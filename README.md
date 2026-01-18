@@ -2,9 +2,9 @@
 
 A new Flutter project.
 
-## Getting Started
+## About
 
-This project is a starting point for a Flutter application.
+This project is a sign language mobile application that have bidirectional translation with a complete learning modules for signs language
 
 A few resources to get you started if this is your first Flutter project:
 
