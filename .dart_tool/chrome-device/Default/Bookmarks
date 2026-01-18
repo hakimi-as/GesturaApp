@@ -1,0 +1,47 @@
+{
+   "checksum": "e2fc28f14d03669438b71d0e3ad076f6",
+   "roots": {
+      "bookmark_bar": {
+         "children": [  ],
+         "date_added": "13412937325516992",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Bookmarks bar",
+         "type": "folder"
+      },
+      "other": {
+         "children": [ {
+            "date_added": "13412937650826515",
+            "date_last_used": "0",
+            "guid": "d423ae21-7a34-446f-b5c1-8c53671d6baf",
+            "id": "5",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "BIM Sign Bank",
+            "type": "url",
+            "url": "https://www.bimsignbank.org/groups/general/alphabets"
+         } ],
+         "date_added": "13412937325516992",
+         "date_last_used": "0",
+         "date_modified": "13412937650826515",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other bookmarks",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13412937325516992",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile bookmarks",
+         "type": "folder"
+      }
+   },
+   "version": 1
+}

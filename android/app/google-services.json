@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "105733141370",
+    "project_id": "gestura-app-2e9fd",
+    "storage_bucket": "gestura-app-2e9fd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:105733141370:android:06a640e9254f02a097dcc3",
+        "android_client_info": {
+          "package_name": "com.example.gesturaclaude"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATpYdtivgLle6b1V3zNSsqz8RkfqGXCPE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

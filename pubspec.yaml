@@ -1,0 +1,68 @@
+name: gesturaclaude
+description: "Gestura - Breaking Silence, Building Bridges: An app that unites communities through sign language"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  confetti: ^0.7.0
+
+  path_provider: ^2.1.5
+
+  # Video Player
+  video_player: ^2.8.2
+  chewie: ^1.7.4  # Better video player UI
+  
+  # HTTP for Cloudinary uploads
+  http: ^1.2.0
+
+  firebase_messaging: ^15.1.6
+  flutter_local_notifications: ^18.0.1
+  share_plus: ^10.1.4
+
+  # Firebase Core - Updated versions
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.6.0
+  firebase_storage: ^12.4.0
+
+  # State Management
+  provider: ^6.1.1
+
+  # UI & Animations
+  flutter_animate: ^4.3.0
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  google_fonts: ^6.1.0
+
+  # Charts (for admin analytics)
+  fl_chart: ^0.66.2
+
+  # Utils
+  intl: ^0.18.1
+  shared_preferences: ^2.2.2
+  connectivity_plus: ^5.0.2
+  image_picker: ^1.0.7
+  permission_handler: ^11.3.0
+  uuid: ^4.3.3
+
+  # Icons
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
