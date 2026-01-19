@@ -1,8 +1,17 @@
-2026/01/18-16:28:22.893 11a0 Reusing MANIFEST C:\Users\user\AppData\Local\Temp\flutter_tools.522a021c\flutter_tools_chrome_device.214cd84d\Default\shared_proto_db/MANIFEST-000001
-2026/01/18-16:28:22.894 11a0 Recovering log #16
-2026/01/18-16:28:22.895 11a0 Reusing old log C:\Users\user\AppData\Local\Temp\flutter_tools.522a021c\flutter_tools_chrome_device.214cd84d\Default\shared_proto_db/000016.log 
-2026/01/18-16:28:22.896 11a0 Delete type=0 #3
-2026/01/18-16:28:22.896 11a0 Delete type=0 #4
-2026/01/18-16:28:22.896 11a0 Delete type=0 #7
-2026/01/18-16:28:22.896 11a0 Delete type=0 #10
-2026/01/18-16:28:22.896 11a0 Delete type=0 #13
+2026/01/19-01:54:39.065 a34 Reusing MANIFEST C:\Users\user\AppData\Local\Temp\flutter_tools.70590548\flutter_tools_chrome_device.13863c16\Default\shared_proto_db/MANIFEST-000001
+2026/01/19-01:54:39.066 a34 Recovering log #19
+2026/01/19-01:54:39.066 a34 (ignoring error) C:\Users\user\AppData\Local\Temp\flutter_tools.70590548\flutter_tools_chrome_device.13863c16\Default\shared_proto_db/000019.log: dropping 203 bytes; Corruption: partial record without end(1)
+2026/01/19-01:54:39.067 a34 Reusing old log C:\Users\user\AppData\Local\Temp\flutter_tools.70590548\flutter_tools_chrome_device.13863c16\Default\shared_proto_db/000019.log 
+2026/01/19-01:54:39.067 a34 Delete type=0 #3
+2026/01/19-01:54:39.068 a34 Delete type=0 #4
+2026/01/19-01:54:39.068 a34 Delete type=0 #7
+2026/01/19-01:54:39.068 a34 Delete type=2 #8
+2026/01/19-01:54:39.068 a34 Delete type=0 #10
+2026/01/19-01:54:39.068 a34 Delete type=2 #11
+2026/01/19-01:54:39.068 a34 Delete type=0 #13
+2026/01/19-01:54:39.068 a34 Delete type=2 #14
+2026/01/19-01:54:39.068 a34 Delete type=0 #16
+2026/01/19-01:54:39.068 a34 Delete type=2 #17
+2026/01/19-01:54:56.226 a34 Level-0 table #24: started
+2026/01/19-01:54:56.240 a34 Level-0 table #24: 136165 bytes OK
+2026/01/19-01:54:56.249 a34 Delete type=0 #19

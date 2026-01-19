@@ -140,23 +140,17 @@ class FirestoreService {
   // ==================== LESSON METHODS ====================
 
   /// Natural sort comparison for lesson names
-  /// Handles both letters (A, B, C) and numbers (1, 2, 10) correctly
   int _naturalCompare(String a, String b) {
-    // Try to parse as numbers first
     final numA = int.tryParse(a);
     final numB = int.tryParse(b);
     
     if (numA != null && numB != null) {
-      // Both are numbers - compare numerically
       return numA.compareTo(numB);
     } else if (numA != null) {
-      // a is number, b is not - numbers come first
       return -1;
     } else if (numB != null) {
-      // b is number, a is not - numbers come first
       return 1;
     } else {
-      // Both are strings - compare case-insensitively
       return a.toLowerCase().compareTo(b.toLowerCase());
     }
   }
@@ -314,7 +308,6 @@ class FirestoreService {
 
   // ==================== QUIZ COMPLETION ====================
 
-  /// Save quiz completion activity to show in Recent Activity
   Future<void> completeQuiz({
     required String userId,
     required String quizType,
@@ -330,7 +323,6 @@ class FirestoreService {
       final quizTypeName = _getQuizTypeName(quizType);
       final displayTitle = quizTitle ?? quizTypeName;
 
-      // Get current user data
       final userDoc = await _firestore
           .collection(AppConstants.usersCollection)
           .doc(userId)
@@ -341,7 +333,6 @@ class FirestoreService {
       final userData = userDoc.data()!;
       final currentXP = userData['totalXP'] ?? 0;
 
-      // Save quiz activity to progress collection
       await _firestore.collection(AppConstants.progressCollection).add({
         'userId': userId,
         'lessonId': 'quiz_${quizId ?? quizType}_${now.millisecondsSinceEpoch}',
@@ -365,17 +356,14 @@ class FirestoreService {
         'startedAt': Timestamp.fromDate(now),
       });
 
-      // Calculate if perfect score
       final isPerfect = totalQuestions > 0 && correctAnswers == totalQuestions;
 
-      // Update user XP and quiz stats
       Map<String, dynamic> updates = {
         'totalXP': currentXP + xpEarned,
         'lastActiveAt': Timestamp.fromDate(now),
         'quizzesCompleted': FieldValue.increment(1),
       };
 
-      // Track perfect quizzes
       if (isPerfect) {
         updates['perfectQuizzes'] = FieldValue.increment(1);
       }
@@ -392,7 +380,6 @@ class FirestoreService {
     }
   }
 
-  /// Get quiz type display name
   String _getQuizTypeName(String type) {
     switch (type) {
       case 'sign_to_text':
@@ -408,10 +395,8 @@ class FirestoreService {
     }
   }
 
-  /// Get average quiz accuracy for a user
   Future<double> getAverageQuizAccuracy(String userId) async {
     try {
-      // Get all quiz completions from progress collection
       final snapshot = await _firestore
           .collection(AppConstants.progressCollection)
           .where('userId', isEqualTo: userId)
@@ -428,12 +413,10 @@ class FirestoreService {
       for (var doc in snapshot.docs) {
         final data = doc.data();
         
-        // Check for accuracy field first
         if (data['accuracy'] != null) {
           totalAccuracy += (data['accuracy'] as num).toDouble();
           count++;
         } else if (data['correctAnswers'] != null && data['totalQuestions'] != null) {
-          // Calculate from correctAnswers and totalQuestions
           final correct = data['correctAnswers'] as int;
           final total = data['totalQuestions'] as int;
           if (total > 0) {
@@ -441,7 +424,6 @@ class FirestoreService {
             count++;
           }
         } else if (data['score'] != null) {
-          // Fallback to score field
           totalAccuracy += (data['score'] as num).toDouble();
           count++;
         }
@@ -495,7 +477,6 @@ class FirestoreService {
         final data = doc.data();
         final lessonId = data['lessonId'] as String?;
         
-        // Skip quiz entries
         if (data['type'] == 'quiz' || data['categoryId'] == 'quiz') {
           continue;
         }
@@ -636,7 +617,6 @@ class FirestoreService {
       if (lastLessonDate != null) {
         final lastDate = DateTime(lastLessonDate.year, lastLessonDate.month, lastLessonDate.day);
         
-        // Reset daily goal if it's a new day
         if (lastDate.isBefore(today)) {
           updates['dailyGoalProgress'] = 0;
           updates['dailyGoalTarget'] = getDailyGoalTarget();
@@ -645,8 +625,6 @@ class FirestoreService {
           debugPrint('✅ Daily goal reset for new day');
         }
 
-        // Reset streak if user missed more than 1 day
-        // Streak should only continue if last lesson was yesterday or today
         if (lastDate.isBefore(yesterday)) {
           final currentStreak = userData['currentStreak'] ?? 0;
           if (currentStreak > 0) {
@@ -655,7 +633,6 @@ class FirestoreService {
           }
         }
       } else {
-        // No lesson ever completed
         updates['dailyGoalProgress'] = 0;
         updates['dailyGoalTarget'] = getDailyGoalTarget();
         updates['dailyGoalText'] = getDailyGoalText();
@@ -742,7 +719,7 @@ class FirestoreService {
             updates['dailyGoalProgress'] = 1;
             updates['dailyGoalTarget'] = getDailyGoalTarget();
             updates['dailyGoalText'] = getDailyGoalText();
-            updates['lessonsCompletedToday'] = 1; // Reset for new day
+            updates['lessonsCompletedToday'] = 1; 
           } else {
             if (dailyGoalProgress < dailyGoalTarget) {
               updates['dailyGoalProgress'] = dailyGoalProgress + 1;
@@ -960,7 +937,6 @@ class FirestoreService {
 
   Future<void> resetUserProgress(String userId) async {
     try {
-      // Reset user stats including badges
       await _firestore
           .collection(AppConstants.usersCollection)
           .doc(userId)
@@ -976,12 +952,11 @@ class FirestoreService {
         'dailyGoalTarget': getDailyGoalTarget(),
         'dailyGoalText': getDailyGoalText(),
         'lastLessonDate': null,
-        'unlockedBadges': [],  // Reset badges
-        'seenBadges': [],      // Reset seen badges
-        'totalTimeSpentSeconds': 0,  // Reset time spent
+        'unlockedBadges': [], 
+        'seenBadges': [], 
+        'totalTimeSpentSeconds': 0, 
       });
 
-      // Delete lesson progress
       final progressDocs = await _firestore
           .collection(AppConstants.progressCollection)
           .where('userId', isEqualTo: userId)
@@ -991,7 +966,6 @@ class FirestoreService {
         await doc.reference.delete();
       }
 
-      // Delete quiz attempts
       try {
         final quizAttempts = await _firestore
             .collection('quizAttempts')
@@ -1005,7 +979,6 @@ class FirestoreService {
         print('No quiz attempts to delete or collection does not exist');
       }
 
-      // Delete user achievements
       try {
         final userAchievements = await _firestore
             .collection(AppConstants.userAchievementsCollection)
@@ -1019,7 +992,6 @@ class FirestoreService {
         print('No user achievements to delete or collection does not exist');
       }
 
-      // Delete notifications
       try {
         final notifications = await _firestore
             .collection('notifications')
@@ -1033,7 +1005,6 @@ class FirestoreService {
         print('No notifications to delete or collection does not exist');
       }
 
-      // Delete challenge progress (subcollection under user document)
       try {
         final challengeProgress = await _firestore
             .collection('users')
@@ -1049,7 +1020,6 @@ class FirestoreService {
         print('No challenge progress to delete or collection does not exist: $e');
       }
 
-      // Also delete from user_challenges collection if it exists (legacy)
       try {
         final challenges = await _firestore
             .collection('user_challenges')
@@ -1070,9 +1040,62 @@ class FirestoreService {
     }
   }
 
+  // ==================== SIGN LIBRARY METHODS ====================
+
+  /// Upload a sign animation JSON to Firestore
+  Future<void> uploadSign(String word, Map<String, dynamic> jsonData) async {
+    try {
+      // Clean the word to be a valid ID (lowercase, no spaces)
+      final docId = word.toLowerCase().trim().replaceAll(' ', '_');
+      
+      await _firestore.collection('signs').doc(docId).set({
+        'word': word,
+        'data': jsonData, // Stores the animation frames
+        'uploadedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      debugPrint("✅ Sign uploaded successfully: $docId");
+    } catch (e) {
+      debugPrint("❌ Error uploading sign: $e");
+      rethrow;
+    }
+  }
+
+  /// Fetch a specific sign animation
+  Future<Map<String, dynamic>?> getSign(String word) async {
+    try {
+      final docId = word.toLowerCase().trim().replaceAll(' ', '_');
+      final doc = await _firestore.collection('signs').doc(docId).get();
+      
+      if (doc.exists && doc.data() != null) {
+        return doc.data(); 
+      }
+      return null;
+    } catch (e) {
+      debugPrint("❌ Error fetching sign: $e");
+      return null;
+    }
+  }
+
+  /// Get list of all cloud signs (for Admin)
+  Stream<QuerySnapshot> getAllSignsStream() {
+    return _firestore.collection('signs').orderBy('word').snapshots();
+  }
+
+  /// Delete a sign from Cloud
+  Future<void> deleteSign(String word) async {
+    try {
+      final docId = word.toLowerCase().trim().replaceAll(' ', '_');
+      await _firestore.collection('signs').doc(docId).delete();
+      debugPrint("✅ Sign deleted: $docId");
+    } catch (e) {
+      debugPrint("❌ Error deleting sign: $e");
+      rethrow;
+    }
+  }
+
   // ==================== NOTIFICATION METHODS ====================
 
-  /// Create a notification for a user
   Future<void> createNotification({
     required String userId,
     required String type,
@@ -1100,7 +1123,6 @@ class FirestoreService {
     }
   }
 
-  /// Notify badge unlocked
   Future<void> notifyBadgeUnlocked(String userId, String badgeName, String badgeIcon) async {
     await createNotification(
       userId: userId,
@@ -1112,7 +1134,6 @@ class FirestoreService {
     );
   }
 
-  /// Notify level up
   Future<void> notifyLevelUp(String userId, int newLevel) async {
     await createNotification(
       userId: userId,
@@ -1124,7 +1145,6 @@ class FirestoreService {
     );
   }
 
-  /// Notify streak milestone
   Future<void> notifyStreakMilestone(String userId, int streakDays) async {
     await createNotification(
       userId: userId,
@@ -1135,7 +1155,6 @@ class FirestoreService {
     );
   }
 
-  /// Notify challenge completed
   Future<void> notifyChallengeCompleted(String userId, String challengeName, int xpEarned) async {
     await createNotification(
       userId: userId,
@@ -1147,7 +1166,6 @@ class FirestoreService {
     );
   }
 
-  /// Notify perfect quiz
   Future<void> notifyPerfectQuiz(String userId, String quizName) async {
     await createNotification(
       userId: userId,
@@ -1158,7 +1176,6 @@ class FirestoreService {
     );
   }
 
-  /// Notify XP milestone
   Future<void> notifyXpMilestone(String userId, int totalXp) async {
     await createNotification(
       userId: userId,
@@ -1170,7 +1187,6 @@ class FirestoreService {
     );
   }
 
-  /// Notify signs learned milestone
   Future<void> notifySignsLearned(String userId, int signCount) async {
     await createNotification(
       userId: userId,
@@ -1182,7 +1198,6 @@ class FirestoreService {
     );
   }
 
-  /// Notify category completed
   Future<void> notifyCategoryCompleted(String userId, String categoryName) async {
     await createNotification(
       userId: userId,
@@ -1194,7 +1209,6 @@ class FirestoreService {
     );
   }
 
-  /// Get unread notification count
   Future<int> getUnreadNotificationCount(String userId) async {
     try {
       final snapshot = await _firestore

@@ -11,6 +11,8 @@ import 'admin_lessons_screen.dart';
 import 'admin_quizzes_screen.dart';
 import 'admin_challenges_screen.dart';
 import 'admin_badges_screen.dart';
+// CHANGE: Import the Library screen instead of just the Upload screen
+import 'admin_sign_library_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -43,15 +45,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       final lessons = await _firestoreService.getAllLessons();
       final quizzes = await _firestoreService.getQuizzes();
 
-      setState(() {
-        _totalUsers = users.length;
-        _totalCategories = categories.length;
-        _totalLessons = lessons.length;
-        _totalQuizzes = quizzes.length;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _totalUsers = users.length;
+          _totalCategories = categories.length;
+          _totalLessons = lessons.length;
+          _totalQuizzes = quizzes.length;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -99,7 +103,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     _buildStatsGrid(context),
                     const SizedBox(height: 24),
 
-                    // Quick Actions
+                    // Manage Section
                     Text(
                       'Manage',
                       style: Theme.of(context).textTheme.titleLarge,
@@ -140,7 +144,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6366F1).withOpacity(0.3),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.3), // Fixed deprecation
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -155,7 +159,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     Text(
                       'Welcome, Admin!',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9), // Fixed deprecation
                         fontSize: 14,
                       ),
                     ),
@@ -172,7 +176,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     Text(
                       'Manage your app content here',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8), // Fixed deprecation
                         fontSize: 14,
                       ),
                     ),
@@ -183,7 +187,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2), // Fixed deprecation
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Center(
@@ -267,7 +271,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15), // Fixed deprecation
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(
@@ -376,6 +380,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           index: 5,
         ),
+        
+        // 2. UPDATED: Points to "Sign Library" which lets you View AND Upload
+        const SizedBox(height: 12),
+        _buildManageCard(
+          context,
+          icon: '🤟', 
+          title: 'Sign Library', // Renamed
+          subtitle: 'View, Delete & Upload Signs',
+          color: Colors.purple, 
+          onTap: () => Navigator.push(
+            context,
+            // NAVIGATES TO LIBRARY SCREEN
+            MaterialPageRoute(builder: (_) => const AdminSignLibraryScreen()), 
+          ),
+          index: 6,
+        ),
       ],
     );
   }
@@ -404,7 +424,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15), // Fixed deprecation
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(
@@ -483,9 +503,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
+          color: color.withValues(alpha: 0.15), // Fixed deprecation
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)), // Fixed deprecation
         ),
         child: Column(
           children: [
