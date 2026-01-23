@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt; // NEW
+import 'package:flutter_tts/flutter_tts.dart'; // NEW
 
 import '../../config/theme.dart';
 import '../../widgets/sign_player.dart';
@@ -22,13 +24,15 @@ class _TranslateScreenState extends State<TranslateScreen>
   late TabController _tabController;
   final TextEditingController _textController = TextEditingController();
   
+  // Voice & TTS
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  final FlutterTts _flutterTts = FlutterTts();
+  bool _isListening = false;
+  
   bool _isCameraActive = false;
   bool _isTranslating = false;
   String _translationOutput = '';
-  
-  // CHANGED: This is now a List<String> to support sentences
   List<String> _currentSentence = []; 
-  
   final int _maxCharacters = 200;
 
   @override
@@ -44,6 +48,8 @@ class _TranslateScreenState extends State<TranslateScreen>
   void dispose() {
     _tabController.dispose();
     _textController.dispose();
+    _flutterTts.stop();
+    _speech.stop();
     super.dispose();
   }
 
@@ -70,11 +76,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                       color: const Color(0xFFFF6B35),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
-                      Icons.translate,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                    child: const Icon(Icons.translate, color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 12),
                   const Text('Translate'),
@@ -137,63 +139,42 @@ class _TranslateScreenState extends State<TranslateScreen>
       ),
       child: Row(
         children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _tabController.animateTo(0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: _tabController.index == 0 ? const Color(0xFF3B82F6) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('👋', style: TextStyle(fontSize: 14)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Sign → Text',
-                      style: TextStyle(
-                        color: _tabController.index == 0 ? Colors.white : context.textMuted,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _tabController.animateTo(1),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: _tabController.index == 1 ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('📝', style: TextStyle(fontSize: 14)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Text → Sign',
-                      style: TextStyle(
-                        color: _tabController.index == 1 ? Colors.white : context.textMuted,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          _buildTabBtn(0, '👋', 'Sign → Text'),
+          _buildTabBtn(1, '📝', 'Text → Sign'),
         ],
       ),
     ).animate().fadeIn(delay: 100.ms);
+  }
+
+  Widget _buildTabBtn(int index, String icon, String label) {
+    bool isSelected = _tabController.index == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _tabController.animateTo(index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? (index == 0 ? const Color(0xFF3B82F6) : AppColors.primary) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 14)),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : context.textMuted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ==================== SIGN TO TEXT TAB ====================
@@ -374,28 +355,6 @@ class _TranslateScreenState extends State<TranslateScreen>
     ).animate().fadeIn(delay: 300.ms);
   }
 
-  Widget _buildOutputActionButton({required IconData icon, required String label, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: context.bgElevated,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: context.textSecondary, size: 18),
-            const SizedBox(width: 6),
-            Text(label, style: TextStyle(color: context.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ==================== TEXT TO SIGN TAB ====================
 
   Widget _buildTextToSignTab() {
@@ -407,7 +366,7 @@ class _TranslateScreenState extends State<TranslateScreen>
           const SizedBox(height: 20),
           _buildSignPreview(),
           const SizedBox(height: 20),
-          _buildCurrentSignSection(),
+          _buildCurrentSignSection(), // Now includes speaker button!
           const SizedBox(height: 20),
         ],
       ),
@@ -453,7 +412,13 @@ class _TranslateScreenState extends State<TranslateScreen>
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildInputActionButton(icon: Icons.mic, label: 'Voice', onTap: _startVoiceInput),
+              // UPDATED: Voice Input Button
+              _buildInputActionButton(
+                icon: _isListening ? Icons.mic_off : Icons.mic, 
+                label: _isListening ? 'Listening...' : 'Voice', 
+                onTap: _startVoiceInput,
+                isActive: _isListening,
+              ),
               const SizedBox(width: 10),
               _buildInputActionButton(icon: Icons.delete_outline, label: 'Clear', onTap: () {
                 _textController.clear();
@@ -488,22 +453,27 @@ class _TranslateScreenState extends State<TranslateScreen>
     ).animate().fadeIn(delay: 200.ms);
   }
 
-  Widget _buildInputActionButton({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _buildInputActionButton({
+    required IconData icon, 
+    required String label, 
+    required VoidCallback onTap,
+    bool isActive = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: context.bgElevated,
+          color: isActive ? Colors.red.withValues(alpha: 0.2) : context.bgElevated,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: context.borderColor),
+          border: Border.all(color: isActive ? Colors.red : context.borderColor),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: context.textSecondary, size: 18),
+            Icon(icon, color: isActive ? Colors.red : context.textSecondary, size: 18),
             const SizedBox(width: 6),
-            Text(label, style: TextStyle(color: context.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
+            Text(label, style: TextStyle(color: isActive ? Colors.red : context.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -512,7 +482,7 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   Widget _buildSignPreview() {
     return Container(
-      height: 320,
+      height: 420, 
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFF1E1B4B),
@@ -522,25 +492,9 @@ class _TranslateScreenState extends State<TranslateScreen>
       child: _currentSentence.isNotEmpty
           ? ClipRRect(
               borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                children: [
-                  // FIX: Using sentence parameter instead of word
-                  SignPlayer(
-                    sentence: _currentSentence,
-                    key: ValueKey(_currentSentence.join()), // Unique key triggers rebuild on change
-                  ),
-                  Positioned(
-                    bottom: 16,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildPreviewControlButton(icon: Icons.replay, label: 'Replay', onTap: _replayAnimation),
-                      ],
-                    ),
-                  ),
-                ],
+              child: SignPlayer(
+                sentence: _currentSentence,
+                key: ValueKey(_currentSentence.join()),
               ),
             )
           : _buildPreviewPlaceholder(),
@@ -575,28 +529,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     );
   }
 
-  Widget _buildPreviewControlButton({required IconData icon, required String label, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white24),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 6),
-            Text(label, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // UPDATED: Now includes Speaker Button
   Widget _buildCurrentSignSection() {
     return Container(
       width: double.infinity,
@@ -619,18 +552,32 @@ class _TranslateScreenState extends State<TranslateScreen>
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text('English → ASL', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
+                child: Text('English → MSL', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            _currentSentence.isEmpty ? 'Type something to see ML animation' : _currentSentence.join(' ').toUpperCase(),
-            style: TextStyle(
-              color: _currentSentence.isEmpty ? context.textMuted : context.textPrimary,
-              fontSize: 16,
-              fontWeight: _currentSentence.isNotEmpty ? FontWeight.bold : FontWeight.normal,
-            ),
+          
+          // NEW: Row with text and speaker button
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _currentSentence.isEmpty ? 'Type something to see ML animation' : _currentSentence.join(' ').toUpperCase(),
+                  style: TextStyle(
+                    color: _currentSentence.isEmpty ? context.textMuted : context.textPrimary,
+                    fontSize: 16,
+                    fontWeight: _currentSentence.isNotEmpty ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ),
+              if (_currentSentence.isNotEmpty)
+                IconButton(
+                  onPressed: _speakCurrentSign,
+                  icon: const Icon(Icons.volume_up, color: Colors.blueAccent),
+                  tooltip: "Speak Sign",
+                ),
+            ],
           ),
         ],
       ),
@@ -647,9 +594,19 @@ class _TranslateScreenState extends State<TranslateScreen>
     setState(() => _isCameraActive = false);
   }
 
-  void _speakOutput() {
+  // Output TTS (Sign -> Text tab)
+  void _speakOutput() async {
     if (_translationOutput.isEmpty) return;
-    // TODO: TTS
+    await _flutterTts.setLanguage("en-US");
+    await _flutterTts.speak(_translationOutput);
+  }
+
+  // Current Sign TTS (Text -> Sign tab)
+  void _speakCurrentSign() async {
+    if (_currentSentence.isNotEmpty) {
+      await _flutterTts.setLanguage("en-US");
+      await _flutterTts.speak(_currentSentence.join(" "));
+    }
   }
 
   void _copyOutput() {
@@ -664,33 +621,65 @@ class _TranslateScreenState extends State<TranslateScreen>
     setState(() => _translationOutput = '');
   }
 
-  void _startVoiceInput() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎤 Voice input coming soon')));
+  // UPDATED: Real Voice Input Logic
+  void _startVoiceInput() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (status) => debugPrint('onStatus: $status'),
+        onError: (errorNotification) => debugPrint('onError: $errorNotification'),
+      );
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) => setState(() {
+            _textController.text = val.recognizedWords;
+          }),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Microphone access denied or unavailable')));
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
   }
+
+  
 
   void _translateText() {
     if (_textController.text.trim().isEmpty) return;
 
     setState(() {
       _isTranslating = true;
-      // FIX: Split sentence into words for chaining
-      _currentSentence = _textController.text.trim().toLowerCase().split(RegExp(r'\s+'));
+      // CHANGED: Do NOT split by space here. Pass the full string as one item.
+      // This allows SignPlayer to check for multi-word signs like "muslim_prayer".
+      _currentSentence = [_textController.text.trim()]; 
     });
 
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() => _isTranslating = false);
     });
   }
-
-  void _replayAnimation() {
-    if (_currentSentence.isEmpty) return;
-    
-    // Quick toggle to force rebuild of SignPlayer widget
-    final current = List<String>.from(_currentSentence);
-    setState(() => _currentSentence = []);
-    
-    Future.delayed(const Duration(milliseconds: 50), () {
-      if (mounted) setState(() => _currentSentence = current);
-    });
+  
+  Widget _buildOutputActionButton({required IconData icon, required String label, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: context.bgElevated,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: context.borderColor),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: context.textSecondary, size: 18),
+            const SizedBox(width: 6),
+            Text(label, style: TextStyle(color: context.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ),
+    );
   }
 }

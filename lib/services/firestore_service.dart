@@ -25,7 +25,7 @@ class FirestoreService {
       }
       return null;
     } catch (e) {
-      print('Error getting user: $e');
+      debugPrint('Error getting user: $e');
       return null;
     }
   }
@@ -37,7 +37,7 @@ class FirestoreService {
           .doc(user.id)
           .set(user.toFirestore());
     } catch (e) {
-      print('Error creating user: $e');
+      debugPrint('Error creating user: $e');
       rethrow;
     }
   }
@@ -49,7 +49,7 @@ class FirestoreService {
           .doc(userId)
           .update(data);
     } catch (e) {
-      print('Error updating user: $e');
+      debugPrint('Error updating user: $e');
       rethrow;
     }
   }
@@ -62,7 +62,7 @@ class FirestoreService {
           .get();
       return snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList();
     } catch (e) {
-      print('Error getting all users: $e');
+      debugPrint('Error getting all users: $e');
       return [];
     }
   }
@@ -80,7 +80,7 @@ class FirestoreService {
     }
   }
 
-  // ==================== CATEGORY METHODS ====================
+  // ==================== LESSON CATEGORY METHODS (Main App) ====================
 
   Future<List<CategoryModel>> getCategories() async {
     try {
@@ -90,7 +90,7 @@ class FirestoreService {
           .get();
       return snapshot.docs.map((doc) => CategoryModel.fromFirestore(doc)).toList();
     } catch (e) {
-      print('Error getting categories: $e');
+      debugPrint('Error getting categories: $e');
       return [];
     }
   }
@@ -99,7 +99,7 @@ class FirestoreService {
     try {
       await _firestore.collection(AppConstants.categoriesCollection).add(data);
     } catch (e) {
-      print('Error adding category: $e');
+      debugPrint('Error adding category: $e');
       rethrow;
     }
   }
@@ -111,7 +111,7 @@ class FirestoreService {
           .doc(categoryId)
           .update(data);
     } catch (e) {
-      print('Error updating category: $e');
+      debugPrint('Error updating category: $e');
       rethrow;
     }
   }
@@ -132,7 +132,7 @@ class FirestoreService {
           .doc(categoryId)
           .delete();
     } catch (e) {
-      print('Error deleting category: $e');
+      debugPrint('Error deleting category: $e');
       rethrow;
     }
   }
@@ -190,7 +190,7 @@ class FirestoreService {
       
       return lessons;
     } catch (e) {
-      print('Error getting all lessons: $e');
+      debugPrint('Error getting all lessons: $e');
       return [];
     }
   }
@@ -203,7 +203,7 @@ class FirestoreService {
         await _updateCategoryLessonCount(data['categoryId']);
       }
     } catch (e) {
-      print('Error adding lesson: $e');
+      debugPrint('Error adding lesson: $e');
       rethrow;
     }
   }
@@ -215,7 +215,7 @@ class FirestoreService {
           .doc(lessonId)
           .update(data);
     } catch (e) {
-      print('Error updating lesson: $e');
+      debugPrint('Error updating lesson: $e');
       rethrow;
     }
   }
@@ -238,7 +238,7 @@ class FirestoreService {
         await _updateCategoryLessonCount(categoryId);
       }
     } catch (e) {
-      print('Error deleting lesson: $e');
+      debugPrint('Error deleting lesson: $e');
       rethrow;
     }
   }
@@ -255,7 +255,7 @@ class FirestoreService {
           .doc(categoryId)
           .update({'lessonCount': lessons.docs.length});
     } catch (e) {
-      print('Error updating category lesson count: $e');
+      debugPrint('Error updating category lesson count: $e');
     }
   }
 
@@ -268,7 +268,7 @@ class FirestoreService {
           .get();
       return snapshot.docs.map((doc) => QuizModel.fromFirestore(doc)).toList();
     } catch (e) {
-      print('Error getting quizzes: $e');
+      debugPrint('Error getting quizzes: $e');
       return [];
     }
   }
@@ -277,7 +277,7 @@ class FirestoreService {
     try {
       await _firestore.collection(AppConstants.quizzesCollection).add(data);
     } catch (e) {
-      print('Error adding quiz: $e');
+      debugPrint('Error adding quiz: $e');
       rethrow;
     }
   }
@@ -289,7 +289,7 @@ class FirestoreService {
           .doc(quizId)
           .update(data);
     } catch (e) {
-      print('Error updating quiz: $e');
+      debugPrint('Error updating quiz: $e');
       rethrow;
     }
   }
@@ -301,7 +301,7 @@ class FirestoreService {
           .doc(quizId)
           .delete();
     } catch (e) {
-      print('Error deleting quiz: $e');
+      debugPrint('Error deleting quiz: $e');
       rethrow;
     }
   }
@@ -457,7 +457,7 @@ class FirestoreService {
       
       return progressList;
     } catch (e) {
-      print('Error getting user progress: $e');
+      debugPrint('Error getting user progress: $e');
       return [];
     }
   }
@@ -521,7 +521,7 @@ class FirestoreService {
             .add(progress.toFirestore());
       }
     } catch (e) {
-      print('Error updating lesson progress: $e');
+      debugPrint('Error updating lesson progress: $e');
       rethrow;
     }
   }
@@ -537,7 +537,7 @@ class FirestoreService {
           .map((doc) => AchievementModel.fromFirestore(doc))
           .toList();
     } catch (e) {
-      print('Error getting achievements: $e');
+      debugPrint('Error getting achievements: $e');
       return [];
     }
   }
@@ -552,7 +552,7 @@ class FirestoreService {
           .map((doc) => UserAchievementModel.fromFirestore(doc))
           .toList();
     } catch (e) {
-      print('Error getting user achievements: $e');
+      debugPrint('Error getting user achievements: $e');
       return [];
     }
   }
@@ -574,7 +574,7 @@ class FirestoreService {
             .update({'totalXP': currentXP + xpAmount});
       }
     } catch (e) {
-      print('Error adding user XP: $e');
+      debugPrint('Error adding user XP: $e');
       rethrow;
     }
   }
@@ -927,9 +927,9 @@ class FirestoreService {
             .add(achievement);
       }
 
-      print('Initial data seeded successfully');
+      debugPrint('Initial data seeded successfully');
     } catch (e) {
-      print('Error seeding data: $e');
+      debugPrint('Error seeding data: $e');
     }
   }
 
@@ -976,7 +976,7 @@ class FirestoreService {
           await doc.reference.delete();
         }
       } catch (e) {
-        print('No quiz attempts to delete or collection does not exist');
+        debugPrint('No quiz attempts to delete or collection does not exist');
       }
 
       try {
@@ -989,7 +989,7 @@ class FirestoreService {
           await doc.reference.delete();
         }
       } catch (e) {
-        print('No user achievements to delete or collection does not exist');
+        debugPrint('No user achievements to delete or collection does not exist');
       }
 
       try {
@@ -1002,7 +1002,7 @@ class FirestoreService {
           await doc.reference.delete();
         }
       } catch (e) {
-        print('No notifications to delete or collection does not exist');
+        debugPrint('No notifications to delete or collection does not exist');
       }
 
       try {
@@ -1015,9 +1015,9 @@ class FirestoreService {
         for (var doc in challengeProgress.docs) {
           await doc.reference.delete();
         }
-        print('Deleted ${challengeProgress.docs.length} challenge progress documents');
+        debugPrint('Deleted ${challengeProgress.docs.length} challenge progress documents');
       } catch (e) {
-        print('No challenge progress to delete or collection does not exist: $e');
+        debugPrint('No challenge progress to delete or collection does not exist: $e');
       }
 
       try {
@@ -1030,31 +1030,56 @@ class FirestoreService {
           await doc.reference.delete();
         }
       } catch (e) {
-        print('No user_challenges to delete or collection does not exist');
+        debugPrint('No user_challenges to delete or collection does not exist');
       }
 
-      print('User progress reset successfully for user: $userId');
+      debugPrint('User progress reset successfully for user: $userId');
     } catch (e) {
-      print('Error resetting user progress: $e');
+      debugPrint('Error resetting user progress: $e');
       rethrow;
     }
   }
 
-  // ==================== SIGN LIBRARY METHODS ====================
+  // ==================== SIGN LIBRARY METHODS (LIBRARY) ====================
 
-  /// Upload a sign animation JSON to Firestore
-  Future<void> uploadSign(String word, Map<String, dynamic> jsonData) async {
+  /// Get the special categories just for the Sign Library
+  Stream<QuerySnapshot> getSignLibraryCategoriesStream() {
+    return _firestore
+        .collection('sign_library_categories')
+        .orderBy('name')
+        .snapshots();
+  }
+
+  /// Add a new category specifically for the library
+  Future<void> addSignLibraryCategory(String name) async {
+    final docId = name.trim().toLowerCase().replaceAll(' ', '_');
+    await _firestore.collection('sign_library_categories').doc(docId).set({
+      'name': name.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Delete a library category
+  Future<void> deleteSignLibraryCategory(String docId) async {
+    await _firestore.collection('sign_library_categories').doc(docId).delete();
+  }
+
+  /// Upload a sign animation JSON to Firestore with Category and SearchKey
+  Future<void> uploadSign(String word, String category, Map<String, dynamic> jsonData) async {
     try {
       // Clean the word to be a valid ID (lowercase, no spaces)
       final docId = word.toLowerCase().trim().replaceAll(' ', '_');
-      
+      final searchKey = word.toLowerCase();
+
       await _firestore.collection('signs').doc(docId).set({
         'word': word,
-        'data': jsonData, // Stores the animation frames
+        'searchKey': searchKey, // For searching
+        'category': category,   // For filtering
+        'data': jsonData,       // Stores the animation frames
         'uploadedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      debugPrint("✅ Sign uploaded successfully: $docId");
+      debugPrint("✅ Sign uploaded successfully: $docId (Category: $category)");
     } catch (e) {
       debugPrint("❌ Error uploading sign: $e");
       rethrow;
@@ -1077,9 +1102,68 @@ class FirestoreService {
     }
   }
 
-  /// Get list of all cloud signs (for Admin)
+  /// Get list of all cloud signs (for Admin) - Stream
   Stream<QuerySnapshot> getAllSignsStream() {
-    return _firestore.collection('signs').orderBy('word').snapshots();
+    return _firestore.collection('signs').orderBy('uploadedAt', descending: true).snapshots();
+  }
+
+  /// Get signs filtered by Category - Stream
+  Stream<QuerySnapshot> getSignsByCategory(String category) {
+    return _firestore
+        .collection('signs')
+        .where('category', isEqualTo: category)
+        .orderBy('word')
+        .snapshots();
+  }
+
+  /// Search signs by word - Stream
+  Stream<QuerySnapshot> searchSigns(String query) {
+    final searchKey = query.toLowerCase();
+    return _firestore
+        .collection('signs')
+        .where('searchKey', isGreaterThanOrEqualTo: searchKey)
+        .where('searchKey', isLessThan: '${searchKey}z')
+        .snapshots();
+  }
+
+  /// Update a sign's category (Move functionality)
+  Future<void> updateSignCategory(String word, String newCategory) async {
+    try {
+      final docId = word.toLowerCase().trim().replaceAll(' ', '_');
+      await _firestore.collection('signs').doc(docId).update({
+        'category': newCategory,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      debugPrint("✅ Moved '$word' to '$newCategory'");
+    } catch (e) {
+      debugPrint("❌ Error moving sign: $e");
+      rethrow;
+    }
+  }
+
+  /// NEW: Bulk move multiple signs to a category
+  Future<void> moveMultipleSigns(List<String> words, String newCategory) async {
+    try {
+      // Get a new write batch
+      final batch = _firestore.batch();
+
+      for (var word in words) {
+        final docId = word.toLowerCase().trim().replaceAll(' ', '_');
+        final docRef = _firestore.collection('signs').doc(docId);
+        
+        batch.update(docRef, {
+          'category': newCategory,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Commit all changes at once
+      await batch.commit();
+      debugPrint("✅ Bulk moved ${words.length} signs to '$newCategory'");
+    } catch (e) {
+      debugPrint("❌ Error bulk moving: $e");
+      rethrow;
+    }
   }
 
   /// Delete a sign from Cloud

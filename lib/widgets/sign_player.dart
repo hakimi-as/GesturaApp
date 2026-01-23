@@ -6,7 +6,6 @@ import '../services/firestore_service.dart';
 import 'skeleton_painter.dart';
 
 class SignPlayer extends StatefulWidget {
-  // Now accepts a list of words for sentence chaining
   final List<String> sentence; 
   final bool autoPlay;
 
@@ -23,15 +22,19 @@ class SignPlayer extends StatefulWidget {
 class _SignPlayerState extends State<SignPlayer> {
   final FirestoreService _firestoreService = FirestoreService();
 
-  // Stores the sequence of animations. 
-  // Structure: [ [Frames for Word 1], [Frames for Word 2] ]
+  // Data
   final List<List<Map<String, dynamic>>> _sequence = [];
+  final List<String> _sequenceLabels = []; 
   
-  int _currentWordIndex = 0; // Which word are we playing?
-  int _currentFrame = 0;     // Which frame of that word?
+  // State
+  int _currentWordIndex = 0;
+  int _currentFrame = 0;
   Timer? _timer;
   bool _isLoading = true;
   String _statusMessage = "Initializing...";
+  bool _isPlaying = false;
+  double _playbackSpeed = 1.0; 
+  bool _isFinished = false;
 
   @override
   void initState() {
@@ -42,69 +45,77 @@ class _SignPlayerState extends State<SignPlayer> {
   @override
   void didUpdateWidget(SignPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reload if the sentence changes (comparing joined strings is a quick way to check lists)
     if (oldWidget.sentence.join(' ') != widget.sentence.join(' ')) {
       _loadSentence();
     }
   }
 
+  Future<List<Map<String, dynamic>>?> _fetchSignData(String term) async {
+    try {
+      final firestoreData = await _firestoreService.getSign(term);
+      if (firestoreData != null) {
+        var rawFrames = firestoreData['data']['data']; 
+        if (rawFrames != null) {
+           return (rawFrames as List).cast<Map<String, dynamic>>();
+        }
+      }
+    } catch (e) { /* Ignore */ }
+
+    try {
+      final jsonString = await rootBundle.loadString('assets/signs/$term.json');
+      final data = json.decode(jsonString);
+      return (data['data'] as List).cast<Map<String, dynamic>>();
+    } catch (e) { return null; }
+  }
+
+  // ... inside _SignPlayerState ...
+
   Future<void> _loadSentence() async {
-    _timer?.cancel();
+    _stop(); 
     setState(() {
       _isLoading = true;
       _sequence.clear();
-      _currentWordIndex = 0;
-      _currentFrame = 0;
+      _sequenceLabels.clear();
       _statusMessage = "Loading signs...";
     });
 
-    for (String word in widget.sentence) {
-      try {
-        List<Map<String, dynamic>>? frames;
-        // Clean the word (lowercase, alphanumeric + underscore only)
-        final cleanWord = word.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
+    for (String rawInput in widget.sentence) {
+      if (rawInput.trim().isEmpty) continue;
 
-        if (cleanWord.isEmpty) continue;
+      String phraseKey = rawInput.trim().toLowerCase()
+          .replaceAll(RegExp(r'\s+'), '_') // Convert spaces to underscores
+          .replaceAll(RegExp(r'[^a-z0-9_]'), ''); // Remove special chars
 
-        // ---------------------------------------------------------
-        // STRATEGY: Cloud First -> Local Fallback
-        // ---------------------------------------------------------
-        
-        // 1. Try fetching from Cloud Firestore
-        try {
-          final firestoreData = await _firestoreService.getSign(cleanWord);
-          if (firestoreData != null) {
-            // Firestore data structure: { 'word': '...', 'data': { 'word': '...', 'data': [...] } }
-            // We need to drill down to the inner 'data' list
-            var rawFrames = firestoreData['data']['data']; 
-            if (rawFrames != null) {
-               frames = (rawFrames as List).cast<Map<String, dynamic>>();
-               debugPrint("☁️ Loaded '$cleanWord' from CLOUD");
+      List<Map<String, dynamic>>? phraseFrames = await _fetchSignData(phraseKey);
+
+      if (phraseFrames != null && phraseFrames.isNotEmpty) {
+        _sequence.add(phraseFrames);
+        _sequenceLabels.add(rawInput.toUpperCase());
+      } else {
+        List<String> words = rawInput.trim().split(RegExp(r'\s+'));
+
+        for (String word in words) {
+          String wordKey = word.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
+          if (wordKey.isEmpty) continue;
+
+          List<Map<String, dynamic>>? wordFrames = await _fetchSignData(wordKey);
+
+          if (wordFrames != null && wordFrames.isNotEmpty) {
+            _sequence.add(wordFrames);
+            _sequenceLabels.add(word.toUpperCase());
+          } else {
+            List<String> characters = wordKey.split('');
+            for (String char in characters) {
+              if (char == '_') continue; 
+              List<Map<String, dynamic>>? letterFrames = await _fetchSignData(char);
+              
+              if (letterFrames != null && letterFrames.isNotEmpty) {
+                _sequence.add(letterFrames);
+                _sequenceLabels.add(char.toUpperCase());
+              }
             }
           }
-        } catch (e) {
-          // Cloud fetch failed or document didn't exist, silently continue to local
         }
-
-        // 2. If Cloud failed, try Local Assets
-        if (frames == null) {
-          try {
-            final jsonString = await rootBundle.loadString('assets/signs/$cleanWord.json');
-            final data = json.decode(jsonString);
-            frames = (data['data'] as List).cast<Map<String, dynamic>>();
-            debugPrint("📦 Loaded '$cleanWord' from ASSETS");
-          } catch (e) {
-            debugPrint("⚠️ Word not found in assets: $cleanWord");
-          }
-        }
-
-        // 3. Add to sequence if we found frames
-        if (frames != null && frames.isNotEmpty) {
-          _sequence.add(frames);
-        }
-
-      } catch (e) {
-        debugPrint("Error processing word '$word': $e");
       }
     }
 
@@ -112,7 +123,7 @@ class _SignPlayerState extends State<SignPlayer> {
       setState(() {
         _isLoading = false;
         if (_sequence.isEmpty) {
-          _statusMessage = "No signs found for this text.";
+          _statusMessage = "No signs found.";
         }
       });
       
@@ -123,36 +134,74 @@ class _SignPlayerState extends State<SignPlayer> {
   }
 
   void _play() {
+    if (_sequence.isEmpty) return;
+    if (_isFinished) {
+      setState(() { _currentWordIndex = 0; _currentFrame = 0; _isFinished = false; });
+    }
+    setState(() => _isPlaying = true);
     _timer?.cancel();
-    // 30 FPS = approx 33ms per frame
-    _timer = Timer.periodic(const Duration(milliseconds: 33), (timer) {
+    int frameDuration = (33 / _playbackSpeed).round();
+
+    _timer = Timer.periodic(Duration(milliseconds: frameDuration), (timer) {
       if (!mounted) return;
-
       setState(() {
-        if (_sequence.isEmpty) return;
-
         final currentAnim = _sequence[_currentWordIndex];
-
         if (_currentFrame < currentAnim.length - 1) {
-          // Next frame in current word
           _currentFrame++;
         } else {
-          // Word finished. Move to next word?
           if (_currentWordIndex < _sequence.length - 1) {
             _currentWordIndex++;
-            _currentFrame = 0; // Reset for new word
-          } else {
-            // Sentence finished. Loop back to start.
-            _currentWordIndex = 0;
             _currentFrame = 0;
-            
-            // Optional: Pause briefly between loops for better readability
-            _timer?.cancel();
-            Future.delayed(const Duration(seconds: 2), _play);
+          } else {
+            _stop();
+            _isFinished = true; 
           }
         }
       });
     });
+  }
+
+  void _stop() {
+    _timer?.cancel();
+    setState(() => _isPlaying = false);
+  }
+
+  void _pause() => _stop();
+
+  void _toggleSpeed() {
+    setState(() {
+      if (_playbackSpeed == 1.0) _playbackSpeed = 0.5;
+      else if (_playbackSpeed == 0.5) _playbackSpeed = 2.0;
+      else _playbackSpeed = 1.0;
+    });
+    if (_isPlaying) _play(); 
+  }
+
+  void _replay() {
+    setState(() {
+      _currentWordIndex = 0;
+      _currentFrame = 0;
+      _isFinished = false;
+    });
+    _play();
+  }
+
+  void _next() {
+    if (_currentWordIndex < _sequence.length - 1) {
+      setState(() {
+        _currentWordIndex++;
+        _currentFrame = 0;
+      });
+    }
+  }
+
+  void _prev() {
+    if (_currentWordIndex > 0) {
+      setState(() {
+        _currentWordIndex--;
+        _currentFrame = 0;
+      });
+    }
   }
 
   @override
@@ -163,89 +212,120 @@ class _SignPlayerState extends State<SignPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Error / Empty State
-    if (!_isLoading && _sequence.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 40),
-            SizedBox(height: 10),
-            Text(
-              "Translation not available", 
-              style: TextStyle(color: Colors.white70)
-            ),
-          ],
+    if (_isLoading || _sequence.isEmpty) {
+      return Container(
+        color: Colors.black87,
+        child: Center(
+          child: _isLoading 
+            ? const CircularProgressIndicator()
+            : Text(_statusMessage, style: const TextStyle(color: Colors.white70)),
         ),
       );
     }
 
-    // 2. Loading State
-    if (_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(_statusMessage, style: const TextStyle(color: Colors.white70)),
-          ],
-        ),
-      );
+    String currentLabel = "";
+    if (_currentWordIndex < _sequenceLabels.length) {
+      currentLabel = _sequenceLabels[_currentWordIndex];
     }
 
-    // 3. Determine current word being played for the UI overlay
-    String currentWordPlaying = "";
-    // We map the sequence index back to the sentence list roughly
-    // Note: If some words were skipped (missing), this might be slightly off, 
-    // but for now it assumes valid words map 1:1.
-    if (_currentWordIndex < _sequence.length) {
-       // We can't map directly to widget.sentence index if we skipped words.
-       // However, for visual feedback, usually showing the valid loaded word is enough.
-       // A more complex implementation would track the word string alongside the frames in _sequence.
-    }
+    return Column(
+      children: [
+        // --- 1. ANIMATION BOX ---
+        Expanded(
+          child: Container(
+            color: Colors.black,
+            width: double.infinity,
+            child: Stack(
+              children: [
+                SizedBox.expand(
+                  child: CustomPaint(
+                    painter: SkeletonPainter(
+                      _sequence.isNotEmpty 
+                        ? _sequence[_currentWordIndex][_currentFrame] 
+                        : {}
+                    ),
+                  ),
+                ),
+                
+                // Label
+                Positioned(
+                  top: 20, 
+                  left: 0, 
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.5))
+                      ),
+                      child: Text(
+                        currentLabel, 
+                        style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
 
-    // 4. Animation Player
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: Colors.black87,
-      child: Stack(
-        children: [
-          // The Skeleton
-          SizedBox.expand(
-            child: CustomPaint(
-              painter: SkeletonPainter(
-                _sequence.isNotEmpty 
-                  ? _sequence[_currentWordIndex][_currentFrame] 
-                  : {}
-              ),
+                // Sequence Counter
+                Positioned(
+                  top: 20,
+                  right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      "${_currentWordIndex + 1}/${_sequence.length}",
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          
-          // Debug/Info Overlay (Shows which word in the sequence is playing)
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white24)
+        ),
+
+        // --- 2. CONTROLS BAR ---
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          color: const Color(0xFF1E1E1E),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Playing: ${currentLabel.toUpperCase()}",
+                style: const TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              child: Text(
-                "Sequence: ${_currentWordIndex + 1}/${_sequence.length}",
-                style: const TextStyle(
-                  color: Colors.tealAccent, 
-                  fontWeight: FontWeight.bold, 
-                  fontSize: 12
-                ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton.icon(
+                    onPressed: _toggleSpeed,
+                    icon: const Icon(Icons.speed, color: Colors.white70, size: 20),
+                    label: Text("${_playbackSpeed}x", style: const TextStyle(color: Colors.white)),
+                  ),
+                  IconButton(onPressed: _prev, icon: const Icon(Icons.skip_previous, color: Colors.white70)),
+                  FloatingActionButton.small(
+                    onPressed: _isPlaying ? _pause : _play,
+                    backgroundColor: _isPlaying ? Colors.amber : Colors.green,
+                    child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.black),
+                  ),
+                  IconButton(onPressed: _next, icon: const Icon(Icons.skip_next, color: Colors.white70)),
+                  IconButton(onPressed: _replay, icon: const Icon(Icons.replay, color: Colors.white)),
+                ],
               ),
-            ),
-          )
-        ],
-      ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

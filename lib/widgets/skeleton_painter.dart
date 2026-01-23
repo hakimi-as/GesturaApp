@@ -12,18 +12,29 @@ class SkeletonPainter extends CustomPainter {
     final leftHand = frameData['left_hand'] as List?;
     final rightHand = frameData['right_hand'] as List?;
 
+    // Check if we have body data
+    bool hasBody = pose != null && pose.isNotEmpty;
+
     // --- Paint Styles ---
     final bonePaint = Paint()
       ..color = Colors.tealAccent
       ..strokeWidth = 3.0
       ..strokeCap = StrokeCap.round;
 
+    final ghostArmPaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [Colors.tealAccent, Colors.transparent],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..strokeWidth = 3.0
+      ..strokeCap = StrokeCap.round;
+
     final headPaint = Paint()
-      ..color = Colors.yellowAccent.withValues(alpha: 0.9) // Fixed deprecation
+      ..color = Colors.yellowAccent.withOpacity(0.9)
       ..style = PaintingStyle.fill;
 
     // Helper to get coordinates
-    // Fixed: Changed 'List' to 'List?' to allow null checking
     Offset getPos(List? source, int index) {
       if (source == null || index >= source.length) return Offset.zero;
       var point = source[index];
@@ -31,9 +42,27 @@ class SkeletonPainter extends CustomPainter {
     }
 
     // ==========================================================
-    // 1. DRAW BODY (Arms & Shoulders)
+    // 1. OPTIMIZATION: Simulated Arms (If Body is Missing)
     // ==========================================================
-    if (pose != null) {
+    // If we only have hands, connect the wrist (Index 0) to the bottom of the screen
+    // so they don't look like floating ghost hands.
+    if (!hasBody) {
+      if (leftHand != null && leftHand.isNotEmpty) {
+        Offset wrist = getPos(leftHand, 0);
+        // Draw line from wrist to bottom-left area to simulate an arm
+        canvas.drawLine(wrist, Offset(wrist.dx - 20, size.height), ghostArmPaint);
+      }
+      if (rightHand != null && rightHand.isNotEmpty) {
+        Offset wrist = getPos(rightHand, 0);
+        // Draw line from wrist to bottom-right area
+        canvas.drawLine(wrist, Offset(wrist.dx + 20, size.height), ghostArmPaint);
+      }
+    }
+
+    // ==========================================================
+    // 2. DRAW BODY (Arms & Shoulders) - Only if data exists
+    // ==========================================================
+    if (hasBody) {
       final bodyConnections = [
         [11, 12], // Shoulders
         [11, 13], [13, 15], // Left Arm
@@ -61,13 +90,13 @@ class SkeletonPainter extends CustomPainter {
       canvas.drawCircle(nose, headRadius, headPaint);
       
       // Draw Eyes
-      final eyePaint = Paint()..color = Colors.black.withValues(alpha: 0.7);
+      final eyePaint = Paint()..color = Colors.black.withOpacity(0.7);
       canvas.drawCircle(nose.translate(-headRadius/3, -headRadius/4), 3, eyePaint);
       canvas.drawCircle(nose.translate(headRadius/3, -headRadius/4), 3, eyePaint);
     }
 
     // ==========================================================
-    // 2. DRAW HANDS (With Color Coding)
+    // 3. DRAW HANDS
     // ==========================================================
     
     void drawDetailedHand(List? handData) {
@@ -90,14 +119,6 @@ class SkeletonPainter extends CustomPainter {
         canvas.drawCircle(getPos(handData, indices.last), 3.0, paint..style=PaintingStyle.fill);
       }
 
-      // --- Color Legend ---
-      // Thumb: Red
-      // Index: Orange
-      // Middle: Yellow
-      // Ring: Green
-      // Pinky: Blue
-      // Palm: White/Grey
-
       // 1. Draw Palm (Base structure)
       final palmPaint = Paint()..color = Colors.white54..strokeWidth = 2.0;
       final palmConnections = [[0,1], [0,5], [5,9], [9,13], [13,17], [0,17]];
@@ -106,7 +127,7 @@ class SkeletonPainter extends CustomPainter {
         canvas.drawLine(getPos(handData, pair[0]), getPos(handData, pair[1]), palmPaint);
       }
 
-      // 2. Draw Fingers
+      // 2. Draw Fingers (Color Coded)
       drawChain([1, 2, 3, 4],   Colors.redAccent);    // Thumb
       drawChain([5, 6, 7, 8],   Colors.orangeAccent); // Index
       drawChain([9, 10, 11, 12],Colors.yellowAccent); // Middle
