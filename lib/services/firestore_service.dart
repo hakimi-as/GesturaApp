@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'dart:convert';
 import '../models/progress_model.dart';
 
 import '../config/constants.dart';
@@ -1040,7 +1042,7 @@ class FirestoreService {
     }
   }
 
-  // ==================== SIGN LIBRARY METHODS (LIBRARY) ====================
+  // ==================== SIGN LIBRARY METHODS (OPTIMIZED) ====================
 
   /// Get the special categories just for the Sign Library
   Stream<QuerySnapshot> getSignLibraryCategoriesStream() {
@@ -1064,29 +1066,322 @@ class FirestoreService {
     await _firestore.collection('sign_library_categories').doc(docId).delete();
   }
 
-  /// Upload a sign animation JSON to Firestore with Category and SearchKey
+  /// OPTIMIZED: Upload sign with separate animation data
+  /// Metadata goes to 'signs', animation data goes to 'sign_animations'
   Future<void> uploadSign(String word, String category, Map<String, dynamic> jsonData) async {
     try {
-      // Clean the word to be a valid ID (lowercase, no spaces)
       final docId = word.toLowerCase().trim().replaceAll(' ', '_');
       final searchKey = word.toLowerCase();
 
-      await _firestore.collection('signs').doc(docId).set({
+      // Compress animation data to reduce size
+      final compressedData = _compressAnimationData(jsonData);
+
+      // Use batched write for both operations (faster than 2 separate writes)
+      final batch = _firestore.batch();
+
+      // 1. Save lightweight metadata to 'signs' collection
+      final signRef = _firestore.collection('signs').doc(docId);
+      batch.set(signRef, {
         'word': word,
-        'searchKey': searchKey, // For searching
-        'category': category,   // For filtering
-        'data': jsonData,       // Stores the animation frames
+        'searchKey': searchKey,
+        'category': category,
         'uploadedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      debugPrint("✅ Sign uploaded successfully: $docId (Category: $category)");
+
+      // 2. Save heavy animation data to separate 'sign_animations' collection
+      final animRef = _firestore.collection('sign_animations').doc(docId);
+      batch.set(animRef, {
+        'word': word,
+        'data': compressedData,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Commit both writes at once
+      await batch.commit();
+
+      debugPrint("✅ Sign uploaded (optimized): $docId (Category: $category)");
     } catch (e) {
       debugPrint("❌ Error uploading sign: $e");
       rethrow;
     }
   }
 
-  /// Fetch a specific sign animation
+  /// BULK UPLOAD: Upload multiple signs at once (much faster)
+  /// Firestore limit: 10MB per batch, so we use small batches
+  Future<Map<String, dynamic>> uploadSignsBulk(
+    List<Map<String, dynamic>> signs,
+    String category, {
+    Function(int current, int total)? onProgress,
+  }) async {
+    int success = 0;
+    int failed = 0;
+    List<String> failedWords = [];
+
+    try {
+      // Process in batches of 10 (each sign ~200-400KB, staying well under 10MB limit)
+      const batchSize = 10;
+      
+      for (int i = 0; i < signs.length; i += batchSize) {
+        final batch = _firestore.batch();
+        final end = (i + batchSize > signs.length) ? signs.length : i + batchSize;
+        final chunk = signs.sublist(i, end);
+        int chunkSuccess = 0;
+
+        for (var sign in chunk) {
+          try {
+            final word = sign['word'] as String;
+            final data = sign['data'] as Map<String, dynamic>;
+            
+            final docId = word.toLowerCase().trim().replaceAll(' ', '_');
+            final searchKey = word.toLowerCase();
+            final compressedData = _compressAnimationData(data);
+
+            // Add metadata write
+            final signRef = _firestore.collection('signs').doc(docId);
+            batch.set(signRef, {
+              'word': word,
+              'searchKey': searchKey,
+              'category': category,
+              'uploadedAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+
+            // Add animation write
+            final animRef = _firestore.collection('sign_animations').doc(docId);
+            batch.set(animRef, {
+              'word': word,
+              'data': compressedData,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+            
+            chunkSuccess++;
+          } catch (e) {
+            failed++;
+            failedWords.add(sign['word'] ?? 'unknown');
+            debugPrint("❌ Error preparing ${sign['word']}: $e");
+          }
+        }
+
+        // Commit this batch
+        await batch.commit();
+        success += chunkSuccess;
+        
+        onProgress?.call(i + chunk.length, signs.length);
+        debugPrint("✅ Uploaded batch ${(i ~/ batchSize) + 1}: ${i + chunk.length}/${signs.length}");
+        
+        // Small delay between batches
+        if (i + batchSize < signs.length) {
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+      }
+    } catch (e) {
+      debugPrint("❌ Bulk upload error: $e");
+      rethrow; // Let caller handle the error
+    }
+
+    return {
+      'success': success,
+      'failed': failed,
+      'failedWords': failedWords,
+    };
+  }
+
+  /// Compress JSON by reducing decimal precision (0.123456789 → 0.123)
+  Map<String, dynamic> _compressAnimationData(Map<String, dynamic> data) {
+    try {
+      String jsonStr = json.encode(data);
+      final originalSize = jsonStr.length;
+      
+      // Level 1: Reduce to 3 decimals (default)
+      jsonStr = jsonStr.replaceAllMapped(
+        RegExp(r'(\d+\.\d{3})\d+'),
+        (match) => match.group(1)!,
+      );
+      
+      // If still > 800KB, use Level 2: Reduce to 2 decimals
+      if (jsonStr.length > 800000) {
+        jsonStr = json.encode(data);
+        jsonStr = jsonStr.replaceAllMapped(
+          RegExp(r'(\d+\.\d{2})\d+'),
+          (match) => match.group(1)!,
+        );
+        debugPrint("⚠️ Large file - using 2 decimal compression");
+      }
+      
+      // If still > 900KB, use Level 3: Reduce to 1 decimal + remove face landmarks
+      if (jsonStr.length > 900000) {
+        Map<String, dynamic> reduced = json.decode(jsonStr);
+        reduced = _removeUnnecessaryLandmarks(reduced);
+        jsonStr = json.encode(reduced);
+        jsonStr = jsonStr.replaceAllMapped(
+          RegExp(r'(\d+\.\d{1})\d+'),
+          (match) => match.group(1)!,
+        );
+        debugPrint("⚠️ Very large file - using 1 decimal + removing extra landmarks");
+      }
+      
+      final compressedSize = jsonStr.length;
+      final savings = ((originalSize - compressedSize) / originalSize * 100).toStringAsFixed(1);
+      debugPrint("📦 Compressed: ${(originalSize/1024).toStringAsFixed(0)}KB → ${(compressedSize/1024).toStringAsFixed(0)}KB ($savings% saved)");
+      
+      return json.decode(jsonStr);
+    } catch (e) {
+      debugPrint("⚠️ Compression failed, using original: $e");
+      return data;
+    }
+  }
+
+  /// Remove unnecessary landmarks to reduce file size
+  /// Keeps only essential points for sign language recognition
+  Map<String, dynamic> _removeUnnecessaryLandmarks(Map<String, dynamic> data) {
+    try {
+      // Key face landmark indices to keep (eyes, nose, mouth outline, eyebrows)
+      // Full face mesh has 468 points, we only keep ~30 key points
+      const keyFaceIndices = {
+        // Eyes
+        33, 133, 157, 158, 159, 160, 161, 246,  // Left eye
+        263, 362, 384, 385, 386, 387, 388, 466, // Right eye
+        // Eyebrows
+        70, 63, 105, 66, 107,   // Left eyebrow
+        300, 293, 334, 296, 336, // Right eyebrow
+        // Nose
+        1, 2, 4, 5, 6, 19, 94, 168,
+        // Mouth
+        0, 13, 14, 17, 37, 39, 40, 61, 78, 80, 81, 82, 84, 87, 88, 91, 95,
+        146, 178, 181, 185, 191, 267, 269, 270, 291, 308, 310, 311, 312, 314, 317, 318, 321, 324, 375, 402, 405, 409, 415,
+      };
+
+      if (data['frames'] != null) {
+        for (var frame in data['frames']) {
+          // Filter face landmarks if present
+          if (frame['face_landmarks'] != null && frame['face_landmarks'] is List) {
+            final faceList = frame['face_landmarks'] as List;
+            if (faceList.length > 50) {
+              // Keep only key indices
+              List filteredFace = [];
+              for (int i = 0; i < faceList.length && i < 468; i++) {
+                if (keyFaceIndices.contains(i)) {
+                  filteredFace.add(faceList[i]);
+                }
+              }
+              frame['face_landmarks'] = filteredFace;
+            }
+          }
+          
+          // Also reduce frame sampling if too many frames (keep every 2nd frame)
+          // This is handled separately below
+        }
+        
+        // If more than 300 frames, sample every 2nd frame
+        if (data['frames'].length > 300) {
+          List sampledFrames = [];
+          for (int i = 0; i < data['frames'].length; i += 2) {
+            sampledFrames.add(data['frames'][i]);
+          }
+          data['frames'] = sampledFrames;
+          debugPrint("📉 Reduced frames: ${data['frames'].length * 2} → ${sampledFrames.length}");
+        }
+      }
+      
+      return data;
+    } catch (e) {
+      debugPrint("⚠️ Could not remove landmarks: $e");
+      return data;
+    }
+  }
+
+  /// OPTIMIZED: Get sign metadata only (for listing - no animation data)
+  /// This is what makes the library fast!
+  Future<List<Map<String, dynamic>>> getSignsMetadataPaginated({
+    String? category,
+    DocumentSnapshot? startAfter,
+    int limit = 20,
+  }) async {
+    try {
+      Query query = _firestore.collection('signs');
+      
+      if (category != null && category != "New Uploads") {
+        query = query.where('category', isEqualTo: category);
+      }
+      
+      query = query.orderBy('word').limit(limit);
+      
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+
+      final snapshot = await query.get();
+      
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,
+          'word': data['word'] ?? '',
+          'category': data['category'] ?? '',
+          'uploadedAt': data['uploadedAt'],
+          'snapshot': doc, // Keep reference for pagination
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint("❌ Error fetching signs metadata: $e");
+      return [];
+    }
+  }
+
+  /// OPTIMIZED: Load animation data ONLY when user wants to play a sign
+  Future<Map<String, dynamic>?> getSignAnimationData(String word) async {
+    try {
+      final docId = word.toLowerCase().trim().replaceAll(' ', '_');
+      
+      // First try the new optimized structure (sign_animations collection)
+      final animDoc = await _firestore.collection('sign_animations').doc(docId).get();
+      if (animDoc.exists && animDoc.data()?['data'] != null) {
+        debugPrint("✅ Loaded animation from sign_animations: $docId");
+        return animDoc.data()!['data'] as Map<String, dynamic>;
+      }
+      
+      // Fallback to old structure (data embedded in signs collection)
+      final signDoc = await _firestore.collection('signs').doc(docId).get();
+      if (signDoc.exists && signDoc.data()?['data'] != null) {
+        debugPrint("✅ Loaded animation from signs (legacy): $docId");
+        return signDoc.data()!['data'] as Map<String, dynamic>;
+      }
+      
+      debugPrint("⚠️ No animation data found for: $docId");
+      return null;
+    } catch (e) {
+      debugPrint("❌ Error fetching sign animation: $e");
+      return null;
+    }
+  }
+
+  /// Load sign from local assets (fast, offline)
+  Future<Map<String, dynamic>?> getLocalSignData(String word) async {
+    try {
+      final fileName = word.toLowerCase().trim().replaceAll(' ', '_');
+      final jsonString = await rootBundle.loadString('assets/signs/$fileName.json');
+      return json.decode(jsonString) as Map<String, dynamic>;
+    } catch (e) {
+      // Not found locally - this is normal, not an error
+      return null;
+    }
+  }
+
+  /// Hybrid: Try local first, then cloud (best of both worlds)
+  Future<Map<String, dynamic>?> getSignData(String word) async {
+    // Try local first (instant, offline)
+    final localData = await getLocalSignData(word);
+    if (localData != null) {
+      debugPrint("✅ Loaded sign from local assets: $word");
+      return localData;
+    }
+    
+    // Fall back to cloud
+    return await getSignAnimationData(word);
+  }
+
+  /// Get sign metadata (for display in lists)
   Future<Map<String, dynamic>?> getSign(String word) async {
     try {
       final docId = word.toLowerCase().trim().replaceAll(' ', '_');
@@ -1102,12 +1397,13 @@ class FirestoreService {
     }
   }
 
-  /// Get list of all cloud signs (for Admin) - Stream
+  /// LEGACY: Get list of all cloud signs - Stream (kept for compatibility)
+  /// Note: This still downloads full documents. Use getSignsMetadataPaginated for better performance.
   Stream<QuerySnapshot> getAllSignsStream() {
     return _firestore.collection('signs').orderBy('uploadedAt', descending: true).snapshots();
   }
 
-  /// Get signs filtered by Category - Stream
+  /// LEGACY: Get signs filtered by Category - Stream
   Stream<QuerySnapshot> getSignsByCategory(String category) {
     return _firestore
         .collection('signs')
@@ -1141,10 +1437,9 @@ class FirestoreService {
     }
   }
 
-  /// NEW: Bulk move multiple signs to a category
+  /// Bulk move multiple signs to a category
   Future<void> moveMultipleSigns(List<String> words, String newCategory) async {
     try {
-      // Get a new write batch
       final batch = _firestore.batch();
 
       for (var word in words) {
@@ -1157,7 +1452,6 @@ class FirestoreService {
         });
       }
 
-      // Commit all changes at once
       await batch.commit();
       debugPrint("✅ Bulk moved ${words.length} signs to '$newCategory'");
     } catch (e) {
@@ -1166,16 +1460,135 @@ class FirestoreService {
     }
   }
 
-  /// Delete a sign from Cloud
+  /// Delete a sign from Cloud (both metadata and animation)
   Future<void> deleteSign(String word) async {
     try {
       final docId = word.toLowerCase().trim().replaceAll(' ', '_');
+      
+      // Delete from both collections
       await _firestore.collection('signs').doc(docId).delete();
+      await _firestore.collection('sign_animations').doc(docId).delete();
+      
       debugPrint("✅ Sign deleted: $docId");
     } catch (e) {
       debugPrint("❌ Error deleting sign: $e");
       rethrow;
     }
+  }
+
+  // ==================== MIGRATION HELPER ====================
+
+  /// ONE-TIME MIGRATION: Move animation data from 'signs' to 'sign_animations'
+  /// Run this once from admin screen to optimize existing data
+  /// Uses BATCHED processing to avoid timeout on large datasets
+  Future<Map<String, int>> migrateSignsToSeparateDataBatched({
+    Function(int current, int total, String status)? onProgress,
+  }) async {
+    int migrated = 0;
+    int skipped = 0;
+    int failed = 0;
+    int processed = 0;
+
+    try {
+      // First, get just the document count (lightweight query)
+      onProgress?.call(0, 0, "Counting signs...");
+      debugPrint("🔄 Counting signs to migrate...");
+      
+      final countSnapshot = await _firestore.collection('signs').count().get();
+      final total = countSnapshot.count ?? 0;
+      
+      debugPrint("🔄 Found $total signs to process");
+      onProgress?.call(0, total, "Found $total signs");
+
+      if (total == 0) {
+        return {'migrated': 0, 'skipped': 0, 'failed': 0};
+      }
+
+      // Process in batches of 20
+      const batchSize = 20;
+      DocumentSnapshot? lastDoc;
+      bool hasMore = true;
+
+      while (hasMore && processed < total) {
+        onProgress?.call(processed, total, "Fetching batch...");
+        
+        // Fetch a small batch
+        Query query = _firestore
+            .collection('signs')
+            .orderBy(FieldPath.documentId)
+            .limit(batchSize);
+            
+        if (lastDoc != null) {
+          query = query.startAfterDocument(lastDoc);
+        }
+
+        final batch = await query.get();
+        
+        if (batch.docs.isEmpty) {
+          debugPrint("⚠️ No more documents to process");
+          hasMore = false;
+          break;
+        }
+
+        lastDoc = batch.docs.last;
+
+        // Process each document in this batch
+        for (var doc in batch.docs) {
+          processed++;
+          final data = doc.data() as Map<String, dynamic>;
+          final animationData = data['data'];
+          final word = data['word'] ?? doc.id;
+
+          onProgress?.call(processed, total, "Processing: $word");
+
+          if (animationData != null) {
+            try {
+              // 1. Save animation data to separate collection
+              await _firestore.collection('sign_animations').doc(doc.id).set({
+                'word': data['word'],
+                'data': animationData,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+
+              // 2. Remove 'data' field from main signs collection
+              await _firestore.collection('signs').doc(doc.id).update({
+                'data': FieldValue.delete(),
+              });
+
+              migrated++;
+              debugPrint("✅ Migrated ($processed/$total): $word");
+            } catch (e) {
+              failed++;
+              debugPrint("❌ Failed to migrate $word: $e");
+            }
+          } else {
+            skipped++;
+            debugPrint("⏭️ Skipped ($processed/$total): $word (already optimized)");
+          }
+        }
+
+        // Check if this was the last batch
+        if (batch.docs.length < batchSize) {
+          hasMore = false;
+        }
+
+        // Small delay between batches to prevent rate limiting
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+
+      onProgress?.call(total, total, "Complete!");
+      debugPrint("✅ Migration complete! Migrated: $migrated, Skipped: $skipped, Failed: $failed");
+    } catch (e) {
+      debugPrint("❌ Migration error: $e");
+      onProgress?.call(processed, processed, "Error: $e");
+      rethrow;
+    }
+
+    return {
+      'migrated': migrated,
+      'skipped': skipped,
+      'failed': failed,
+    };
   }
 
   // ==================== NOTIFICATION METHODS ====================

@@ -28,6 +28,24 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
   Set<String> _completedLessonIds = {};
   bool _isLoading = true;
 
+  /// Check if this category is an alphabet/letters category
+  bool get isAlphabetCategory {
+    final categoryId = widget.category.id.toLowerCase();
+    final categoryName = widget.category.name.toLowerCase();
+    return categoryId == 'alphabet' || 
+           categoryId == 'alphabets' ||
+           categoryName.contains('alphabet') ||
+           categoryName.contains('letter');
+  }
+
+  /// Get display name for a lesson (adds "Letter" prefix for alphabet lessons)
+  String getDisplayName(LessonModel lesson) {
+    if (isAlphabetCategory && lesson.signName.length == 1) {
+      return 'Letter ${lesson.signName.toUpperCase()}';
+    }
+    return lesson.signName;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -45,7 +63,6 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
       Set<String> completedIds = {};
 
       if (authProvider.userId != null) {
-        // Use the new method that handles all formats
         completedIds = await _firestoreService.getCompletedLessonIdsForUser(authProvider.userId!);
         debugPrint('✅ User completed ${completedIds.length} lessons total');
       }
@@ -92,10 +109,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
               color: AppColors.primary,
               child: Column(
                 children: [
-                  // Header with progress
                   _buildHeader(context, completedCount, totalLessons, progress),
-
-                  // Lessons list
                   Expanded(
                     child: _lessons.isEmpty
                         ? _buildEmptyState()
@@ -187,7 +201,6 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          // Progress bar
           Column(
             children: [
               Row(
@@ -228,8 +241,9 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
 
   Widget _buildLessonCard(BuildContext context, LessonModel lesson, int index) {
     final isCompleted = _completedLessonIds.contains(lesson.id);
+    final displayName = getDisplayName(lesson); // Use display name helper
     
-    debugPrint('🎯 Lesson ${lesson.signName} (${lesson.id}) - Completed: $isCompleted');
+    debugPrint('🎯 Lesson ${lesson.signName} (${lesson.id}) - Display: $displayName - Completed: $isCompleted');
 
     return GestureDetector(
       onTap: () async {
@@ -243,7 +257,6 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
           ),
         );
 
-        // Refresh if lesson was completed
         if (result == true) {
           _loadLessons();
         }
@@ -261,7 +274,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
         ),
         child: Row(
           children: [
-            // Lesson thumbnail - show image if available, fallback to emoji
+            // Lesson thumbnail
             Container(
               width: 56,
               height: 56,
@@ -299,7 +312,6 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                               child: Text(lesson.emoji, style: const TextStyle(fontSize: 28)),
                             ),
                           ),
-                          // Completed overlay
                           if (isCompleted)
                             Container(
                               color: AppColors.success.withAlpha(180),
@@ -327,7 +339,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          lesson.signName,
+                          displayName, // Use display name (e.g., "Letter A" or "Hello")
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),

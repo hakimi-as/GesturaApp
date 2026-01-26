@@ -36,6 +36,24 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   bool _isCompleting = false;
   bool _isCompleted = false;
 
+  /// Check if this is an alphabet category
+  bool get isAlphabetCategory {
+    final categoryId = widget.category.id.toLowerCase();
+    final categoryName = widget.category.name.toLowerCase();
+    return categoryId == 'alphabet' || 
+           categoryId == 'alphabets' ||
+           categoryName.contains('alphabet') ||
+           categoryName.contains('letter');
+  }
+
+  /// Get display name (adds "Letter" prefix for alphabet lessons)
+  String get displayName {
+    if (isAlphabetCategory && widget.lesson.signName.length == 1) {
+      return 'Letter ${widget.lesson.signName.toUpperCase()}';
+    }
+    return widget.lesson.signName;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -247,7 +265,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(widget.lesson.signName),
+        title: Text(displayName), // Use display name here
         actions: [
           if (_isCompleted)
             Container(
@@ -466,9 +484,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           
           const SizedBox(height: 24),
 
-          // Sign Name
+          // Sign Name - use displayName here too
           Text(
-            widget.lesson.signName,
+            displayName,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),

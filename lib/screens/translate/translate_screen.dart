@@ -482,22 +482,24 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   Widget _buildSignPreview() {
     return Container(
-      height: 420, 
+      // Increased height to fit Animation + Gap + Controls comfortably
+      height: 480, 
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1B4B),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 1),
-      ),
+      // REMOVED: The decoration (color/border) is now handled inside SignPlayer components
       child: _currentSentence.isNotEmpty
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: SignPlayer(
-                sentence: _currentSentence,
-                key: ValueKey(_currentSentence.join()),
-              ),
+          ? SignPlayer(
+              sentence: _currentSentence,
+              key: ValueKey(_currentSentence.join()),
             )
-          : _buildPreviewPlaceholder(),
+          : Container(
+              // Keep placeholder styling or make it match animation box style
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1B4B),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 1),
+              ),
+              child: _buildPreviewPlaceholder(),
+            ),
     ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1);
   }
 

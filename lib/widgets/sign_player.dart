@@ -4,15 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/firestore_service.dart';
 import 'skeleton_painter.dart';
+import '../config/theme.dart'; 
 
 class SignPlayer extends StatefulWidget {
   final List<String> sentence; 
   final bool autoPlay;
+  final bool isAlphabetMode; // NEW: indicates if playing alphabet letters
 
   const SignPlayer({
     super.key, 
     required this.sentence,
     this.autoPlay = true,
+    this.isAlphabetMode = false,
   });
 
   @override
@@ -45,30 +48,66 @@ class _SignPlayerState extends State<SignPlayer> {
   @override
   void didUpdateWidget(SignPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.sentence.join(' ') != widget.sentence.join(' ')) {
+    if (oldWidget.sentence.join(' ') != widget.sentence.join(' ') ||
+        oldWidget.isAlphabetMode != widget.isAlphabetMode) {
       _loadSentence();
     }
   }
 
-  Future<List<Map<String, dynamic>>?> _fetchSignData(String term) async {
-    try {
-      final firestoreData = await _firestoreService.getSign(term);
-      if (firestoreData != null) {
-        var rawFrames = firestoreData['data']['data']; 
-        if (rawFrames != null) {
-           return (rawFrames as List).cast<Map<String, dynamic>>();
-        }
-      }
-    } catch (e) { /* Ignore */ }
-
-    try {
-      final jsonString = await rootBundle.loadString('assets/signs/$term.json');
-      final data = json.decode(jsonString);
-      return (data['data'] as List).cast<Map<String, dynamic>>();
-    } catch (e) { return null; }
+  /// Fetch sign data for a LETTER (e.g., 'a' -> tries 'letter_a' first, then 'a')
+  Future<List<Map<String, dynamic>>?> _fetchLetterData(String letter) async {
+    final char = letter.toLowerCase();
+    
+    // Try "letter_x" format first (for Sign Library letters)
+    final letterKey = 'letter_$char';
+    var frames = await _fetchSignDataByKey(letterKey);
+    if (frames != null) return frames;
+    
+    // Fallback to just the character
+    return await _fetchSignDataByKey(char);
   }
 
-  // ... inside _SignPlayerState ...
+  /// Fetch sign data for a WORD (e.g., 'i' -> tries 'i' first, then 'word_i')
+  Future<List<Map<String, dynamic>>?> _fetchWordData(String word) async {
+    final key = word.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
+    
+    // Try the word directly first
+    var frames = await _fetchSignDataByKey(key);
+    if (frames != null) return frames;
+    
+    // For single characters that are words (like "I"), try "word_x" format
+    if (word.length == 1) {
+      return await _fetchSignDataByKey('word_$key');
+    }
+    
+    return null;
+  }
+
+  /// Low-level fetch by exact key
+  Future<List<Map<String, dynamic>>?> _fetchSignDataByKey(String key) async {
+    // Try Firestore (using optimized getSignData that loads from sign_animations)
+    try {
+      final firestoreData = await _firestoreService.getSignData(key);
+      if (firestoreData != null && firestoreData['data'] != null) {
+        return (firestoreData['data'] as List).cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Firestore fetch failed for $key: $e');
+    }
+
+    // Fallback to local assets
+    try {
+      final jsonString = await rootBundle.loadString('assets/signs/$key.json');
+      final data = json.decode(jsonString);
+      if (data['data'] != null) {
+        return (data['data'] as List).cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      // Asset not found - this is expected for many signs
+    }
+
+    return null;
+  }
 
   Future<void> _loadSentence() async {
     _stop(); 
@@ -82,36 +121,54 @@ class _SignPlayerState extends State<SignPlayer> {
     for (String rawInput in widget.sentence) {
       if (rawInput.trim().isEmpty) continue;
 
-      String phraseKey = rawInput.trim().toLowerCase()
-          .replaceAll(RegExp(r'\s+'), '_') // Convert spaces to underscores
-          .replaceAll(RegExp(r'[^a-z0-9_]'), ''); // Remove special chars
+      // If in alphabet mode and it's a single character, treat as letter
+      if (widget.isAlphabetMode && rawInput.trim().length == 1) {
+        final char = rawInput.trim();
+        final frames = await _fetchLetterData(char);
+        if (frames != null && frames.isNotEmpty) {
+          _sequence.add(frames);
+          _sequenceLabels.add('Letter ${char.toUpperCase()}');
+        }
+        continue;
+      }
 
-      List<Map<String, dynamic>>? phraseFrames = await _fetchSignData(phraseKey);
+      // Try to fetch as a phrase first
+      String phraseKey = rawInput.trim().toLowerCase()
+          .replaceAll(RegExp(r'\s+'), '_') 
+          .replaceAll(RegExp(r'[^a-z0-9_]'), ''); 
+
+      List<Map<String, dynamic>>? phraseFrames = await _fetchWordData(phraseKey);
 
       if (phraseFrames != null && phraseFrames.isNotEmpty) {
         _sequence.add(phraseFrames);
         _sequenceLabels.add(rawInput.toUpperCase());
       } else {
+        // Split into words
         List<String> words = rawInput.trim().split(RegExp(r'\s+'));
 
         for (String word in words) {
           String wordKey = word.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
           if (wordKey.isEmpty) continue;
 
-          List<Map<String, dynamic>>? wordFrames = await _fetchSignData(wordKey);
+          // Try to fetch as a word
+          List<Map<String, dynamic>>? wordFrames = await _fetchWordData(wordKey);
 
           if (wordFrames != null && wordFrames.isNotEmpty) {
             _sequence.add(wordFrames);
             _sequenceLabels.add(word.toUpperCase());
           } else {
+            // Fingerspell - split into characters (these are LETTERS)
             List<String> characters = wordKey.split('');
             for (String char in characters) {
-              if (char == '_') continue; 
-              List<Map<String, dynamic>>? letterFrames = await _fetchSignData(char);
+              if (char == '_') continue;
+              
+              // Fingerspelling uses LETTER signs
+              List<Map<String, dynamic>>? letterFrames = await _fetchLetterData(char);
               
               if (letterFrames != null && letterFrames.isNotEmpty) {
                 _sequence.add(letterFrames);
-                _sequenceLabels.add(char.toUpperCase());
+                // Show "Letter X" for fingerspelled characters
+                _sequenceLabels.add('Letter ${char.toUpperCase()}');
               }
             }
           }
@@ -214,7 +271,12 @@ class _SignPlayerState extends State<SignPlayer> {
   Widget build(BuildContext context) {
     if (_isLoading || _sequence.isEmpty) {
       return Container(
-        color: Colors.black87,
+        height: 300,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white12),
+        ),
         child: Center(
           child: _isLoading 
             ? const CircularProgressIndicator()
@@ -230,102 +292,157 @@ class _SignPlayerState extends State<SignPlayer> {
 
     return Column(
       children: [
-        // --- 1. ANIMATION BOX ---
+        // Animation Box
         Expanded(
           child: Container(
-            color: Colors.black,
-            width: double.infinity,
-            child: Stack(
-              children: [
-                SizedBox.expand(
-                  child: CustomPaint(
-                    painter: SkeletonPainter(
-                      _sequence.isNotEmpty 
-                        ? _sequence[_currentWordIndex][_currentFrame] 
-                        : {}
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(
+                children: [
+                  SizedBox.expand(
+                    child: CustomPaint(
+                      painter: SkeletonPainter(
+                        _sequence.isNotEmpty 
+                          ? _sequence[_currentWordIndex][_currentFrame] 
+                          : {}
+                      ),
                     ),
                   ),
-                ),
-                
-                // Label
-                Positioned(
-                  top: 20, 
-                  left: 0, 
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.5))
-                      ),
-                      child: Text(
-                        currentLabel, 
-                        style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22
+                  
+                  // Label - shows "Letter X" for letters, "WORD" for words
+                  Positioned(
+                    top: 20, 
+                    left: 0, 
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.5))
+                        ),
+                        child: Text(
+                          currentLabel, 
+                          style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
 
-                // Sequence Counter
-                Positioned(
-                  top: 20,
-                  right: 20,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      "${_currentWordIndex + 1}/${_sequence.length}",
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  // Sequence Counter
+                  Positioned(
+                    top: 20,
+                    right: 20,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "${_currentWordIndex + 1}/${_sequence.length}",
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
 
-        // --- 2. CONTROLS BAR ---
+        const SizedBox(height: 16),
+
+        // Controls Bar
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-          color: const Color(0xFF1E1E1E),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: context.bgCard,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: context.borderColor),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                "Playing: ${currentLabel.toUpperCase()}",
-                style: const TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   Text(
+                    "CONTROLS",
+                    style: TextStyle(color: context.textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1),
+                  ),
+                  Text(
+                    "Playing: $currentLabel",
+                    style: const TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  TextButton.icon(
-                    onPressed: _toggleSpeed,
-                    icon: const Icon(Icons.speed, color: Colors.white70, size: 20),
-                    label: Text("${_playbackSpeed}x", style: const TextStyle(color: Colors.white)),
+                  _buildControlBtn(
+                    icon: Icons.speed,
+                    label: "${_playbackSpeed}x",
+                    onTap: _toggleSpeed,
                   ),
-                  IconButton(onPressed: _prev, icon: const Icon(Icons.skip_previous, color: Colors.white70)),
+                  
+                  IconButton(onPressed: _prev, icon: Icon(Icons.skip_previous, color: context.textPrimary)),
+                  
                   FloatingActionButton.small(
                     onPressed: _isPlaying ? _pause : _play,
                     backgroundColor: _isPlaying ? Colors.amber : Colors.green,
+                    elevation: 0,
                     child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.black),
                   ),
-                  IconButton(onPressed: _next, icon: const Icon(Icons.skip_next, color: Colors.white70)),
-                  IconButton(onPressed: _replay, icon: const Icon(Icons.replay, color: Colors.white)),
+                  
+                  IconButton(onPressed: _next, icon: Icon(Icons.skip_next, color: context.textPrimary)),
+                  
+                  _buildControlBtn(
+                    icon: Icons.replay,
+                    label: "",
+                    onTap: _replay,
+                    isIconOnly: true,
+                  ),
                 ],
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildControlBtn({required IconData icon, required String label, required VoidCallback onTap, bool isIconOnly = false}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: isIconOnly ? 10 : 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: Theme.of(context).iconTheme.color),
+            if (!isIconOnly) ...[
+              const SizedBox(width: 6),
+              Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 12, fontWeight: FontWeight.bold)),
+            ]
+          ],
+        ),
+      ),
     );
   }
 }
