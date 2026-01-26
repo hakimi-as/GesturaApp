@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -14,6 +15,7 @@ import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../models/progress_model.dart';
 import '../../models/challenge_model.dart';
+import '../../widgets/shimmer_widgets.dart';
 import '../translate/translate_screen.dart';
 import '../learn/learn_screen.dart';
 import '../progress/progress_screen.dart';
@@ -34,6 +36,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   Uint8List? _profileImageBytes;
+  bool _isInitialLoading = true;
 
   @override
   void initState() {
@@ -52,7 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       
       // First check if user has photoUrl in Firestore
       if (user?.photoUrl != null && user!.photoUrl!.isNotEmpty) {
-        // User has cloud photo - we'll display it via Image.network
+        // User has cloud photo - we'll display it via CachedNetworkImage
         // Just load cached bytes for immediate display
         final imageBase64 = prefs.getString('profileImageBase64');
         if (imageBase64 != null && imageBase64.isNotEmpty && mounted) {
@@ -91,6 +94,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     }
+    
+    if (mounted) {
+      setState(() => _isInitialLoading = false);
+    }
   }
 
   String _getGreeting() {
@@ -107,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,  // ← CHANGED
+      backgroundColor: context.bgPrimary,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -116,31 +123,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
               await authProvider.refreshUser();
               await Provider.of<ProgressProvider>(context, listen: false)
                   .loadUserProgress(authProvider.userId!);
+              
+              final user = authProvider.currentUser;
+              if (user != null) {
+                await Provider.of<ChallengeProvider>(context, listen: false)
+                    .loadChallenges(authProvider.userId!, user);
+              }
             }
             await _loadProfileImage();
           },
           color: AppColors.primary,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                const SizedBox(height: 20),
-                _buildWelcomeCard(context),
-                const SizedBox(height: 24),
-                _buildQuickActionsSection(context),
-                const SizedBox(height: 24),
-                _buildCompetitionSection(context),
-                const SizedBox(height: 24),
-                _buildRecentActivitySection(context),
-                const SizedBox(height: 24),
-                _buildDailyGoalsSection(context),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
+          child: _isInitialLoading
+              ? ShimmerWidgets.dashboardLoading()
+              : SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(context),
+                      const SizedBox(height: 20),
+                      _buildWelcomeCard(context),
+                      const SizedBox(height: 24),
+                      _buildQuickActionsSection(context),
+                      const SizedBox(height: 24),
+                      _buildCompetitionSection(context),
+                      const SizedBox(height: 24),
+                      _buildRecentActivitySection(context),
+                      const SizedBox(height: 24),
+                      _buildDailyGoalsSection(context),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
         ),
       ),
     );
@@ -162,7 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'Gestura',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: context.textPrimary,  // ← CHANGED
+                        color: context.textPrimary,
                       ),
                 ),
               ],
@@ -180,12 +195,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: context.bgCard,  // ← CHANGED
+                      color: context.bgCard,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       Icons.search,
-                      color: context.textPrimary,  // ← CHANGED
+                      color: context.textPrimary,
                       size: 24,
                     ),
                   ),
@@ -280,26 +295,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
                       child: user?.photoUrl != null
-                          ? Image.network(
-                              CloudinaryService.getOptimizedImage(user!.photoUrl!, width: 88, height: 88),
+                          ? CachedNetworkImage(
+                              imageUrl: CloudinaryService.getOptimizedImage(user!.photoUrl!, width: 88, height: 88),
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                // Show cached image while loading
-                                if (_profileImageBytes != null) {
-                                  return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
-                                }
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                        : null,
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                // Fallback to cached image or initials
+                              placeholder: (context, url) => _profileImageBytes != null
+                                  ? Image.memory(_profileImageBytes!, fit: BoxFit.cover)
+                                  : ShimmerWidgets.circle(size: 44),
+                              errorWidget: (context, url, error) {
                                 if (_profileImageBytes != null) {
                                   return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
                                 }
@@ -311,7 +313,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                   child: Center(
                                     child: Text(
-                                      user?.initials ?? 'U',
+                                      user.initials,
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -345,10 +347,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                      fontSize: 16,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                     ),
                   ),
                 ),
@@ -608,9 +610,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: context.bgCard,  // ← CHANGED
+          color: context.bgCard,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: context.borderColor),  // ← CHANGED
+          border: Border.all(color: context.borderColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,7 +641,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               subtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textMuted,  // ← CHANGED
+                    color: context.textMuted,
                   ),
             ),
           ],
@@ -844,6 +846,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 12),
         Consumer<ProgressProvider>(
           builder: (context, progressProvider, child) {
+            // Show shimmer while loading
+            if (progressProvider.isLoading) {
+              return Column(
+                children: [
+                  ShimmerWidgets.activityItem(),
+                  ShimmerWidgets.activityItem(),
+                  ShimmerWidgets.activityItem(),
+                ],
+              );
+            }
+
             final progress = progressProvider.progressList;
 
             if (progress.isEmpty) {
@@ -858,28 +871,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 final xpEarned = item.xpEarned > 0 ? item.xpEarned : 10;
 
                 // Check if it's a quiz activity
-                // Ensure your ProgressModel has these fields or logic matches your data structure
                 final isQuiz = item.lessonId.startsWith('quiz_') || 
                              (item is dynamic && item.categoryId == 'quiz'); 
 
                 return _buildActivityItem(
                   context,
-                  // Use Target icon for quizzes, Check for completed lessons, Book for started
                   icon: isQuiz ? '🎯' : (item.isCompleted ? '✅' : '📚'),
-                  
-                  // Pink for quizzes, Green for success, Indigo for learning
                   iconBgColor: isQuiz
                       ? const Color(0xFFEC4899)
                       : (item.isCompleted
                           ? const Color(0xFF10B981)
                           : const Color(0xFF6366F1)),
-                  
                   title: isQuiz
                       ? 'Completed "$title"'
                       : (item.isCompleted
                           ? 'Completed "$title" Lesson'
                           : 'Started "$title" Lesson'),
-                  
                   subtitle: _formatTimeAgo(item.lastAccessedAt),
                   xpText: '+$xpEarned XP',
                   xpColor: const Color(0xFF10B981),
@@ -896,7 +903,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: context.bgCard,  // ← CHANGED
+        color: context.bgCard,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -911,7 +918,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Text(
             'Start learning to see your progress!',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.textMuted,  // ← CHANGED
+                  color: context.textMuted,
                 ),
           ),
         ],
@@ -932,9 +939,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: context.bgCard,  // ← CHANGED
+        color: context.bgCard,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.borderColor),  // ← CHANGED
+        border: Border.all(color: context.borderColor),
       ),
       child: Row(
         children: [
@@ -966,7 +973,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.textMuted,  // ← CHANGED
+                        color: context.textMuted,
                       ),
                 ),
               ],
@@ -1002,7 +1009,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ? (completedChallenges / totalChallenges).clamp(0.0, 1.0) 
             : 0.0;
 
-        // If challenges not loaded yet, show loading
+        // If challenges not loaded yet, show shimmer loading
         if (challengeProvider.isLoading) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1021,15 +1028,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.all(40),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: context.bgCard,
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: context.borderColor),
                 ),
-                child: const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
+                child: ShimmerWidgets.challengesLoading(),
               ),
             ],
           );
@@ -1249,7 +1254,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Keep the old _buildGoalItem for backward compatibility if needed elsewhere
   Widget _buildGoalItem(
     BuildContext context, {
     required String title,

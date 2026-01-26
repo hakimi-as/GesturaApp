@@ -12,6 +12,8 @@ import '../../models/badge_model.dart';
 import '../../models/challenge_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
+import '../../widgets/shimmer_widgets.dart';
+import '../../widgets/xp_chart_widget.dart';
 import 'category_lessons_screen.dart';
 import '../quiz/quiz_list_screen.dart';
 import '../badges/badges_screen.dart';
@@ -193,9 +195,7 @@ class _LearnScreenState extends State<LearnScreen> {
               // Content
               Expanded(
                 child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(color: AppColors.primary),
-                      )
+                    ? _buildLoadingState()
                     : _buildTabContent(),
               ),
             ],
@@ -203,6 +203,116 @@ class _LearnScreenState extends State<LearnScreen> {
         ),
       ),
     );
+  }
+
+  /// Build shimmer loading state based on current tab
+  Widget _buildLoadingState() {
+    switch (_selectedTabIndex) {
+      case 0: // Learn tab
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Welcome card shimmer
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ShimmerWidgets.welcomeCard(),
+              ),
+              const SizedBox(height: 24),
+              // Section title shimmer
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ShimmerWidgets.text(width: 150, height: 24),
+              ),
+              const SizedBox(height: 16),
+              // Categories grid shimmer
+              ShimmerWidgets.categoriesLoading(),
+              const SizedBox(height: 24),
+              // Daily goals shimmer
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: context.bgCard,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: context.borderColor),
+                  ),
+                  child: ShimmerWidgets.challengesLoading(),
+                ),
+              ),
+            ],
+          ),
+        );
+      case 1: // Quiz tab
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ShimmerWidgets.welcomeCard(),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ShimmerWidgets.text(width: 150, height: 24),
+              ),
+              const SizedBox(height: 16),
+              ShimmerWidgets.categoriesLoading(),
+            ],
+          ),
+        );
+      case 2: // Progress tab
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 14,
+                  crossAxisSpacing: 14,
+                  childAspectRatio: 1.3,
+                  children: List.generate(4, (_) => ShimmerWidgets.statsCard()),
+                ),
+                const SizedBox(height: 24),
+                // Chart shimmer
+                ShimmerWidgets.card(height: 280, borderRadius: 20),
+                const SizedBox(height: 24),
+                // Calendar shimmer
+                ShimmerWidgets.card(height: 300, borderRadius: 20),
+              ],
+            ),
+          ),
+        );
+      case 3: // Badges tab
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ShimmerWidgets.welcomeCard(),
+              ),
+              const SizedBox(height: 24),
+              ...List.generate(5, (_) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                child: ShimmerWidgets.card(height: 90, borderRadius: 16),
+              )),
+            ],
+          ),
+        );
+      default:
+        return const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        );
+    }
   }
 
   Widget _buildHeader() {
@@ -310,13 +420,13 @@ class _LearnScreenState extends State<LearnScreen> {
       if (!isSelected) return Colors.transparent;
       switch (index) {
         case 0:
-          return AppColors.primary; // Purple for Learn
+          return AppColors.primary;
         case 1:
-          return AppColors.primary; // Purple for Quiz
+          return AppColors.primary;
         case 2:
-          return AppColors.primary; // Purple for Progress
+          return AppColors.primary;
         case 3:
-          return AppColors.primary; // Purple for Badges
+          return AppColors.primary;
         default:
           return AppColors.primary;
       }
@@ -635,19 +745,17 @@ class _LearnScreenState extends State<LearnScreen> {
             ? (completedChallenges / totalChallenges).clamp(0.0, 1.0) 
             : 0.0;
 
-        // If challenges not loaded yet, show loading
+        // If challenges not loaded yet, show shimmer loading
         if (challengeProvider.isLoading) {
           return Container(
             margin: const EdgeInsets.all(20),
-            padding: const EdgeInsets.all(40),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: context.bgCard,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: context.borderColor),
             ),
-            child: const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            ),
+            child: ShimmerWidgets.challengesLoading(),
           );
         }
 
@@ -1107,6 +1215,19 @@ class _LearnScreenState extends State<LearnScreen> {
 
               const SizedBox(height: 24),
 
+              // XP Progress Chart - NEW!
+              if (authProvider.userId != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: XPProgressChart(
+                    userId: authProvider.userId!,
+                    totalXP: user?.totalXP ?? 0,
+                    currentStreak: user?.currentStreak ?? 0,
+                  ),
+                ).animate().fadeIn(delay: 250.ms),
+
+              const SizedBox(height: 24),
+
               // Calendar Section
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -1539,127 +1660,6 @@ class _LearnScreenState extends State<LearnScreen> {
               width: 28,
               height: 28,
               decoration: const BoxDecoration(
-                color: AppColors.success,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check,
-                color: Colors.white,
-                size: 16,
-              ),
-            ),
-        ],
-      ),
-    ).animate().fadeIn(delay: 300.ms);
-  }
-
-  // Keep old method for backward compatibility but deprecated
-  Widget _buildAchievementCard({
-    required String icon,
-    required String name,
-    required String description,
-    required String tier,
-    required int xpReward,
-    required bool isEarned,
-  }) {
-    Color getTierColor() {
-      switch (tier.toLowerCase()) {
-        case 'bronze':
-          return const Color(0xFFCD7F32);
-        case 'silver':
-          return const Color(0xFFC0C0C0);
-        case 'gold':
-          return const Color(0xFFFFD700);
-        case 'platinum':
-          return const Color(0xFF00CED1);
-        default:
-          return context.textMuted;
-      }
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isEarned ? getTierColor().withAlpha(100) : context.borderColor,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Icon
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: isEarned
-                  ? getTierColor().withAlpha(30)
-                  : context.bgElevated,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Center(
-              child: Text(
-                icon,
-                style: TextStyle(
-                  fontSize: 24,
-                  color: isEarned ? null : Colors.grey,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isEarned ? context.textPrimary : context.textMuted,
-                      ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.textMuted,
-                      ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: getTierColor().withAlpha(isEarned ? 30 : 15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${tier[0].toUpperCase()}${tier.substring(1)} • $xpReward XP',
-                        style: TextStyle(
-                          color: isEarned ? getTierColor() : context.textMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Status
-          if (isEarned)
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
                 color: AppColors.success,
                 shape: BoxShape.circle,
               ),

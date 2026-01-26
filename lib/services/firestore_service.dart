@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
-import '../models/progress_model.dart';
+import 'package:intl/intl.dart'; // ADDED: For date formatting in recordDailyXP
 
 import '../config/constants.dart';
 import '../models/user_model.dart';
@@ -10,6 +10,7 @@ import '../models/category_model.dart';
 import '../models/lesson_model.dart';
 import '../models/quiz_model.dart';
 import '../models/achievement_model.dart';
+import '../models/progress_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -374,6 +375,11 @@ class FirestoreService {
           .collection(AppConstants.usersCollection)
           .doc(userId)
           .update(updates);
+      
+      // ADDED: Record daily XP for quizzes too
+      if (xpEarned > 0) {
+        await recordDailyXP(userId, xpEarned);
+      }
 
       debugPrint('✅ Quiz activity saved: $displayTitle (+$xpEarned XP)${isPerfect ? ' - PERFECT!' : ''}');
     } catch (e) {
@@ -574,11 +580,46 @@ class FirestoreService {
             .collection(AppConstants.usersCollection)
             .doc(userId)
             .update({'totalXP': currentXP + xpAmount});
+        
+        // ADDED: Also record to daily XP when adding generic XP
+        await recordDailyXP(userId, xpAmount);
       }
     } catch (e) {
       debugPrint('Error adding user XP: $e');
       rethrow;
     }
+  }
+
+  /// Record daily XP when user earns XP (for the XP Progress Chart)
+  Future<void> recordDailyXP(String userId, int xpEarned) async {
+    final today = DateTime.now();
+    final dateKey = DateFormat('yyyy-MM-dd').format(today);
+    
+    final docRef = _firestore
+        .collection(AppConstants.usersCollection) // Using constant instead of string literal for consistency
+        .doc(userId)
+        .collection('daily_xp')
+        .doc(dateKey);
+
+    // Use transaction to safely increment
+    await _firestore.runTransaction((transaction) async {
+      final doc = await transaction.get(docRef);
+      
+      if (doc.exists) {
+        final currentXP = doc.data()?['xpEarned'] ?? 0;
+        transaction.update(docRef, {
+          'xpEarned': currentXP + xpEarned,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        transaction.set(docRef, {
+          'date': Timestamp.fromDate(DateTime(today.year, today.month, today.day)),
+          'xpEarned': xpEarned,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    });
   }
 
   Future<List<LessonModel>> getLessonsByCategory(String categoryId) async {
@@ -788,6 +829,11 @@ class FirestoreService {
           .doc(userId)
           .update(updates);
 
+      // ADDED: Record daily XP if it was a new lesson and XP was awarded
+      if (isNewLesson && xpReward > 0) {
+        await recordDailyXP(userId, xpReward);
+      }
+
       debugPrint('✅ Lesson completed successfully');
     } catch (e) {
       debugPrint('❌ Error completing lesson: $e');
@@ -966,6 +1012,20 @@ class FirestoreService {
 
       for (var doc in progressDocs.docs) {
         await doc.reference.delete();
+      }
+
+      // Also reset daily XP
+      try {
+        final dailyXpDocs = await _firestore
+            .collection(AppConstants.usersCollection)
+            .doc(userId)
+            .collection('daily_xp')
+            .get();
+        for (var doc in dailyXpDocs.docs) {
+          await doc.reference.delete();
+        }
+      } catch (e) {
+        debugPrint('No daily XP to delete or collection does not exist');
       }
 
       try {
