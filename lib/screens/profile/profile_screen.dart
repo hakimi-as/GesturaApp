@@ -60,7 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     
     if (user != null) {
       _nameController.text = user.fullName;
-      _selectedSignLanguage = user.preferredSignLanguage;
+      _selectedSignLanguage = user.preferredSignLanguage ?? 'ASL';
       _selectedUserType = user.userType;
     }
   }

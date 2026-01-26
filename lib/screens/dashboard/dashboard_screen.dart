@@ -16,6 +16,8 @@ import '../../services/cloudinary_service.dart';
 import '../../models/progress_model.dart';
 import '../../models/challenge_model.dart';
 import '../../widgets/shimmer_widgets.dart';
+import '../../widgets/streak_freeze_widgets.dart'; 
+
 import '../translate/translate_screen.dart';
 import '../learn/learn_screen.dart';
 import '../progress/progress_screen.dart';
@@ -53,10 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final user = authProvider.currentUser;
       
-      // First check if user has photoUrl in Firestore
       if (user?.photoUrl != null && user!.photoUrl!.isNotEmpty) {
-        // User has cloud photo - we'll display it via CachedNetworkImage
-        // Just load cached bytes for immediate display
         final imageBase64 = prefs.getString('profileImageBase64');
         if (imageBase64 != null && imageBase64.isNotEmpty && mounted) {
           setState(() {
@@ -64,7 +63,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           });
         }
       } else {
-        // Fallback to local storage
         final imageBase64 = prefs.getString('profileImageBase64');
         if (imageBase64 != null && imageBase64.isNotEmpty && mounted) {
           setState(() {
@@ -86,7 +84,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Provider.of<ProgressProvider>(context, listen: false)
             .loadUserProgress(authProvider.userId!);
         
-        // Load daily challenges
         final user = authProvider.currentUser;
         if (user != null) {
           Provider.of<ChallengeProvider>(context, listen: false)
@@ -98,6 +95,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) {
       setState(() => _isInitialLoading = false);
     }
+  }
+
+  // ADDED: Method to show the freeze info modal
+  void _showFreezeInfo() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => const StreakFreezeModal(),
+    );
   }
 
   String _getGreeting() {
@@ -184,6 +191,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             Row(
               children: [
+                // ADDED: Streak Freeze Widget in Header
+                StreakFreezeWidget(
+                  freezeCount: user?.streakFreezes ?? 0,
+                  compact: true,
+                  onTap: () => _showFreezeInfo(),
+                ),
+                const SizedBox(width: 10),
+                
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -228,7 +243,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             size: 24,
                           ),
                         ),
-                        // Real-time unread badge
                         StreamBuilder<QuerySnapshot>(
                           stream: FirebaseFirestore.instance
                               .collection('notifications')
@@ -276,7 +290,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       context,
                       MaterialPageRoute(builder: (_) => const ProfileScreen()),
                     );
-                    // Reload profile image when returning from profile
                     _loadProfileImage();
                   },
                   child: Container(
@@ -361,6 +374,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
+
+  // ... [Rest of the file remains unchanged: _buildWelcomeCard, _buildWelcomeStatChip, etc.]
 
   Widget _buildWelcomeCard(BuildContext context) {
     return Consumer<AuthProvider>(
@@ -495,6 +510,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     return number.toString();
   }
+
+  // ... [Rest of the file remains unchanged]
 
   Widget _buildQuickActionsSection(BuildContext context) {
     return Column(

@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
-import 'package:intl/intl.dart'; // ADDED: For date formatting in recordDailyXP
+import 'package:intl/intl.dart';
 
 import '../config/constants.dart';
 import '../models/user_model.dart';
@@ -11,9 +11,15 @@ import '../models/lesson_model.dart';
 import '../models/quiz_model.dart';
 import '../models/achievement_model.dart';
 import '../models/progress_model.dart';
+// import '../models/daily_goal_model.dart'; // Ensure this import exists based on your code usage
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // ==================== STREAK FREEZE CONSTANTS ====================
+  static const int maxFreezes = 2;
+  static const int streakDaysToEarnFreeze = 7;
+  static const int xpCostToBuyFreeze = 500;
 
   // ==================== USER METHODS ====================
 
@@ -83,6 +89,156 @@ class FirestoreService {
     }
   }
 
+  // ==================== STREAK FREEZE METHODS (NEW) ====================
+
+  /// Award a streak freeze to user (earned through streaks)
+  Future<bool> awardStreakFreeze(String userId) async {
+    try {
+      final userRef = _firestore.collection(AppConstants.usersCollection).doc(userId);
+      final userDoc = await userRef.get();
+
+      if (!userDoc.exists) return false;
+
+      final userData = userDoc.data()!;
+      final currentFreezes = userData['streakFreezes'] ?? 0;
+
+      // Check if user can earn more freezes
+      if (currentFreezes >= maxFreezes) {
+        debugPrint('⚠️ User already has max freezes ($maxFreezes)');
+        return false;
+      }
+
+      await userRef.update({
+        'streakFreezes': currentFreezes + 1,
+        'totalFreezesEarned': FieldValue.increment(1),
+        'lastFreezeEarned': FieldValue.serverTimestamp(),
+      });
+
+      // Notify user
+      await createNotification(
+        userId: userId,
+        type: 'streak_freeze_earned',
+        title: 'Streak Freeze Earned! 🧊',
+        message: 'You earned a freeze for your streak!',
+        icon: '🧊',
+      );
+
+      debugPrint('🧊 Streak freeze awarded! User now has ${currentFreezes + 1} freezes');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error awarding streak freeze: $e');
+      return false;
+    }
+  }
+
+  /// Use a streak freeze (called when user misses a day)
+  Future<bool> useStreakFreeze(String userId) async {
+    try {
+      final userRef = _firestore.collection(AppConstants.usersCollection).doc(userId);
+      final userDoc = await userRef.get();
+
+      if (!userDoc.exists) return false;
+
+      final userData = userDoc.data()!;
+      final currentFreezes = userData['streakFreezes'] ?? 0;
+      final autoUse = userData['autoUseFreeze'] ?? true;
+
+      // Check if user has freezes and auto-use is enabled
+      if (currentFreezes <= 0) {
+        debugPrint('⚠️ User has no streak freezes');
+        return false;
+      }
+
+      if (!autoUse) {
+        debugPrint('⚠️ Auto-use freeze is disabled');
+        return false;
+      }
+
+      await userRef.update({
+        'streakFreezes': currentFreezes - 1,
+        'lastFreezeUsed': FieldValue.serverTimestamp(),
+      });
+
+      // Create notification
+      await createNotification(
+        userId: userId,
+        type: 'streak_freeze_used',
+        title: 'Streak Protected! 🧊',
+        message: 'A streak freeze was used to save your streak.',
+        icon: '🛡️',
+      );
+
+      debugPrint('🧊 Streak freeze used! Streak protected. ${currentFreezes - 1} freezes remaining');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error using streak freeze: $e');
+      return false;
+    }
+  }
+
+  /// Buy a streak freeze with XP
+  Future<Map<String, dynamic>> buyStreakFreeze(String userId) async {
+    try {
+      final userRef = _firestore.collection(AppConstants.usersCollection).doc(userId);
+      final userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        return {'success': false, 'error': 'User not found'};
+      }
+
+      final userData = userDoc.data()!;
+      final currentFreezes = userData['streakFreezes'] ?? 0;
+      final currentXP = userData['totalXP'] ?? 0;
+
+      // Check if user can buy more freezes
+      if (currentFreezes >= maxFreezes) {
+        return {'success': false, 'error': 'Maximum freezes reached ($maxFreezes)'};
+      }
+
+      // Check if user has enough XP
+      if (currentXP < xpCostToBuyFreeze) {
+        return {'success': false, 'error': 'Not enough XP. Need $xpCostToBuyFreeze XP.'};
+      }
+
+      await userRef.update({
+        'streakFreezes': currentFreezes + 1,
+        'totalXP': currentXP - xpCostToBuyFreeze,
+        'totalFreezesEarned': FieldValue.increment(1),
+        'lastFreezeEarned': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint('🧊 Streak freeze purchased for $xpCostToBuyFreeze XP!');
+      return {
+        'success': true,
+        'newFreezeCount': currentFreezes + 1,
+        'newXP': currentXP - xpCostToBuyFreeze,
+      };
+    } catch (e) {
+      debugPrint('❌ Error buying streak freeze: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Toggle auto-use freeze setting
+  Future<void> setAutoUseFreeze(String userId, bool enabled) async {
+    try {
+      await _firestore.collection(AppConstants.usersCollection).doc(userId).update({
+        'autoUseFreeze': enabled,
+      });
+      debugPrint('🧊 Auto-use freeze set to: $enabled');
+    } catch (e) {
+      debugPrint('❌ Error setting auto-use freeze: $e');
+    }
+  }
+
+  /// Check and potentially award freeze for streak milestone
+  Future<bool> checkAndAwardStreakFreeze(String userId, int currentStreak) async {
+    if (currentStreak > 0 && currentStreak % streakDaysToEarnFreeze == 0) {
+      return await awardStreakFreeze(userId);
+    }
+    return false;
+  }
+
   // ==================== LESSON CATEGORY METHODS (Main App) ====================
 
   Future<List<CategoryModel>> getCategories() async {
@@ -142,7 +298,6 @@ class FirestoreService {
 
   // ==================== LESSON METHODS ====================
 
-  /// Natural sort comparison for lesson names
   int _naturalCompare(String a, String b) {
     final numA = int.tryParse(a);
     final numB = int.tryParse(b);
@@ -170,8 +325,6 @@ class FirestoreService {
       debugPrint('🔥 Found ${snapshot.docs.length} lessons');
 
       final lessons = snapshot.docs.map((doc) => LessonModel.fromFirestore(doc)).toList();
-      
-      // Sort alphabetically/numerically by signName
       lessons.sort((a, b) => _naturalCompare(a.signName, b.signName));
       
       return lessons;
@@ -187,10 +340,7 @@ class FirestoreService {
           .collection(AppConstants.lessonsCollection)
           .get();
       final lessons = snapshot.docs.map((doc) => LessonModel.fromFirestore(doc)).toList();
-      
-      // Sort alphabetically/numerically by signName
       lessons.sort((a, b) => _naturalCompare(a.signName, b.signName));
-      
       return lessons;
     } catch (e) {
       debugPrint('Error getting all lessons: $e');
@@ -376,7 +526,7 @@ class FirestoreService {
           .doc(userId)
           .update(updates);
       
-      // ADDED: Record daily XP for quizzes too
+      // Record daily XP
       if (xpEarned > 0) {
         await recordDailyXP(userId, xpEarned);
       }
@@ -495,15 +645,12 @@ class FirestoreService {
         
         final isCompleted = isCompletedByStatus || isCompletedByBool || isCompletedByPercentage;
         
-        debugPrint('  📝 Lesson: $lessonId | status=${data['status']} | isCompleted=${data['isCompleted']} | percentage=${data['completionPercentage']} | COMPLETED: $isCompleted');
-        
         if (lessonId != null && isCompleted) {
           completedIds.add(lessonId);
         }
       }
 
       debugPrint('✅ Total completed lessons: ${completedIds.length}');
-      debugPrint('✅ Completed IDs: $completedIds');
       
       return completedIds;
     } catch (e) {
@@ -581,7 +728,6 @@ class FirestoreService {
             .doc(userId)
             .update({'totalXP': currentXP + xpAmount});
         
-        // ADDED: Also record to daily XP when adding generic XP
         await recordDailyXP(userId, xpAmount);
       }
     } catch (e) {
@@ -590,18 +736,16 @@ class FirestoreService {
     }
   }
 
-  /// Record daily XP when user earns XP (for the XP Progress Chart)
   Future<void> recordDailyXP(String userId, int xpEarned) async {
     final today = DateTime.now();
     final dateKey = DateFormat('yyyy-MM-dd').format(today);
     
     final docRef = _firestore
-        .collection(AppConstants.usersCollection) // Using constant instead of string literal for consistency
+        .collection(AppConstants.usersCollection)
         .doc(userId)
         .collection('daily_xp')
         .doc(dateKey);
 
-    // Use transaction to safely increment
     await _firestore.runTransaction((transaction) async {
       final doc = await transaction.get(docRef);
       
@@ -636,6 +780,7 @@ class FirestoreService {
     return DailyGoalModel.getDailyGoalTarget();
   }
 
+  // UPDATED: Check and Reset Daily Goal with Streak Freeze Logic
   Future<void> checkAndResetDailyGoal(String userId) async {
     try {
       final userDoc = await _firestore
@@ -669,10 +814,18 @@ class FirestoreService {
         }
 
         if (lastDate.isBefore(yesterday)) {
-          final currentStreak = userData['currentStreak'] ?? 0;
-          if (currentStreak > 0) {
-            updates['currentStreak'] = 0;
-            debugPrint('⚠️ Streak reset - user missed a day (last: $lastDate, yesterday: $yesterday)');
+          // Check if we can use a streak freeze
+          bool freezeUsed = await useStreakFreeze(userId);
+          
+          if (freezeUsed) {
+            debugPrint('🧊 Streak protected by freeze!');
+            // Streak preserved, do not reset to 0
+          } else {
+            final currentStreak = userData['currentStreak'] ?? 0;
+            if (currentStreak > 0) {
+              updates['currentStreak'] = 0;
+              debugPrint('⚠️ Streak reset - user missed a day (last: $lastDate, yesterday: $yesterday)');
+            }
           }
         }
       } else {
@@ -694,6 +847,7 @@ class FirestoreService {
 
   // ==================== LESSON COMPLETION ====================
 
+  // UPDATED: Complete Lesson with Freeze Awarding Logic
   Future<void> completeLesson(
     String userId, 
     String lessonId, 
@@ -788,6 +942,12 @@ class FirestoreService {
               if (newStreak > longestStreak) {
                 updates['longestStreak'] = newStreak;
               }
+
+              // CHECK FOR FREEZE AWARD (Every 7 days)
+              if (newStreak > 0 && newStreak % streakDaysToEarnFreeze == 0) {
+                 await awardStreakFreeze(userId);
+              }
+
             } else {
               updates['currentStreak'] = 1;
             }
@@ -829,7 +989,7 @@ class FirestoreService {
           .doc(userId)
           .update(updates);
 
-      // ADDED: Record daily XP if it was a new lesson and XP was awarded
+      // Record daily XP
       if (isNewLesson && xpReward > 0) {
         await recordDailyXP(userId, xpReward);
       }
@@ -1003,6 +1163,11 @@ class FirestoreService {
         'unlockedBadges': [], 
         'seenBadges': [], 
         'totalTimeSpentSeconds': 0, 
+        // Also reset streak freeze data
+        'streakFreezes': 0,
+        'totalFreezesEarned': 0,
+        'lastFreezeUsed': null,
+        'lastFreezeEarned': null,
       });
 
       final progressDocs = await _firestore
@@ -1104,7 +1269,6 @@ class FirestoreService {
 
   // ==================== SIGN LIBRARY METHODS (OPTIMIZED) ====================
 
-  /// Get the special categories just for the Sign Library
   Stream<QuerySnapshot> getSignLibraryCategoriesStream() {
     return _firestore
         .collection('sign_library_categories')
@@ -1112,7 +1276,6 @@ class FirestoreService {
         .snapshots();
   }
 
-  /// Add a new category specifically for the library
   Future<void> addSignLibraryCategory(String name) async {
     final docId = name.trim().toLowerCase().replaceAll(' ', '_');
     await _firestore.collection('sign_library_categories').doc(docId).set({
@@ -1121,25 +1284,19 @@ class FirestoreService {
     });
   }
 
-  /// Delete a library category
   Future<void> deleteSignLibraryCategory(String docId) async {
     await _firestore.collection('sign_library_categories').doc(docId).delete();
   }
 
-  /// OPTIMIZED: Upload sign with separate animation data
-  /// Metadata goes to 'signs', animation data goes to 'sign_animations'
   Future<void> uploadSign(String word, String category, Map<String, dynamic> jsonData) async {
     try {
       final docId = word.toLowerCase().trim().replaceAll(' ', '_');
       final searchKey = word.toLowerCase();
 
-      // Compress animation data to reduce size
       final compressedData = _compressAnimationData(jsonData);
 
-      // Use batched write for both operations (faster than 2 separate writes)
       final batch = _firestore.batch();
 
-      // 1. Save lightweight metadata to 'signs' collection
       final signRef = _firestore.collection('signs').doc(docId);
       batch.set(signRef, {
         'word': word,
@@ -1149,7 +1306,6 @@ class FirestoreService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // 2. Save heavy animation data to separate 'sign_animations' collection
       final animRef = _firestore.collection('sign_animations').doc(docId);
       batch.set(animRef, {
         'word': word,
@@ -1157,7 +1313,6 @@ class FirestoreService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Commit both writes at once
       await batch.commit();
 
       debugPrint("✅ Sign uploaded (optimized): $docId (Category: $category)");
@@ -1167,8 +1322,6 @@ class FirestoreService {
     }
   }
 
-  /// BULK UPLOAD: Upload multiple signs at once (much faster)
-  /// Firestore limit: 10MB per batch, so we use small batches
   Future<Map<String, dynamic>> uploadSignsBulk(
     List<Map<String, dynamic>> signs,
     String category, {
@@ -1179,7 +1332,6 @@ class FirestoreService {
     List<String> failedWords = [];
 
     try {
-      // Process in batches of 10 (each sign ~200-400KB, staying well under 10MB limit)
       const batchSize = 10;
       
       for (int i = 0; i < signs.length; i += batchSize) {
@@ -1197,7 +1349,6 @@ class FirestoreService {
             final searchKey = word.toLowerCase();
             final compressedData = _compressAnimationData(data);
 
-            // Add metadata write
             final signRef = _firestore.collection('signs').doc(docId);
             batch.set(signRef, {
               'word': word,
@@ -1207,7 +1358,6 @@ class FirestoreService {
               'updatedAt': FieldValue.serverTimestamp(),
             });
 
-            // Add animation write
             final animRef = _firestore.collection('sign_animations').doc(docId);
             batch.set(animRef, {
               'word': word,
@@ -1223,21 +1373,19 @@ class FirestoreService {
           }
         }
 
-        // Commit this batch
         await batch.commit();
         success += chunkSuccess;
         
         onProgress?.call(i + chunk.length, signs.length);
         debugPrint("✅ Uploaded batch ${(i ~/ batchSize) + 1}: ${i + chunk.length}/${signs.length}");
         
-        // Small delay between batches
         if (i + batchSize < signs.length) {
           await Future.delayed(const Duration(milliseconds: 200));
         }
       }
     } catch (e) {
       debugPrint("❌ Bulk upload error: $e");
-      rethrow; // Let caller handle the error
+      rethrow;
     }
 
     return {
@@ -1247,19 +1395,16 @@ class FirestoreService {
     };
   }
 
-  /// Compress JSON by reducing decimal precision (0.123456789 → 0.123)
   Map<String, dynamic> _compressAnimationData(Map<String, dynamic> data) {
     try {
       String jsonStr = json.encode(data);
       final originalSize = jsonStr.length;
       
-      // Level 1: Reduce to 3 decimals (default)
       jsonStr = jsonStr.replaceAllMapped(
         RegExp(r'(\d+\.\d{3})\d+'),
         (match) => match.group(1)!,
       );
       
-      // If still > 800KB, use Level 2: Reduce to 2 decimals
       if (jsonStr.length > 800000) {
         jsonStr = json.encode(data);
         jsonStr = jsonStr.replaceAllMapped(
@@ -1269,7 +1414,6 @@ class FirestoreService {
         debugPrint("⚠️ Large file - using 2 decimal compression");
       }
       
-      // If still > 900KB, use Level 3: Reduce to 1 decimal + remove face landmarks
       if (jsonStr.length > 900000) {
         Map<String, dynamic> reduced = json.decode(jsonStr);
         reduced = _removeUnnecessaryLandmarks(reduced);
@@ -1292,33 +1436,23 @@ class FirestoreService {
     }
   }
 
-  /// Remove unnecessary landmarks to reduce file size
-  /// Keeps only essential points for sign language recognition
   Map<String, dynamic> _removeUnnecessaryLandmarks(Map<String, dynamic> data) {
     try {
-      // Key face landmark indices to keep (eyes, nose, mouth outline, eyebrows)
-      // Full face mesh has 468 points, we only keep ~30 key points
       const keyFaceIndices = {
-        // Eyes
-        33, 133, 157, 158, 159, 160, 161, 246,  // Left eye
-        263, 362, 384, 385, 386, 387, 388, 466, // Right eye
-        // Eyebrows
-        70, 63, 105, 66, 107,   // Left eyebrow
-        300, 293, 334, 296, 336, // Right eyebrow
-        // Nose
+        33, 133, 157, 158, 159, 160, 161, 246,
+        263, 362, 384, 385, 386, 387, 388, 466,
+        70, 63, 105, 66, 107,
+        300, 293, 334, 296, 336,
         1, 2, 4, 5, 6, 19, 94, 168,
-        // Mouth
         0, 13, 14, 17, 37, 39, 40, 61, 78, 80, 81, 82, 84, 87, 88, 91, 95,
         146, 178, 181, 185, 191, 267, 269, 270, 291, 308, 310, 311, 312, 314, 317, 318, 321, 324, 375, 402, 405, 409, 415,
       };
 
       if (data['frames'] != null) {
         for (var frame in data['frames']) {
-          // Filter face landmarks if present
           if (frame['face_landmarks'] != null && frame['face_landmarks'] is List) {
             final faceList = frame['face_landmarks'] as List;
             if (faceList.length > 50) {
-              // Keep only key indices
               List filteredFace = [];
               for (int i = 0; i < faceList.length && i < 468; i++) {
                 if (keyFaceIndices.contains(i)) {
@@ -1328,12 +1462,8 @@ class FirestoreService {
               frame['face_landmarks'] = filteredFace;
             }
           }
-          
-          // Also reduce frame sampling if too many frames (keep every 2nd frame)
-          // This is handled separately below
         }
         
-        // If more than 300 frames, sample every 2nd frame
         if (data['frames'].length > 300) {
           List sampledFrames = [];
           for (int i = 0; i < data['frames'].length; i += 2) {
@@ -1351,8 +1481,6 @@ class FirestoreService {
     }
   }
 
-  /// OPTIMIZED: Get sign metadata only (for listing - no animation data)
-  /// This is what makes the library fast!
   Future<List<Map<String, dynamic>>> getSignsMetadataPaginated({
     String? category,
     DocumentSnapshot? startAfter,
@@ -1380,7 +1508,7 @@ class FirestoreService {
           'word': data['word'] ?? '',
           'category': data['category'] ?? '',
           'uploadedAt': data['uploadedAt'],
-          'snapshot': doc, // Keep reference for pagination
+          'snapshot': doc,
         };
       }).toList();
     } catch (e) {
@@ -1389,19 +1517,16 @@ class FirestoreService {
     }
   }
 
-  /// OPTIMIZED: Load animation data ONLY when user wants to play a sign
   Future<Map<String, dynamic>?> getSignAnimationData(String word) async {
     try {
       final docId = word.toLowerCase().trim().replaceAll(' ', '_');
       
-      // First try the new optimized structure (sign_animations collection)
       final animDoc = await _firestore.collection('sign_animations').doc(docId).get();
       if (animDoc.exists && animDoc.data()?['data'] != null) {
         debugPrint("✅ Loaded animation from sign_animations: $docId");
         return animDoc.data()!['data'] as Map<String, dynamic>;
       }
       
-      // Fallback to old structure (data embedded in signs collection)
       final signDoc = await _firestore.collection('signs').doc(docId).get();
       if (signDoc.exists && signDoc.data()?['data'] != null) {
         debugPrint("✅ Loaded animation from signs (legacy): $docId");
@@ -1416,32 +1541,25 @@ class FirestoreService {
     }
   }
 
-  /// Load sign from local assets (fast, offline)
   Future<Map<String, dynamic>?> getLocalSignData(String word) async {
     try {
       final fileName = word.toLowerCase().trim().replaceAll(' ', '_');
       final jsonString = await rootBundle.loadString('assets/signs/$fileName.json');
       return json.decode(jsonString) as Map<String, dynamic>;
     } catch (e) {
-      // Not found locally - this is normal, not an error
       return null;
     }
   }
 
-  /// Hybrid: Try local first, then cloud (best of both worlds)
   Future<Map<String, dynamic>?> getSignData(String word) async {
-    // Try local first (instant, offline)
     final localData = await getLocalSignData(word);
     if (localData != null) {
       debugPrint("✅ Loaded sign from local assets: $word");
       return localData;
     }
-    
-    // Fall back to cloud
     return await getSignAnimationData(word);
   }
 
-  /// Get sign metadata (for display in lists)
   Future<Map<String, dynamic>?> getSign(String word) async {
     try {
       final docId = word.toLowerCase().trim().replaceAll(' ', '_');
@@ -1457,13 +1575,10 @@ class FirestoreService {
     }
   }
 
-  /// LEGACY: Get list of all cloud signs - Stream (kept for compatibility)
-  /// Note: This still downloads full documents. Use getSignsMetadataPaginated for better performance.
   Stream<QuerySnapshot> getAllSignsStream() {
     return _firestore.collection('signs').orderBy('uploadedAt', descending: true).snapshots();
   }
 
-  /// LEGACY: Get signs filtered by Category - Stream
   Stream<QuerySnapshot> getSignsByCategory(String category) {
     return _firestore
         .collection('signs')
@@ -1472,7 +1587,6 @@ class FirestoreService {
         .snapshots();
   }
 
-  /// Search signs by word - Stream
   Stream<QuerySnapshot> searchSigns(String query) {
     final searchKey = query.toLowerCase();
     return _firestore
@@ -1482,7 +1596,6 @@ class FirestoreService {
         .snapshots();
   }
 
-  /// Update a sign's category (Move functionality)
   Future<void> updateSignCategory(String word, String newCategory) async {
     try {
       final docId = word.toLowerCase().trim().replaceAll(' ', '_');
@@ -1497,7 +1610,6 @@ class FirestoreService {
     }
   }
 
-  /// Bulk move multiple signs to a category
   Future<void> moveMultipleSigns(List<String> words, String newCategory) async {
     try {
       final batch = _firestore.batch();
@@ -1520,12 +1632,10 @@ class FirestoreService {
     }
   }
 
-  /// Delete a sign from Cloud (both metadata and animation)
   Future<void> deleteSign(String word) async {
     try {
       final docId = word.toLowerCase().trim().replaceAll(' ', '_');
       
-      // Delete from both collections
       await _firestore.collection('signs').doc(docId).delete();
       await _firestore.collection('sign_animations').doc(docId).delete();
       
@@ -1538,9 +1648,6 @@ class FirestoreService {
 
   // ==================== MIGRATION HELPER ====================
 
-  /// ONE-TIME MIGRATION: Move animation data from 'signs' to 'sign_animations'
-  /// Run this once from admin screen to optimize existing data
-  /// Uses BATCHED processing to avoid timeout on large datasets
   Future<Map<String, int>> migrateSignsToSeparateDataBatched({
     Function(int current, int total, String status)? onProgress,
   }) async {
@@ -1550,7 +1657,6 @@ class FirestoreService {
     int processed = 0;
 
     try {
-      // First, get just the document count (lightweight query)
       onProgress?.call(0, 0, "Counting signs...");
       debugPrint("🔄 Counting signs to migrate...");
       
@@ -1564,7 +1670,6 @@ class FirestoreService {
         return {'migrated': 0, 'skipped': 0, 'failed': 0};
       }
 
-      // Process in batches of 20
       const batchSize = 20;
       DocumentSnapshot? lastDoc;
       bool hasMore = true;
@@ -1572,7 +1677,6 @@ class FirestoreService {
       while (hasMore && processed < total) {
         onProgress?.call(processed, total, "Fetching batch...");
         
-        // Fetch a small batch
         Query query = _firestore
             .collection('signs')
             .orderBy(FieldPath.documentId)
@@ -1592,7 +1696,6 @@ class FirestoreService {
 
         lastDoc = batch.docs.last;
 
-        // Process each document in this batch
         for (var doc in batch.docs) {
           processed++;
           final data = doc.data() as Map<String, dynamic>;
@@ -1603,14 +1706,12 @@ class FirestoreService {
 
           if (animationData != null) {
             try {
-              // 1. Save animation data to separate collection
               await _firestore.collection('sign_animations').doc(doc.id).set({
                 'word': data['word'],
                 'data': animationData,
                 'updatedAt': FieldValue.serverTimestamp(),
               });
 
-              // 2. Remove 'data' field from main signs collection
               await _firestore.collection('signs').doc(doc.id).update({
                 'data': FieldValue.delete(),
               });
@@ -1627,12 +1728,10 @@ class FirestoreService {
           }
         }
 
-        // Check if this was the last batch
         if (batch.docs.length < batchSize) {
           hasMore = false;
         }
 
-        // Small delay between batches to prevent rate limiting
         await Future.delayed(const Duration(milliseconds: 200));
       }
 

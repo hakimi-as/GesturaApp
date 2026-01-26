@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -7,17 +8,24 @@ import 'package:intl/intl.dart';
 
 /// Service to generate PDF certificates for completed categories/lessons
 class CertificateService {
-  /// Generate a certificate PDF for category completion
+  /// Generate a certificate PDF for category completion or progress
   static Future<Uint8List> generateCategoryCertificate({
     required String userName,
     required String categoryName,
     required int signsLearned,
     required int totalXP,
     required DateTime completionDate,
+    int? totalSigns, // Optional: if provided, shows progress percentage
   }) async {
     final pdf = pw.Document();
 
-    // Load fonts
+    // Determine if this is a completion or progress certificate
+    final isCompleted = totalSigns == null || signsLearned >= totalSigns;
+    final progressPercent = totalSigns != null && totalSigns > 0
+        ? (signsLearned / totalSigns * 100).toInt()
+        : 100;
+
+    // Load fonts from Google Fonts via printing package
     final fontRegular = await PdfGoogleFonts.poppinsRegular();
     final fontBold = await PdfGoogleFonts.poppinsBold();
     final fontItalic = await PdfGoogleFonts.poppinsItalic();
@@ -54,11 +62,13 @@ class CertificateService {
 
                 // Certificate title
                 pw.Text(
-                  'CERTIFICATE OF ACHIEVEMENT',
+                  isCompleted 
+                      ? 'CERTIFICATE OF COMPLETION'
+                      : 'CERTIFICATE OF PROGRESS',
                   style: pw.TextStyle(
                     font: fontBold,
                     fontSize: 28,
-                    color: PdfColor.fromHex('#6366F1'),
+                    color: PdfColor.fromHex(isCompleted ? '#F59E0B' : '#6366F1'),
                     letterSpacing: 3,
                   ),
                 ),
@@ -70,11 +80,17 @@ class CertificateService {
                   height: 3,
                   decoration: pw.BoxDecoration(
                     gradient: pw.LinearGradient(
-                      colors: [
-                        PdfColor.fromHex('#6366F1'),
-                        PdfColor.fromHex('#8B5CF6'),
-                        PdfColor.fromHex('#EC4899'),
-                      ],
+                      colors: isCompleted
+                          ? [
+                              PdfColor.fromHex('#F59E0B'),
+                              PdfColor.fromHex('#FBBF24'),
+                              PdfColor.fromHex('#F59E0B'),
+                            ]
+                          : [
+                              PdfColor.fromHex('#6366F1'),
+                              PdfColor.fromHex('#8B5CF6'),
+                              PdfColor.fromHex('#EC4899'),
+                            ],
                     ),
                     borderRadius: pw.BorderRadius.circular(2),
                   ),
@@ -105,7 +121,9 @@ class CertificateService {
 
                 // Achievement text
                 pw.Text(
-                  'has successfully completed the',
+                  isCompleted
+                      ? 'has successfully completed the'
+                      : 'is making excellent progress in the',
                   style: pw.TextStyle(
                     font: fontRegular,
                     fontSize: 16,
@@ -134,7 +152,9 @@ class CertificateService {
 
                 // Stats
                 pw.Text(
-                  'Learning $signsLearned signs and earning $totalXP XP',
+                  isCompleted
+                      ? 'Mastering $signsLearned signs and earning $totalXP XP'
+                      : 'Learning $signsLearned signs ($progressPercent% complete) with $totalXP XP earned',
                   style: pw.TextStyle(
                     font: fontRegular,
                     fontSize: 14,
@@ -145,7 +165,9 @@ class CertificateService {
 
                 // Date
                 pw.Text(
-                  'Awarded on ${DateFormat('MMMM d, yyyy').format(completionDate)}',
+                  isCompleted
+                      ? 'Completed on ${DateFormat('MMMM d, yyyy').format(completionDate)}'
+                      : 'Progress as of ${DateFormat('MMMM d, yyyy').format(completionDate)}',
                   style: pw.TextStyle(
                     font: fontItalic,
                     fontSize: 12,
@@ -159,7 +181,7 @@ class CertificateService {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildBadge('🤟', 'Gestura'),
-                    _buildBadge('🏆', 'Achievement'),
+                    _buildBadge(isCompleted ? '🏆' : '📈', isCompleted ? 'Completed' : '$progressPercent%'),
                     _buildBadge('⭐', '$totalXP XP'),
                   ],
                 ),

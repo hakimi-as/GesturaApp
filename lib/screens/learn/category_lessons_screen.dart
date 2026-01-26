@@ -8,6 +8,7 @@ import '../../models/lesson_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
+import '../../services/certificate_service.dart';
 import 'lesson_detail_screen.dart';
 
 class CategoryLessonsScreen extends StatefulWidget {
@@ -46,6 +47,12 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
     return lesson.signName;
   }
 
+  /// Get completed count for this category
+  int get _completedCount => _lessons.where((l) => _completedLessonIds.contains(l.id)).length;
+  
+  /// Get total lessons count
+  int get _totalLessons => _lessons.length;
+
   @override
   void initState() {
     super.initState();
@@ -78,10 +85,78 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
     }
   }
 
+  /// Generate and share certificate
+  Future<void> _generateCertificate() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.currentUser;
+    
+    if (user == null) return;
+    
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: context.bgCard,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: AppColors.primary),
+              const SizedBox(height: 20),
+              Text(
+                'Generating Certificate...',
+                style: TextStyle(
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    
+    try {
+      final pdfBytes = await CertificateService.generateCategoryCertificate(
+        userName: user.fullName,
+        categoryName: widget.category.name,
+        signsLearned: _completedCount,
+        totalXP: _completedCount * 10,
+        completionDate: DateTime.now(),
+        totalSigns: _totalLessons,
+      );
+      
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+      
+      // Share/Save the certificate
+      await CertificateService.shareCertificate(
+        pdfBytes,
+        'Gestura_${widget.category.name.replaceAll(' ', '_')}_Certificate.pdf',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error generating certificate: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final completedCount = _lessons.where((l) => _completedLessonIds.contains(l.id)).length;
-    final totalLessons = _lessons.length;
+    final completedCount = _completedCount;
+    final totalLessons = _totalLessons;
     final progress = totalLessons > 0 ? completedCount / totalLessons : 0.0;
 
     return Scaffold(
@@ -110,11 +185,12 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
               child: Column(
                 children: [
                   _buildHeader(context, completedCount, totalLessons, progress),
+                  _buildCertificateButton(), // Certificate button added here
                   Expanded(
                     child: _lessons.isEmpty
                         ? _buildEmptyState()
                         : ListView.builder(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                             itemCount: _lessons.length,
                             itemBuilder: (context, index) {
                               return _buildLessonCard(
@@ -129,6 +205,78 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
               ),
             ),
     );
+  }
+
+  /// Certificate button widget
+  Widget _buildCertificateButton() {
+    final isCompleted = _completedCount == _totalLessons && _totalLessons > 0;
+    final percentage = _totalLessons > 0 
+        ? (_completedCount / _totalLessons * 100).toInt() 
+        : 0;
+    
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _completedCount > 0 ? _generateCertificate : null,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              gradient: _completedCount > 0
+                  ? LinearGradient(
+                      colors: isCompleted
+                          ? [const Color(0xFFF59E0B), const Color(0xFFFBBF24)]
+                          : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    )
+                  : null,
+              color: _completedCount == 0 ? context.bgCard : null,
+              borderRadius: BorderRadius.circular(14),
+              border: _completedCount == 0 
+                  ? Border.all(color: context.borderColor) 
+                  : null,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isCompleted ? Icons.workspace_premium : Icons.card_membership,
+                  color: _completedCount > 0 ? Colors.white : context.textMuted,
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    _completedCount == 0
+                        ? 'Complete lessons to get certificate'
+                        : isCompleted
+                            ? 'Get Completion Certificate 🎓'
+                            : 'Share Progress Certificate ($percentage%)',
+                    style: TextStyle(
+                      color: _completedCount > 0 ? Colors.white : context.textMuted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (_completedCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.share,
+                    color: Colors.white.withAlpha(200),
+                    size: 18,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: 200.ms);
   }
 
   Widget _buildHeader(BuildContext context, int completedCount, int totalLessons, double progress) {
@@ -241,7 +389,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
 
   Widget _buildLessonCard(BuildContext context, LessonModel lesson, int index) {
     final isCompleted = _completedLessonIds.contains(lesson.id);
-    final displayName = getDisplayName(lesson); // Use display name helper
+    final displayName = getDisplayName(lesson);
     
     debugPrint('🎯 Lesson ${lesson.signName} (${lesson.id}) - Display: $displayName - Completed: $isCompleted');
 
@@ -339,7 +487,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          displayName, // Use display name (e.g., "Letter A" or "Hello")
+                          displayName,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),

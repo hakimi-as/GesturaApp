@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // For HapticFeedback
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,6 +18,7 @@ import '../profile/profile_screen.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 import '../../widgets/share/share_progress_card.dart';
+import '../../widgets/streak_freeze_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -335,6 +337,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // ADDED: Helper to show buy confirmation dialog (since BuyFreezeDialog widget might be missing)
+  Future<bool?> _showBuyConfirmation(BuildContext context, int cost, int userXp) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Text('🧊', style: TextStyle(fontSize: 24)),
+            SizedBox(width: 10),
+            Text('Buy Streak Freeze?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Protect your streak for one day if you miss a lesson.',
+              style: TextStyle(color: context.textMuted),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Cost:'),
+                Text(
+                  '$cost XP',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('You have:'),
+                Text(
+                  '$userXp XP',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: userXp >= cost ? context.success : AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: userXp >= cost 
+              ? () => Navigator.pop(ctx, true) 
+              : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Buy Freeze'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -348,6 +419,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildHeader(),
               _buildProfileCard(),
               _buildStatsRow(),
+              const SizedBox(height: 20),
+              // STEP 7: Add Full Freeze Card to Settings
+              _buildStreakCard(),
               _buildGeneralSection(),
               _buildPreferencesSection(),
               _buildAccountSection(),
@@ -418,7 +492,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           width: 3,
                         ),
                       ),
-                      child: ClipOval(
+                    ),
+                    ClipOval(
+                      child: Container(
+                        width: 80,
+                        height: 80,
                         child: _isLoadingImage
                             ? Container(
                                 color: context.bgElevated,
@@ -686,6 +764,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // ADDED: Step 7 - Full Freeze Card
+  Widget _buildStreakCard() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final user = authProvider.currentUser;
+        if (user == null) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: StreakFreezeCard(
+            freezeCount: user.streakFreezes,
+            currentStreak: user.currentStreak,
+            onBuyFreeze: () async {
+              final confirm = await _showBuyConfirmation(context, 500, user.totalXP);
+              if (confirm == true) {
+                final result = await _firestoreService.buyStreakFreeze(user.id);
+                if (mounted) {
+                  if (result['success']) {
+                    HapticFeedback.mediumImpact();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('✓ Streak freeze purchased!'),
+                        backgroundColor: AppColors.success,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      )
+                    );
+                    await authProvider.refreshUser();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(result['error'] ?? 'Purchase failed'),
+                        backgroundColor: AppColors.error,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      )
+                    );
+                  }
+                }
+              }
+            },
+            onLearnMore: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                isScrollControlled: true,
+                builder: (context) => const StreakFreezeModal(),
+              );
+            },
+          ),
+        ).animate().fadeIn(delay: 250.ms);
+      },
+    );
+  }
+
   Widget _buildGeneralSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -834,6 +967,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () => _showSignLanguageSelector(),
               ),
               _buildDivider(),
+              // STEP 8: Add Auto-Use Toggle
+              Consumer<AuthProvider>(
+                builder: (context, authProvider, child) {
+                  final user = authProvider.currentUser;
+                  if (user == null) return const SizedBox.shrink();
+                  
+                  return _buildSettingsTile(
+                    icon: Icons.ac_unit,
+                    iconColor: const Color(0xFF0EA5E9), // Sky blue for ice
+                    title: 'Auto-use Freeze',
+                    trailing: Switch(
+                      value: user.autoUseFreeze,
+                      onChanged: (value) async {
+                        HapticFeedback.lightImpact();
+                        await _firestoreService.setAutoUseFreeze(user.id, value);
+                        await authProvider.refreshUser();
+                      },
+                      activeTrackColor: AppColors.primary.withAlpha(128),
+                      activeThumbColor: AppColors.primary,
+                    ),
+                  );
+                },
+              ),
+              _buildDivider(),
               _buildSettingsTile(
                 icon: Icons.dark_mode_outlined,
                 iconColor: const Color(0xFF8B5CF6),
@@ -841,36 +998,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: Consumer<ThemeProvider>(
                   builder: (context, themeProvider, child) {
                     return Row(
-                       mainAxisSize: MainAxisSize.min,
-                         children: [
-                          Text(
-                           themeProvider.themeMode == AppThemeMode.dark
-                               ? 'Dark'
-                               : themeProvider.themeMode == AppThemeMode.light
-                                   ? 'Light'
-                                   : 'System',
-                           style: TextStyle(
-                              color: context.textMuted,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.chevron_right,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          themeProvider.themeMode == AppThemeMode.dark
+                              ? 'Dark'
+                              : themeProvider.themeMode == AppThemeMode.light
+                                  ? 'Light'
+                                  : 'System',
+                          style: TextStyle(
                             color: context.textMuted,
-                            size: 20,
+                            fontSize: 14,
                           ),
-                        ],
-                      );
-                    },
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ThemeSettingsScreen()),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right,
+                          color: context.textMuted,
+                          size: 20,
+                        ),
+                      ],
                     );
                   },
                 ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ThemeSettingsScreen()),
+                  );
+                },
+              ),
             ],
           ),
         ).animate().fadeIn(delay: 400.ms),
@@ -997,6 +1154,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     );
   }
+
+  // ... [Rest of the helper methods: _buildSectionTitle, _buildSettingsTile, etc. remain unchanged]
 
   Widget _buildSectionTitle(String title) {
     return Padding(
