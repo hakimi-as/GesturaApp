@@ -13,7 +13,8 @@ import '../../providers/progress_provider.dart';
 import '../../providers/challenge_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
-import '../../services/haptic_service.dart'; // ADDED: Haptic Service
+import '../../services/haptic_service.dart';
+import '../../services/friend_service.dart'; // NEW: Friend Service
 import '../../models/challenge_model.dart';
 import '../../widgets/shimmer_widgets.dart';
 import '../../widgets/streak_freeze_widgets.dart';
@@ -29,6 +30,7 @@ import '../challenges/challenges_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../../widgets/learning_path_widgets.dart';
 import '../learn/learning_paths_screen.dart';
+import '../social/friends_screen.dart'; // NEW: Friends Screen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -100,7 +102,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showFreezeInfo() {
-    HapticService.buttonTap(); // ADDED
+    HapticService.buttonTap();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -127,7 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            HapticService.lightTap(); // ADDED
+            HapticService.lightTap();
             final authProvider = Provider.of<AuthProvider>(context, listen: false);
             if (authProvider.userId != null) {
               await authProvider.refreshUser();
@@ -223,7 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 
                 GestureDetector(
                   onTap: () {
-                    HapticService.buttonTap(); // ADDED
+                    HapticService.buttonTap();
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const SearchScreen()),
@@ -246,7 +248,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 10),
                 GestureDetector(
                   onTap: () {
-                    HapticService.buttonTap(); // ADDED
+                    HapticService.buttonTap();
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const NotificationsScreen()),
@@ -310,7 +312,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 10),
                 GestureDetector(
                   onTap: () async {
-                    HapticService.buttonTap(); // ADDED
+                    HapticService.buttonTap();
                     await Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const ProfileScreen()),
@@ -561,7 +563,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Translate',
                 subtitle: 'Real-time sign translation',
                 onTap: () {
-                  HapticService.buttonTap(); // ADDED
+                  HapticService.buttonTap();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -580,7 +582,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Learn',
                 subtitle: 'Interactive lessons',
                 onTap: () {
-                  HapticService.buttonTap(); // ADDED
+                  HapticService.buttonTap();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -603,7 +605,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Quiz',
                 subtitle: 'Test your knowledge',
                 onTap: () {
-                  HapticService.buttonTap(); // ADDED
+                  HapticService.buttonTap();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -625,7 +627,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Progress',
                 subtitle: 'Track your stats',
                 onTap: () {
-                  HapticService.buttonTap(); // ADDED
+                  HapticService.buttonTap();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const EnhancedProgressScreen()),
@@ -692,6 +694,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // ==================== UPDATED COMPETITION SECTION WITH FRIENDS ====================
   Widget _buildCompetitionSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -701,7 +704,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const Text('🏅', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Compete & Earn',
+              'Compete & Connect',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -711,10 +714,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 16),
         Row(
           children: [
+            // Leaderboard Card
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  HapticService.buttonTap(); // ADDED
+                  HapticService.buttonTap();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
@@ -733,30 +737,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          const Text('🏆', style: TextStyle(fontSize: 28)),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(50),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'NEW',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      const Text('🏆', style: TextStyle(fontSize: 28)),
                       const SizedBox(height: 12),
                       const Text(
                         'Leaderboard',
@@ -780,20 +761,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 12),
+            // NEW: Friends Card
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  HapticService.buttonTap(); // ADDED
+                  HapticService.buttonTap();
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ChallengesScreen()),
+                    MaterialPageRoute(builder: (_) => const FriendsScreen()),
                   );
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                      colors: [Color(0xFFEC4899), Color(0xFF8B5CF6)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -804,31 +786,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Row(
                         children: [
-                          const Text('🎯', style: TextStyle(fontSize: 28)),
+                          const Text('👥', style: TextStyle(fontSize: 28)),
                           const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                          // Pending requests badge
+                          FutureBuilder<int>(
+                            future: FriendService.getPendingRequestCount(
+                              Provider.of<AuthProvider>(context, listen: false).userId ?? '',
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(50),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              '3 NEW',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            builder: (context, snapshot) {
+                              final count = snapshot.data ?? 0;
+                              if (count == 0) return const SizedBox();
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withAlpha(50),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '$count NEW',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'Challenges',
+                        'Friends',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -837,7 +826,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Daily & weekly',
+                        'Connect & compare',
                         style: TextStyle(
                           color: Colors.white.withAlpha(180),
                           fontSize: 12,
@@ -850,6 +839,79 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.1),
+        const SizedBox(height: 12),
+        // Challenges Card (full width)
+        GestureDetector(
+          onTap: () {
+            HapticService.buttonTap();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChallengesScreen()),
+            );
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                const Text('🎯', style: TextStyle(fontSize: 28)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Daily Challenges',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        'Complete challenges for bonus XP',
+                        style: TextStyle(
+                          color: Colors.white.withAlpha(180),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Consumer<ChallengeProvider>(
+                  builder: (context, challengeProvider, child) {
+                    final activeChallenges = challengeProvider.dailyChallenges
+                        .where((c) => !c.isCompleted)
+                        .length;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(50),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$activeChallenges Active',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
       ],
     );
   }
@@ -875,7 +937,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             TextButton(
               onPressed: () {
-                HapticService.buttonTap(); // ADDED
+                HapticService.buttonTap();
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ProgressScreen()),
@@ -1102,7 +1164,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    HapticService.buttonTap(); // ADDED
+                    HapticService.buttonTap();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
