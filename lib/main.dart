@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config/theme.dart';
 import 'firebase_options.dart';
+
+// --- Existing Providers ---
 import 'providers/auth_provider.dart';
 import 'providers/lesson_provider.dart';
 import 'providers/quiz_provider.dart';
@@ -12,7 +14,16 @@ import 'providers/progress_provider.dart';
 import 'providers/badge_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/challenge_provider.dart';
+
+// --- Phase 2 Integration: New Imports ---
+import 'providers/connectivity_provider.dart'; // Contains ConnectivityService
+import 'services/offline_service.dart';        // Handles Hive & Caching
+
+// --- Services ---
 import 'services/notification_service.dart';
+import 'services/haptic_service.dart';
+
+// --- Screens ---
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
@@ -20,12 +31,24 @@ import 'screens/main_navigator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
   // Initialize notifications
   await NotificationService().initialize();
+
+  // Initialize haptic service
+  await HapticService.init();
+
+  // --- Phase 2 Integration: Initialization ---
+  // Initialize Offline Service (Hive, Adapters, Download Paths)
+  await OfflineService.initialize();
+  
+  // Initialize Connectivity Service (Start listening to network status)
+  await ConnectivityService.initialize();
+  // ------------------------------------------
 
   // Check if user has seen onboarding
   final prefs = await SharedPreferences.getInstance();
@@ -61,6 +84,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProgressProvider()),
         ChangeNotifierProvider(create: (_) => BadgeProvider()),
         ChangeNotifierProvider(create: (_) => ChallengeProvider()),
+        
+        // --- Phase 2 Integration: Connectivity Provider ---
+        // Provides real-time online/offline status to the widget tree
+        ChangeNotifierProvider(create: (_) => ConnectivityService.instance),
+        
         ChangeNotifierProvider.value(value: themeProvider),
       ],
       child: Consumer<ThemeProvider>(

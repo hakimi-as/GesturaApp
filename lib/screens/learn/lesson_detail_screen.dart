@@ -13,7 +13,14 @@ import '../../providers/badge_provider.dart';
 import '../../providers/challenge_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
-import '../../widgets/video/video_player_widget.dart';
+
+// --- Phase 2 Integration: Imports ---
+import '../../widgets/download_widgets.dart';
+import '../../widgets/video/cached_video_player.dart';
+import '../../services/haptic_service.dart';
+import '../../services/offline_service.dart';
+import '../../services/video_cache_service.dart';
+
 import '../../widgets/badges/badge_unlock_dialog.dart';
 import '../../widgets/challenges/challenge_complete_dialog.dart';
 
@@ -255,6 +262,85 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     );
   }
 
+  // --- Phase 2: Save for Offline Button ---
+  Widget _buildSaveOfflineButton() {
+    return FutureBuilder<bool>(
+      future: OfflineService.isLessonAvailable(widget.lesson.id),
+      builder: (context, snapshot) {
+        final isSaved = snapshot.data ?? false;
+        
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 24),
+          child: OutlinedButton.icon(
+            onPressed: isSaved ? null : () async {
+              HapticService.buttonTap();
+              
+              // Save lesson data
+              await OfflineService.saveLesson(widget.lesson.id, {
+                'id': widget.lesson.id,
+                'signName': widget.lesson.signName,
+                'category': widget.category.id, // ID for filtering
+                'categoryName': widget.category.name,
+                'videoUrl': widget.lesson.videoUrl,
+                'imageUrl': widget.lesson.imageUrl,
+                'description': widget.lesson.description,
+                'xpReward': widget.lesson.xpReward,
+                'emoji': widget.lesson.emoji,
+              });
+              
+              // Cache video if available
+              if (widget.lesson.videoUrl != null) {
+                await VideoCacheService.cacheVideo(widget.lesson.videoUrl!);
+              }
+              
+              HapticService.success();
+              
+              if (mounted) {
+                setState(() {}); // Refresh to show "Saved" state
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('✓ Saved for offline'),
+                    backgroundColor: const Color(0xFF10B981),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              }
+            },
+            icon: Icon(
+              isSaved ? Icons.offline_pin : Icons.download_outlined,
+              color: isSaved ? const Color(0xFF10B981) : context.textPrimary,
+            ),
+            label: Text(
+              isSaved ? 'Saved Offline' : 'Save for Offline Practice',
+              style: TextStyle(
+                color: isSaved ? const Color(0xFF10B981) : context.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              side: BorderSide(
+                color: isSaved 
+                    ? const Color(0xFF10B981).withAlpha(100) 
+                    : context.borderColor,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              backgroundColor: isSaved 
+                  ? const Color(0xFF10B981).withAlpha(10)
+                  : Colors.transparent,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -265,8 +351,29 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(displayName), // Use display name here
+        title: Text(displayName),
         actions: [
+          // --- Phase 2: AppBar Download Button ---
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: DownloadButton(
+              lessonId: widget.lesson.id,
+              videoUrl: widget.lesson.videoUrl,
+              lessonData: {
+                'id': widget.lesson.id,
+                'signName': widget.lesson.signName,
+                'category': widget.category.id,
+                'categoryName': widget.category.name,
+                'videoUrl': widget.lesson.videoUrl,
+                'imageUrl': widget.lesson.imageUrl,
+                'description': widget.lesson.description,
+                'xpReward': widget.lesson.xpReward,
+                'emoji': widget.lesson.emoji,
+              },
+              size: 24,
+            ),
+          ),
+          
           if (_isCompleted)
             Container(
               margin: const EdgeInsets.only(right: 16),
@@ -281,7 +388,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                   Icon(Icons.check_circle, color: AppColors.success, size: 18),
                   SizedBox(width: 4),
                   Text(
-                    'Completed',
+                    'Done',
                     style: TextStyle(
                       color: AppColors.success,
                       fontWeight: FontWeight.w600,
@@ -299,8 +406,11 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           children: [
             // Sign Display Card
             _buildSignCard(context),
-            const SizedBox(height: 24),
-
+            const SizedBox(height: 16),
+            
+            // --- Phase 2: Big Save Button ---
+            _buildSaveOfflineButton(),
+            
             // Description
             Text(
               'How to Sign',
@@ -418,16 +528,24 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Video Player or Image or Emoji
+          // --- Phase 2: Cached Video Player ---
           if (hasVideo)
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
-                child: VideoPlayerWidget(
+                // Replaced VideoPlayerWidget with CachedVideoPlayer
+                child: CachedVideoPlayer(
                   videoUrl: widget.lesson.videoUrl!,
-                  autoPlay: false,
+                  autoPlay: true, // Auto-play for better engagement
                   looping: true,
+                  showControls: true,
+                  placeholder: Container(
+                    color: context.bgElevated,
+                    child: const Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    ),
+                  ),
                 ),
               ),
             )
@@ -484,7 +602,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           
           const SizedBox(height: 24),
 
-          // Sign Name - use displayName here too
+          // Sign Name
           Text(
             displayName,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(

@@ -13,10 +13,10 @@ import '../../providers/progress_provider.dart';
 import '../../providers/challenge_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
-import '../../models/progress_model.dart';
+import '../../services/haptic_service.dart'; // ADDED: Haptic Service
 import '../../models/challenge_model.dart';
 import '../../widgets/shimmer_widgets.dart';
-import '../../widgets/streak_freeze_widgets.dart'; 
+import '../../widgets/streak_freeze_widgets.dart';
 
 import '../translate/translate_screen.dart';
 import '../learn/learn_screen.dart';
@@ -27,6 +27,8 @@ import '../search/search_screen.dart';
 import '../leaderboard/leaderboard_screen.dart';
 import '../challenges/challenges_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../../widgets/learning_path_widgets.dart';
+import '../learn/learning_paths_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -97,8 +99,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // ADDED: Method to show the freeze info modal
   void _showFreezeInfo() {
+    HapticService.buttonTap(); // ADDED
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -125,6 +127,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
+            HapticService.lightTap(); // ADDED
             final authProvider = Provider.of<AuthProvider>(context, listen: false);
             if (authProvider.userId != null) {
               await authProvider.refreshUser();
@@ -152,16 +155,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 20),
                       _buildWelcomeCard(context),
                       const SizedBox(height: 24),
-                      _buildQuickActionsSection(context),
-                      const SizedBox(height: 24),
-                      _buildCompetitionSection(context),
-                      const SizedBox(height: 24),
-                      _buildRecentActivitySection(context),
-                      const SizedBox(height: 24),
-                      _buildDailyGoalsSection(context),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+    
+                      // Learning Path Card
+                       Consumer<AuthProvider>(
+                        builder: (context, authProvider, child) {
+                          return CurrentPathProgressCard(
+                            userId: authProvider.currentUser?.id ?? '',
+                            onTap: () {
+                              HapticService.buttonTap();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const LearningPathsScreen(),
+                                ),
+                              );
+                            },
+                           );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+    
+                        _buildQuickActionsSection(context),
+                        const SizedBox(height: 24),
+                        _buildCompetitionSection(context),
+                        const SizedBox(height: 24),
+                        _buildRecentActivitySection(context),
+                        const SizedBox(height: 24),
+                        _buildDailyGoalsSection(context),
+                        const SizedBox(height: 20),
+                      ],
+                     ),
                 ),
         ),
       ),
@@ -191,7 +214,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             Row(
               children: [
-                // ADDED: Streak Freeze Widget in Header
                 StreakFreezeWidget(
                   freezeCount: user?.streakFreezes ?? 0,
                   compact: true,
@@ -201,6 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 
                 GestureDetector(
                   onTap: () {
+                    HapticService.buttonTap(); // ADDED
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const SearchScreen()),
@@ -223,6 +246,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 10),
                 GestureDetector(
                   onTap: () {
+                    HapticService.buttonTap(); // ADDED
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const NotificationsScreen()),
@@ -286,6 +310,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 10),
                 GestureDetector(
                   onTap: () async {
+                    HapticService.buttonTap(); // ADDED
                     await Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const ProfileScreen()),
@@ -374,8 +399,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
   }
-
-  // ... [Rest of the file remains unchanged: _buildWelcomeCard, _buildWelcomeStatChip, etc.]
 
   Widget _buildWelcomeCard(BuildContext context) {
     return Consumer<AuthProvider>(
@@ -511,8 +534,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return number.toString();
   }
 
-  // ... [Rest of the file remains unchanged]
-
   Widget _buildQuickActionsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,6 +561,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Translate',
                 subtitle: 'Real-time sign translation',
                 onTap: () {
+                  HapticService.buttonTap(); // ADDED
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -558,6 +580,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Learn',
                 subtitle: 'Interactive lessons',
                 onTap: () {
+                  HapticService.buttonTap(); // ADDED
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -580,12 +603,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Quiz',
                 subtitle: 'Test your knowledge',
                 onTap: () {
+                  HapticService.buttonTap(); // ADDED
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => const LearnScreen(
                         showBackButton: true,
-                        initialTabIndex: 1, // Quiz tab
+                        initialTabIndex: 1,
                       ),
                     ),
                   );
@@ -601,6 +625,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: 'Progress',
                 subtitle: 'Track your stats',
                 onTap: () {
+                  HapticService.buttonTap(); // ADDED
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const EnhancedProgressScreen()),
@@ -689,6 +714,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Expanded(
               child: GestureDetector(
                 onTap: () {
+                  HapticService.buttonTap(); // ADDED
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
@@ -757,6 +783,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Expanded(
               child: GestureDetector(
                 onTap: () {
+                  HapticService.buttonTap(); // ADDED
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const ChallengesScreen()),
@@ -848,6 +875,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             TextButton(
               onPressed: () {
+                HapticService.buttonTap(); // ADDED
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ProgressScreen()),
@@ -863,7 +891,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 12),
         Consumer<ProgressProvider>(
           builder: (context, progressProvider, child) {
-            // Show shimmer while loading
             if (progressProvider.isLoading) {
               return Column(
                 children: [
@@ -887,9 +914,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     : 'Lesson';
                 final xpEarned = item.xpEarned > 0 ? item.xpEarned : 10;
 
-                // Check if it's a quiz activity
                 final isQuiz = item.lessonId.startsWith('quiz_') || 
-                             (item is dynamic && item.categoryId == 'quiz'); 
+                             item.categoryId == 'quiz'; 
 
                 return _buildActivityItem(
                   context,
@@ -1026,7 +1052,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ? (completedChallenges / totalChallenges).clamp(0.0, 1.0) 
             : 0.0;
 
-        // If challenges not loaded yet, show shimmer loading
         if (challengeProvider.isLoading) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1077,6 +1102,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 GestureDetector(
                   onTap: () {
+                    HapticService.buttonTap(); // ADDED
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1187,7 +1213,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         children: [
-          // Emoji icon
           Container(
             width: 36,
             height: 36,
@@ -1205,7 +1230,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // Challenge info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1248,7 +1272,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // XP reward
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
@@ -1264,58 +1287,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGoalItem(
-    BuildContext context, {
-    required String title,
-    required int xpReward,
-    required bool isCompleted,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              color: isCompleted ? context.success : Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isCompleted ? context.success : context.borderColor,
-                width: 2,
-              ),
-            ),
-            child: isCompleted
-                ? const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 16,
-                  )
-                : null,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isCompleted ? context.textMuted : context.textPrimary,
-                    decoration: isCompleted ? TextDecoration.lineThrough : null,
-                  ),
-            ),
-          ),
-          Text(
-            '+$xpReward XP',
-            style: TextStyle(
-              color: isCompleted ? context.success : AppColors.primary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ],

@@ -1879,4 +1879,17 @@ class FirestoreService {
       return 0;
     }
   }
+  /// Get a single lesson by ID
+  Future<LessonModel?> getLesson(String lessonId) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('lessons').doc(lessonId).get();
+      if (doc.exists) {
+        return LessonModel.fromFirestore(doc);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting lesson: $e');
+      return null;
+    }
+  }
 }

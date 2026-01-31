@@ -11,6 +11,10 @@ import '../../services/cloudinary_service.dart';
 import '../../services/certificate_service.dart';
 import 'lesson_detail_screen.dart';
 
+// --- Phase 2 Integration: Imports ---
+import '../../widgets/download_widgets.dart';
+import '../../widgets/offline_widgets.dart';
+
 class CategoryLessonsScreen extends StatefulWidget {
   final CategoryModel category;
 
@@ -185,7 +189,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
               child: Column(
                 children: [
                   _buildHeader(context, completedCount, totalLessons, progress),
-                  _buildCertificateButton(), // Certificate button added here
+                  _buildCertificateButton(), // Certificate button
                   Expanded(
                     child: _lessons.isEmpty
                         ? _buildEmptyState()
@@ -493,6 +497,12 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                               ),
                         ),
                       ),
+                      
+                      // --- Phase 2: Offline Badge ---
+                      OfflineAvailableBadge(lessonId: lesson.id),
+                      
+                      const SizedBox(width: 4),
+
                       if (isCompleted)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -572,6 +582,26 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                 ],
               ),
             ),
+
+            const SizedBox(width: 8),
+
+            // --- Phase 2: Download Button ---
+            DownloadButton(
+              lessonId: lesson.id,
+              videoUrl: lesson.videoUrl, // Requires videoUrl in LessonModel
+              lessonData: {
+                'id': lesson.id,
+                'signName': lesson.signName,
+                'description': lesson.description,
+                'imageUrl': lesson.imageUrl,
+                'videoUrl': lesson.videoUrl,
+                'xpReward': lesson.xpReward,
+                'emoji': lesson.emoji,
+                'category': widget.category.id,
+              },
+            ),
+
+            const SizedBox(width: 8),
 
             Icon(
               isCompleted ? Icons.replay : Icons.chevron_right,

@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // For HapticFeedback
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
@@ -14,11 +13,15 @@ import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/cloudinary_service.dart';
 import '../../services/firestore_service.dart';
+import '../../services/haptic_service.dart';
 import '../profile/profile_screen.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 import '../../widgets/share/share_progress_card.dart';
 import '../../widgets/streak_freeze_widgets.dart';
+
+// --- Phase 2 Integration: Import ---
+import '../../widgets/offline_settings_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -31,12 +34,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final ImagePicker _picker = ImagePicker();
   final FirestoreService _firestoreService = FirestoreService();
   
-  // Store image as bytes instead of path (works on web and mobile)
   Uint8List? _profileImageBytes;
   bool _isLoadingImage = false;
   bool _isUploadingImage = false;
 
-  // Settings
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
@@ -53,29 +54,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
-    // First try to load from Firestore (cloud)
     Uint8List? imageBytes;
     final user = authProvider.currentUser;
     
     if (user?.photoUrl != null && user!.photoUrl!.isNotEmpty) {
-      // Load from Firestore URL (with local caching)
       try {
         final cachedBase64 = prefs.getString('profileImageBase64');
         final cachedUrl = prefs.getString('profileImageUrl');
         
-        // If cached URL matches current URL, use cached bytes
         if (cachedUrl == user.photoUrl && cachedBase64 != null) {
           imageBytes = base64Decode(cachedBase64);
         } else {
-          // Download from URL and cache locally
-          // For now, just store the URL - the image will load from network
           await prefs.setString('profileImageUrl', user.photoUrl!);
         }
       } catch (e) {
         debugPrint('Error loading profile image from URL: $e');
       }
     } else {
-      // Fallback to local base64 storage
       final imageBase64 = prefs.getString('profileImageBase64');
       if (imageBase64 != null && imageBase64.isNotEmpty) {
         try {
@@ -119,16 +114,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       if (image != null && mounted) {
-        // Read image as bytes (works on web and mobile)
         final bytes = await image.readAsBytes();
         
-        // Show image immediately while uploading
         setState(() {
           _profileImageBytes = bytes;
           _isUploadingImage = true;
         });
 
-        // Upload to Cloudinary
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         String? photoUrl;
         
@@ -145,24 +137,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
 
         if (mounted) {
-          // Save locally as cache
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('profileImageBase64', base64Encode(bytes));
           
-          // Save URL to Firestore if upload succeeded
           if (photoUrl != null && authProvider.userId != null) {
             await _firestoreService.updateUser(
               authProvider.userId!,
               {'photoUrl': photoUrl},
             );
             await prefs.setString('profileImageUrl', photoUrl);
-            
-            // Refresh user to get updated photoUrl
             await authProvider.refreshUser();
           }
 
           setState(() => _isUploadingImage = false);
 
+          HapticService.success();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(photoUrl != null 
@@ -179,6 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       debugPrint('Error picking image: $e');
       if (mounted) {
         setState(() => _isUploadingImage = false);
+        HapticService.error();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
@@ -196,6 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showImagePickerOptions() {
+    HapticService.buttonTap();
     showModalBottomSheet(
       context: context,
       backgroundColor: context.bgCard,
@@ -231,6 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 label: 'Take Photo',
                 color: const Color(0xFF6366F1),
                 onTap: () {
+                  HapticService.buttonTap();
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
                 },
@@ -242,6 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 label: 'Choose from Gallery',
                 color: const Color(0xFF10B981),
                 onTap: () {
+                  HapticService.buttonTap();
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
                 },
@@ -254,12 +247,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   label: 'Remove Photo',
                   color: AppColors.error,
                   onTap: () async {
+                    HapticService.buttonTap();
                     Navigator.pop(context);
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.remove('profileImageBase64');
                     await prefs.remove('profileImageUrl');
                     
-                    // Remove from Firestore
                     final authProvider = Provider.of<AuthProvider>(context, listen: false);
                     if (authProvider.userId != null) {
                       await _firestoreService.updateUser(
@@ -273,6 +266,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() {
                         _profileImageBytes = null;
                       });
+                      HapticService.success();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: const Text('✓ Profile photo removed'),
@@ -337,8 +331,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ADDED: Helper to show buy confirmation dialog (since BuyFreezeDialog widget might be missing)
   Future<bool?> _showBuyConfirmation(BuildContext context, int cost, int userXp) {
+    HapticService.buttonTap();
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -388,12 +382,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () {
+              HapticService.buttonTap();
+              Navigator.pop(ctx, false);
+            },
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: userXp >= cost 
-              ? () => Navigator.pop(ctx, true) 
+              ? () {
+                  HapticService.buttonTap();
+                  Navigator.pop(ctx, true);
+                }
               : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -420,10 +420,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildProfileCard(),
               _buildStatsRow(),
               const SizedBox(height: 20),
-              // STEP 7: Add Full Freeze Card to Settings
               _buildStreakCard(),
               _buildGeneralSection(),
               _buildPreferencesSection(),
+
+              // --- Phase 2: Offline Settings Section ---
+              // Shows cache size, cleared videos, and sync status
+              const OfflineSettingsSection(),
+              // -----------------------------------------
+
               _buildAccountSection(),
               const SizedBox(height: 100),
             ],
@@ -494,7 +499,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     ClipOval(
-                      child: Container(
+                      child: SizedBox(
                         width: 80,
                         height: 80,
                         child: _isLoadingImage
@@ -530,7 +535,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       if (_profileImageBytes != null) {
                                         return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
                                       }
-                                      return _buildDefaultAvatar(user?.initials ?? 'U');
+                                      return _buildDefaultAvatar(user.initials);
                                     },
                                   )
                                 : _profileImageBytes != null
@@ -544,12 +549,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     : _buildDefaultAvatar(user?.initials ?? 'U'),
                       ),
                     ),
-                    // Upload progress indicator
                     if (_isUploadingImage)
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withAlpha(128),
                             shape: BoxShape.circle,
                           ),
                           child: const Center(
@@ -626,6 +630,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     GestureDetector(
                       onTap: () {
+                        HapticService.buttonTap();
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const ProfileScreen()),
@@ -706,7 +711,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Expanded(
                 child: _buildStatCard(
                   emoji: '🏆',
-                  value: '${user?.signsLearned ?? 0}',
+                  value: '${user?.totalBadges ?? 0}',
                   label: 'Badges',
                   color: const Color(0xFF6366F1),
                 ),
@@ -764,7 +769,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ADDED: Step 7 - Full Freeze Card
   Widget _buildStreakCard() {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
@@ -782,7 +786,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final result = await _firestoreService.buyStreakFreeze(user.id);
                 if (mounted) {
                   if (result['success']) {
-                    HapticFeedback.mediumImpact();
+                    HapticService.achievement();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text('✓ Streak freeze purchased!'),
@@ -793,6 +797,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     );
                     await authProvider.refreshUser();
                   } else {
+                    HapticService.error();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(result['error'] ?? 'Purchase failed'),
@@ -806,6 +811,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             },
             onLearnMore: () {
+              HapticService.buttonTap();
               showModalBottomSheet(
                 context: context,
                 backgroundColor: Colors.transparent,
@@ -840,6 +846,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: Switch(
                   value: _notificationsEnabled,
                   onChanged: (value) {
+                    HapticService.toggle();
                     setState(() => _notificationsEnabled = value);
                     _saveSettings();
                   },
@@ -858,6 +865,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   size: 20,
                 ),
                 onTap: () {
+                  HapticService.buttonTap();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -874,6 +882,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: Switch(
                   value: _soundEnabled,
                   onChanged: (value) {
+                    HapticService.toggle();
                     setState(() => _soundEnabled = value);
                     _saveSettings();
                   },
@@ -889,6 +898,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: Switch(
                   value: _vibrationEnabled,
                   onChanged: (value) {
+                    HapticService.toggle();
                     setState(() => _vibrationEnabled = value);
                     _saveSettings();
                   },
@@ -967,7 +977,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () => _showSignLanguageSelector(),
               ),
               _buildDivider(),
-              // STEP 8: Add Auto-Use Toggle
               Consumer<AuthProvider>(
                 builder: (context, authProvider, child) {
                   final user = authProvider.currentUser;
@@ -975,12 +984,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   
                   return _buildSettingsTile(
                     icon: Icons.ac_unit,
-                    iconColor: const Color(0xFF0EA5E9), // Sky blue for ice
+                    iconColor: const Color(0xFF0EA5E9),
                     title: 'Auto-use Freeze',
                     trailing: Switch(
                       value: user.autoUseFreeze,
                       onChanged: (value) async {
-                        HapticFeedback.lightImpact();
+                        HapticService.toggle();
                         await _firestoreService.setAutoUseFreeze(user.id, value);
                         await authProvider.refreshUser();
                       },
@@ -1022,6 +1031,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 onTap: () {
+                  HapticService.buttonTap();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const ThemeSettingsScreen()),
@@ -1084,6 +1094,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   onTap: () {
+                    HapticService.buttonTap();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1115,6 +1126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       size: 20,
                     ),
                     onTap: () {
+                      HapticService.buttonTap();
                       final authProvider = Provider.of<AuthProvider>(context, listen: false);
                       if (authProvider.currentUser != null) {
                         showShareProgressSheet(context, authProvider.currentUser!);
@@ -1154,8 +1166,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     );
   }
-
-  // ... [Rest of the helper methods: _buildSectionTitle, _buildSettingsTile, etc. remain unchanged]
 
   Widget _buildSectionTitle(String title) {
     return Padding(
@@ -1223,6 +1233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showLanguageSelector() {
+    HapticService.buttonTap();
     final languages = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese'];
 
     showModalBottomSheet(
@@ -1236,6 +1247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         options: languages,
         selectedOption: _selectedLanguage,
         onSelect: (value) {
+          HapticService.selectionClick();
           setState(() => _selectedLanguage = value);
           _saveSettings();
           Navigator.pop(context);
@@ -1245,6 +1257,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showSignLanguageSelector() {
+    HapticService.buttonTap();
     final languages = ['ASL', 'BSL', 'Auslan', 'ISL', 'JSL', 'MSL'];
 
     showModalBottomSheet(
@@ -1258,6 +1271,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         options: languages,
         selectedOption: _selectedSignLanguage,
         onSelect: (value) {
+          HapticService.selectionClick();
           setState(() => _selectedSignLanguage = value);
           _saveSettings();
           Navigator.pop(context);
@@ -1311,6 +1325,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showAboutDialog() {
+    HapticService.buttonTap();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1344,7 +1359,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              HapticService.buttonTap();
+              Navigator.pop(context);
+            },
             child: const Text('Close'),
           ),
         ],
@@ -1353,6 +1371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showLogoutConfirmation() {
+    HapticService.buttonTap();
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -1362,11 +1381,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: const Text('Are you sure you want to log out?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () {
+              HapticService.buttonTap();
+              Navigator.pop(dialogContext);
+            },
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
+              HapticService.buttonTap();
               Navigator.pop(dialogContext);
               
               final authProvider = Provider.of<AuthProvider>(context, listen: false);

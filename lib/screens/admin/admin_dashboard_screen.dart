@@ -11,8 +11,9 @@ import 'admin_lessons_screen.dart';
 import 'admin_quizzes_screen.dart';
 import 'admin_challenges_screen.dart';
 import 'admin_badges_screen.dart';
-// CHANGE: Import the Library screen instead of just the Upload screen
 import 'admin_sign_library_screen.dart';
+import '../../services/learning_path_seeder.dart';
+import '../../services/learning_path_diagnostic.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -396,6 +397,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           index: 6,
         ),
+        // Learning Paths Seeder
+        const SizedBox(height: 12),
+        _buildManageCard(
+          context,
+          icon: '🎯',
+          title: 'Learning Paths',
+          subtitle: 'Seed paths from existing lessons',
+          color: const Color(0xFF10B981),
+          onTap: () => _showLearningPathsDialog(context),
+          index: 7,
+        ),
       ],
     );
   }
@@ -522,5 +534,284 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
       ),
     );
+  }
+  void _showLearningPathsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withAlpha(30),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Text('🎯', style: TextStyle(fontSize: 20)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('Learning Paths'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'This will create 5 learning paths based on your existing lessons:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            _buildPathPreview('⚡', 'Quick Start', 'Beginner'),
+            _buildPathPreview('🤟', 'ASL Foundations', 'Beginner'),
+            _buildPathPreview('💬', 'Everyday Vocabulary', 'Intermediate'),
+            _buildPathPreview('🔄', 'Daily Practice Mix', 'Intermediate'),
+            _buildPathPreview('🎓', 'Fluent Signer', 'Advanced'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: context.textMuted)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _runDiagnostic();
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.blue.withAlpha(30),
+              foregroundColor: Colors.blue,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('🔍 Diagnose'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteLearningPaths();
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.red.withAlpha(30),
+              foregroundColor: Colors.red,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete All'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _seedLearningPaths();
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Seed Paths'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPathPreview(String emoji, String name, String difficulty) {
+    Color diffColor;
+    switch (difficulty.toLowerCase()) {
+      case 'beginner':
+        diffColor = const Color(0xFF10B981);
+        break;
+      case 'intermediate':
+        diffColor = const Color(0xFFF59E0B);
+        break;
+      case 'advanced':
+        diffColor = const Color(0xFFEF4444);
+        break;
+      default:
+        diffColor = AppColors.primary;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Expanded(child: Text(name, style: const TextStyle(fontSize: 13))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: diffColor.withAlpha(30),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              difficulty,
+              style: TextStyle(color: diffColor, fontSize: 10, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _seedLearningPaths() async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF10B981)),
+      ),
+    );
+
+    try {
+      await LearningPathSeeder.seedLearningPaths();
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Text('✅'),
+                SizedBox(width: 8),
+                Text('Learning paths created successfully!'),
+              ],
+            ),
+            backgroundColor: Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteLearningPaths() async {
+    // Confirm deletion
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete All Learning Paths?'),
+        content: const Text(
+          'This will delete all learning paths and user progress. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Colors.red),
+      ),
+    );
+
+    try {
+      await LearningPathSeeder.deleteAllPaths();
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Text('🗑️'),
+                SizedBox(width: 8),
+                Text('All learning paths deleted'),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+  Future<void> _runDiagnostic() async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Colors.blue),
+      ),
+    );
+
+    try {
+      await LearningPathDiagnostic.checkStructure();
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Text('🔍'),
+                SizedBox(width: 8),
+                Text('Check your console for structure details!'),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }

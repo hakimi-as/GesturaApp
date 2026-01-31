@@ -18,6 +18,8 @@ import 'category_lessons_screen.dart';
 import '../quiz/quiz_list_screen.dart';
 import '../badges/badges_screen.dart';
 import '../challenges/challenges_screen.dart';
+import 'learning_paths_screen.dart';
+import '../../services/haptic_service.dart';
 
 class LearnScreen extends StatefulWidget {
   final bool showBackButton;
@@ -561,6 +563,9 @@ class _LearnScreenState extends State<LearnScreen> {
             ),
           ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
 
+          const SizedBox(height: 20),
+          _buildLearningPathsCard(),
+
           // Section Title
           _buildSectionTitle('📚', 'Lesson Categories'),
 
@@ -853,6 +858,90 @@ class _LearnScreenState extends State<LearnScreen> {
         ).animate().fadeIn(delay: 500.ms);
       },
     );
+  }
+  // ==================== LEARNING PATHS CARD ====================
+  
+  Widget _buildLearningPathsCard() {
+    return GestureDetector(
+      onTap: () {
+        HapticService.buttonTap();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LearningPathsScreen()),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF10B981), Color(0xFF059669)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF10B981).withAlpha(50),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(50),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Center(
+                child: Text('🎯', style: TextStyle(fontSize: 28)),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Learning Paths',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Structured courses for all levels',
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(200),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(50),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.1);
   }
 
   Widget _buildChallengeItem(ChallengeModel challenge) {
