@@ -12,12 +12,12 @@ import '../../services/friend_service.dart';
 import '../../models/user_model.dart';
 
 class FriendProfileScreen extends StatefulWidget {
-  final String odlerndId;
+  final String friendId;
   final String? friendshipId;
 
   const FriendProfileScreen({
     super.key,
-    required this.odlerndId,
+    required this.friendId,
     this.friendshipId,
   });
 
@@ -46,7 +46,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
 
       final friendDoc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(widget.odlerndId)
+          .doc(widget.friendId)
           .get();
 
       if (friendDoc.exists) {
@@ -56,7 +56,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       if (_currentUser != null) {
         _friendshipStatus = await FriendService.getFriendshipStatus(
           _currentUser!.id,
-          widget.odlerndId,
+          widget.friendId,
         );
       }
 
@@ -78,7 +78,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       case 'none':
         final result = await FriendService.sendFriendRequest(
           _currentUser!.id,
-          widget.odlerndId,
+          widget.friendId,
         );
         if (result['success'] && mounted) {
           HapticService.success();
@@ -96,7 +96,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       case 'received':
         final friendshipId = await FriendService.getFriendshipId(
           _currentUser!.id,
-          widget.odlerndId,
+          widget.friendId,
         );
         if (friendshipId != null) {
           final success = await FriendService.acceptFriendRequest(
@@ -129,19 +129,19 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   void _showRemoveFriendDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         backgroundColor: context.bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Remove Friend'),
         content: Text('Are you sure you want to remove ${_friend?.fullName} from your friends?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: Text('Cancel', style: TextStyle(color: context.textMuted)),
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               if (widget.friendshipId != null) {
                 final success = await FriendService.removeFriend(widget.friendshipId!);
                 if (success && mounted) {
@@ -186,7 +186,6 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
           Container(
             width: 40,
             height: 4,
@@ -196,7 +195,6 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
           Text(
             'Scan to Add Friend',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -209,8 +207,6 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             style: TextStyle(color: context.textMuted),
           ),
           const SizedBox(height: 24),
-          
-          // QR Code Container
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -230,18 +226,16 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
               size: 200,
               backgroundColor: Colors.white,
               eyeStyle: const QrEyeStyle(
-                eyeShape: QrEyeShape.roundedRect,
+                eyeShape: QrEyeShape.square,
                 color: Color(0xFF6366F1),
               ),
               dataModuleStyle: const QrDataModuleStyle(
-                dataModuleShape: QrDataModuleShape.roundedRect,
+                dataModuleShape: QrDataModuleShape.square,
                 color: Color(0xFF6366F1),
               ),
             ),
           ),
           const SizedBox(height: 24),
-          
-          // Friend Code
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
@@ -251,10 +245,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Code: ',
-                  style: TextStyle(color: context.textMuted),
-                ),
+                Text('Code: ', style: TextStyle(color: context.textMuted)),
                 Text(
                   friendCode.length > 10 
                       ? '${friendCode.substring(0, 10)}...' 
@@ -277,11 +268,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                       ),
                     );
                   },
-                  child: Icon(
-                    Icons.copy_rounded,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
+                  child: Icon(Icons.copy_rounded, size: 18, color: AppColors.primary),
                 ),
               ],
             ),
@@ -366,7 +353,6 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
         bottom: false,
         child: Column(
           children: [
-            // App Bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Row(
@@ -382,20 +368,15 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.more_vert, color: Colors.white),
-                    onPressed: () {
-                      // Show more options
-                    },
+                    onPressed: () {},
                   ),
                 ],
               ),
             ),
-            
-            // Profile Info
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
               child: Column(
                 children: [
-                  // Avatar with ring
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
@@ -430,8 +411,6 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
-                  // Name
                   Text(
                     _friend!.fullName,
                     style: const TextStyle(
@@ -441,8 +420,6 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
-                  // Level & Badges
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -505,13 +482,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   Widget _buildActionButtons() {
     return Row(
       children: [
-        // Main Friend Action Button
-        Expanded(
-          flex: 3,
-          child: _buildFriendButton(),
-        ),
+        Expanded(flex: 3, child: _buildFriendButton()),
         const SizedBox(width: 12),
-        // QR Button
         Container(
           width: 52,
           height: 52,
@@ -522,10 +494,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
           ),
           child: IconButton(
             onPressed: _showQRCode,
-            icon: Icon(
-              Icons.qr_code_rounded,
-              color: context.textSecondary,
-            ),
+            icon: Icon(Icons.qr_code_rounded, color: context.textSecondary),
           ),
         ),
       ],
@@ -566,20 +535,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       child: Container(
         height: 52,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
+          gradient: LinearGradient(colors: gradientColors),
           borderRadius: BorderRadius.circular(14),
           boxShadow: isEnabled
-              ? [
-                  BoxShadow(
-                    color: gradientColors.first.withAlpha(80),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
+              ? [BoxShadow(color: gradientColors.first.withAlpha(80), blurRadius: 12, offset: const Offset(0, 6))]
               : null,
         ),
         child: Row(
@@ -587,14 +546,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
           children: [
             Icon(icon, color: Colors.white, size: 22),
             const SizedBox(width: 10),
-            Text(
-              text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-            ),
+            Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
           ],
         ),
       ),
@@ -611,74 +563,26 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _buildStatItem(
-              emoji: '⭐',
-              value: _formatNumber(_friend!.totalXP),
-              label: 'Total XP',
-            ),
-          ),
-          _buildDivider(),
-          Expanded(
-            child: _buildStatItem(
-              emoji: '🤟',
-              value: '${_friend!.signsLearned}',
-              label: 'Signs',
-            ),
-          ),
-          _buildDivider(),
-          Expanded(
-            child: _buildStatItem(
-              emoji: '📚',
-              value: '${_friend!.lessonsCompleted}',
-              label: 'Lessons',
-            ),
-          ),
-          _buildDivider(),
-          Expanded(
-            child: _buildStatItem(
-              emoji: '🎯',
-              value: '${_friend!.quizzesCompleted}',
-              label: 'Quizzes',
-            ),
-          ),
+          Expanded(child: _buildStatItem(emoji: '⭐', value: _formatNumber(_friend!.totalXP), label: 'Total XP')),
+          Container(width: 1, height: 40, color: context.borderColor),
+          Expanded(child: _buildStatItem(emoji: '🤟', value: '${_friend!.signsLearned}', label: 'Signs')),
+          Container(width: 1, height: 40, color: context.borderColor),
+          Expanded(child: _buildStatItem(emoji: '📚', value: '${_friend!.lessonsCompleted}', label: 'Lessons')),
+          Container(width: 1, height: 40, color: context.borderColor),
+          Expanded(child: _buildStatItem(emoji: '🎯', value: '${_friend!.quizzesCompleted}', label: 'Quizzes')),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
   }
 
-  Widget _buildDivider() {
-    return Container(
-      width: 1,
-      height: 40,
-      color: context.borderColor,
-    );
-  }
-
-  Widget _buildStatItem({
-    required String emoji,
-    required String value,
-    required String label,
-  }) {
+  Widget _buildStatItem({required String emoji, required String value, required String label}) {
     return Column(
       children: [
         Text(emoji, style: const TextStyle(fontSize: 22)),
         const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            color: context.textMuted,
-            fontSize: 11,
-          ),
-        ),
+        Text(label, style: TextStyle(color: context.textMuted, fontSize: 11)),
       ],
     );
   }
@@ -707,51 +611,17 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                 child: const Text('📊', style: TextStyle(fontSize: 18)),
               ),
               const SizedBox(width: 12),
-              Text(
-                'Stats Comparison',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text('Stats Comparison', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 24),
-          
-          _buildComparisonBar(
-            label: 'Total XP',
-            myValue: _currentUser!.totalXP,
-            friendValue: _friend!.totalXP,
-            myColor: const Color(0xFF6366F1),
-            friendColor: const Color(0xFFEC4899),
-          ),
+          _buildComparisonBar(label: 'Total XP', myValue: _currentUser!.totalXP, friendValue: _friend!.totalXP, myColor: const Color(0xFF6366F1), friendColor: const Color(0xFFEC4899)),
           const SizedBox(height: 20),
-          
-          _buildComparisonBar(
-            label: 'Current Streak',
-            myValue: _currentUser!.currentStreak,
-            friendValue: _friend!.currentStreak,
-            myColor: const Color(0xFFF59E0B),
-            friendColor: const Color(0xFFEF4444),
-            suffix: ' days',
-          ),
+          _buildComparisonBar(label: 'Current Streak', myValue: _currentUser!.currentStreak, friendValue: _friend!.currentStreak, myColor: const Color(0xFFF59E0B), friendColor: const Color(0xFFEF4444), suffix: ' days'),
           const SizedBox(height: 20),
-          
-          _buildComparisonBar(
-            label: 'Signs Learned',
-            myValue: _currentUser!.signsLearned,
-            friendValue: _friend!.signsLearned,
-            myColor: const Color(0xFF10B981),
-            friendColor: const Color(0xFF8B5CF6),
-          ),
+          _buildComparisonBar(label: 'Signs Learned', myValue: _currentUser!.signsLearned, friendValue: _friend!.signsLearned, myColor: const Color(0xFF10B981), friendColor: const Color(0xFF8B5CF6)),
           const SizedBox(height: 20),
-          
-          _buildComparisonBar(
-            label: 'Quizzes Completed',
-            myValue: _currentUser!.quizzesCompleted,
-            friendValue: _friend!.quizzesCompleted,
-            myColor: const Color(0xFF3B82F6),
-            friendColor: const Color(0xFFEC4899),
-          ),
+          _buildComparisonBar(label: 'Quizzes Completed', myValue: _currentUser!.quizzesCompleted, friendValue: _friend!.quizzesCompleted, myColor: const Color(0xFF3B82F6), friendColor: const Color(0xFFEC4899)),
         ],
       ),
     ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1);
@@ -773,38 +643,22 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: context.textSecondary,
-            fontWeight: FontWeight.w500,
-            fontSize: 13,
-          ),
-        ),
+        Text(label, style: TextStyle(color: context.textSecondary, fontWeight: FontWeight.w500, fontSize: 13)),
         const SizedBox(height: 12),
-        
-        // Progress Bar
         Container(
           height: 32,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: context.bgElevated,
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: context.bgElevated),
           child: Stack(
             children: [
-              // My portion (left side)
               FractionallySizedBox(
                 widthFactor: myPercent.clamp(0.05, 0.95),
                 child: Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [myColor, myColor.withAlpha(200)],
-                    ),
+                    gradient: LinearGradient(colors: [myColor, myColor.withAlpha(200)]),
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),
-              // Labels on bar
               Positioned.fill(
                 child: Row(
                   children: [
@@ -841,8 +695,6 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             ],
           ),
         ),
-        
-        // Winner indicator
         if (iAmBetter || friendIsBetter)
           Padding(
             padding: const EdgeInsets.only(top: 6),
@@ -851,10 +703,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withAlpha(26),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  decoration: BoxDecoration(color: AppColors.success.withAlpha(26), borderRadius: BorderRadius.circular(8)),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -862,11 +711,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                       const SizedBox(width: 4),
                       Text(
                         iAmBetter ? 'You\'re ahead!' : '${_friend!.fullName.split(' ').first} leads',
-                        style: const TextStyle(
-                          color: AppColors.success,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: const TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -893,24 +738,14 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withAlpha(26),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                decoration: BoxDecoration(color: const Color(0xFFF59E0B).withAlpha(26), borderRadius: BorderRadius.circular(12)),
                 child: const Text('🏆', style: TextStyle(fontSize: 18)),
               ),
               const SizedBox(width: 12),
-              Text(
-                'Recent Achievements',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text('Recent Achievements', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 20),
-          
-          // Achievement badges
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -934,42 +769,22 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       decoration: BoxDecoration(
         color: unlocked ? AppColors.primary.withAlpha(20) : context.bgElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: unlocked ? AppColors.primary.withAlpha(50) : context.borderColor,
-        ),
+        border: Border.all(color: unlocked ? AppColors.primary.withAlpha(50) : context.borderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            emoji,
-            style: TextStyle(
-              fontSize: 18,
-              color: unlocked ? null : context.textMuted,
-            ),
-          ),
+          Text(emoji, style: TextStyle(fontSize: 18, color: unlocked ? null : context.textMuted)),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: unlocked ? context.textPrimary : context.textMuted,
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-            ),
-          ),
-          if (unlocked) ...[
-            const SizedBox(width: 6),
-            const Icon(Icons.check_circle, color: AppColors.success, size: 14),
-          ],
+          Text(label, style: TextStyle(color: unlocked ? context.textPrimary : context.textMuted, fontWeight: FontWeight.w500, fontSize: 12)),
+          if (unlocked) ...[const SizedBox(width: 6), const Icon(Icons.check_circle, color: AppColors.success, size: 14)],
         ],
       ),
     );
   }
 
   String _formatNumber(int number) {
-    if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(1)}k';
-    }
+    if (number >= 1000) return '${(number / 1000).toStringAsFixed(1)}k';
     return number.toString();
   }
 }

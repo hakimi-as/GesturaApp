@@ -21,7 +21,6 @@ class LeaderboardScreen extends StatefulWidget {
 class _LeaderboardScreenState extends State<LeaderboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _selectedPeriod = 'weekly';
   String _selectedScope = 'global'; // 'global' or 'friends'
   
   List<UserModel> _globalLeaderboard = [];
@@ -47,19 +46,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   void _onTabChanged() {
     if (_tabController.indexIsChanging) return;
-    setState(() {
-      switch (_tabController.index) {
-        case 0:
-          _selectedPeriod = 'weekly';
-          break;
-        case 1:
-          _selectedPeriod = 'monthly';
-          break;
-        case 2:
-          _selectedPeriod = 'allTime';
-          break;
-      }
-    });
     _loadLeaderboard();
   }
 
@@ -110,11 +96,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Future<void> _loadFriendsLeaderboard(String currentUserId) async {
-    final friends = await FriendService.getFriendsLeaderboard(currentUserId);
+    final friends = await FriendService.getLeaderboard(currentUserId);
 
     int rank = 0;
     for (int i = 0; i < friends.length; i++) {
-      if (friends[i].odlerndId == currentUserId) {
+      if (friends[i].friendUser.id == currentUserId) {
         rank = i + 1;
         break;
       }
@@ -131,15 +117,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     _loadLeaderboard();
   }
 
-  void _openFriendProfile(String odlerndId) {
+  void _openFriendProfile(String odlernId) {
     HapticService.buttonTap();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (odlerndId == authProvider.userId) return; // Don't open own profile
+    if (odlernId == authProvider.userId) return; // Don't open own profile
     
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FriendProfileScreen(odlerndId: odlerndId),
+        builder: (_) => FriendProfileScreen(friendId: odlernId),
       ),
     );
   }
@@ -677,10 +663,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   Widget _buildFriendLeaderboardItem(FriendWithUser friend, int rank, int index) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final isCurrentUser = friend.odlerndId == authProvider.userId;
+    final friendUser = friend.friendUser; // Access the UserModel
+    final isCurrentUser = friendUser.id == authProvider.userId;
 
     return GestureDetector(
-      onTap: () => _openFriendProfile(friend.odlerndId),
+      onTap: () => _openFriendProfile(friendUser.id),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
@@ -696,7 +683,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           children: [
             SizedBox(width: 40, child: _buildRankBadge(rank)),
             const SizedBox(width: 12),
-            _buildAvatar(friend.photoUrl, friend.initials, rank),
+            _buildAvatar(friendUser.photoUrl, friendUser.initials, rank),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -706,7 +693,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     children: [
                       Flexible(
                         child: Text(
-                          friend.fullName,
+                          friendUser.fullName,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
@@ -740,12 +727,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   Row(
                     children: [
                       Text(
-                        '🔥 ${friend.currentStreak} streak',
+                        '🔥 ${friendUser.currentStreak} streak',
                         style: TextStyle(color: context.textMuted, fontSize: 12),
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        '🤟 ${friend.signsLearned} signs',
+                        '🤟 ${friendUser.signsLearned} signs',
                         style: TextStyle(color: context.textMuted, fontSize: 12),
                       ),
                     ],
@@ -757,7 +744,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${friend.totalXP}',
+                  '${friendUser.totalXP}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

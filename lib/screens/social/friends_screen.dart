@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
@@ -9,7 +10,6 @@ import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart';
 import '../../models/friend_model.dart';
 import '../../models/user_model.dart';
-import '../../widgets/shimmer_widgets.dart';
 import 'friend_profile_screen.dart';
 import 'add_friend_screen.dart';
 
@@ -136,7 +136,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       friendshipId,
     );
     
-    if (success) {
+    if (success && mounted) {
       HapticService.success();
       await _loadData();
     }
@@ -160,24 +160,26 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       toUserId,
     );
     
-    if (result['success']) {
-      HapticService.success();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ ${result['message']}'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      setState(() {});
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ ${result['message']}'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (mounted) {
+      if (result['success']) {
+        HapticService.success();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${result['message']}'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        setState(() {});
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ ${result['message']}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -201,7 +203,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         ),
         centerTitle: true,
         actions: [
-          // QR Code / Add Friend button
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(8),
@@ -228,7 +229,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       ),
       body: Column(
         children: [
-          // Tab Bar
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -281,7 +281,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               ],
             ),
           ),
-          
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -297,12 +296,27 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     );
   }
 
+  Widget _buildShimmerItem({double height = 80}) {
+    return Shimmer.fromColors(
+      baseColor: context.bgElevated,
+      highlightColor: context.bgCard,
+      child: Container(
+        height: height,
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: context.bgCard,
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFriendsTab() {
     if (_isLoadingFriends) {
       return ListView.builder(
         padding: const EdgeInsets.all(20),
         itemCount: 5,
-        itemBuilder: (context, index) => ShimmerWidgets.listItem(height: 80),
+        itemBuilder: (context, index) => _buildShimmerItem(),
       );
     }
 
@@ -338,10 +352,8 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildFriendCard(FriendWithUser friend) {
-    final user = friend.user;
-    final isOnline = user.lastActive != null && 
-        DateTime.now().difference(user.lastActive!).inMinutes < 5;
+  Widget _buildFriendCard(FriendWithUser friendWithUser) {
+    final user = friendWithUser.friendUser;
 
     return GestureDetector(
       onTap: () {
@@ -350,8 +362,8 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           context,
           MaterialPageRoute(
             builder: (_) => FriendProfileScreen(
-              odlerndId: user.id,
-              friendshipId: friend.friendship.id,
+              friendId: user.id,
+              friendshipId: friendWithUser.friendship.id,
             ),
           ),
         );
@@ -366,69 +378,46 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         ),
         child: Row(
           children: [
-            // Avatar with online indicator
-            Stack(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: user.photoUrl == null
-                        ? const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                          )
-                        : null,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
-                    child: user.photoUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: user.photoUrl!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: context.bgElevated,
-                              child: Center(
-                                child: Text(
-                                  user.initials,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )
-                        : Center(
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: user.photoUrl == null
+                    ? const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
+                      )
+                    : null,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: user.photoUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: user.photoUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: context.bgElevated,
+                          child: Center(
                             child: Text(
                               user.initials,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
-                  ),
-                ),
-                if (isOnline)
-                  Positioned(
-                    right: 2,
-                    bottom: 2,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: AppColors.success,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: context.bgCard, width: 2),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          user.initials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-              ],
+              ),
             ),
             const SizedBox(width: 14),
-            
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,12 +442,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                 ],
               ),
             ),
-            
-            // Arrow
-            Icon(
-              Icons.chevron_right,
-              color: context.textMuted,
-            ),
+            Icon(Icons.chevron_right, color: context.textMuted),
           ],
         ),
       ),
@@ -495,7 +479,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       return ListView.builder(
         padding: const EdgeInsets.all(20),
         itemCount: 3,
-        itemBuilder: (context, index) => ShimmerWidgets.listItem(height: 100),
+        itemBuilder: (context, index) => _buildShimmerItem(height: 120),
       );
     }
 
@@ -524,7 +508,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   }
 
   Widget _buildRequestCard(FriendWithUser request) {
-    final user = request.user;
+    final user = request.friendUser;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -538,7 +522,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         children: [
           Row(
             children: [
-              // Avatar
               Container(
                 width: 56,
                 height: 56,
@@ -570,8 +553,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                 ),
               ),
               const SizedBox(width: 14),
-              
-              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -597,8 +578,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
             ],
           ),
           const SizedBox(height: 14),
-          
-          // Action buttons
           Row(
             children: [
               Expanded(
@@ -655,7 +634,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   Widget _buildFindTab() {
     return Column(
       children: [
-        // Search bar
         Padding(
           padding: const EdgeInsets.all(20),
           child: TextField(
@@ -686,12 +664,11 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
               ),
             ),
           ),
         ),
-        
         Expanded(
           child: _isSearching
               ? const Center(child: CircularProgressIndicator())
@@ -795,7 +772,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => FriendProfileScreen(odlerndId: user.id),
+                builder: (_) => FriendProfileScreen(friendId: user.id),
               ),
             );
           },
@@ -809,7 +786,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
             ),
             child: Row(
               children: [
-                // Avatar
                 Container(
                   width: 50,
                   height: 50,
@@ -840,8 +816,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                   ),
                 ),
                 const SizedBox(width: 14),
-                
-                // Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -876,8 +850,6 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                     ],
                   ),
                 ),
-                
-                // Action button
                 _buildStatusButton(status, user.id),
               ],
             ),
