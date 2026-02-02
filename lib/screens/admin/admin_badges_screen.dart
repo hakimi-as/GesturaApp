@@ -21,6 +21,7 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
   List<BadgeTemplate> _badges = [];
   List<Map<String, dynamic>> _lessonCategories = [];
   bool _isLoading = true;
+  bool _isSeeding = false;
 
   final List<BadgeCategory> _categories = BadgeCategory.values;
 
@@ -92,6 +93,102 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
       SnackBar(
         content: Text(message),
         backgroundColor: isError ? Colors.red : AppColors.success,
+      ),
+    );
+  }
+
+  /// Seed default badges
+  Future<void> _seedDefaultBadges() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.bgCard,
+        title: const Row(
+          children: [
+            Text('🌱', style: TextStyle(fontSize: 24)),
+            SizedBox(width: 12),
+            Text('Seed Default Badges?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('This will:'),
+            const SizedBox(height: 12),
+            _buildBulletPoint('Delete ALL existing badges'),
+            _buildBulletPoint('Add ${BadgeTemplate.defaultBadges.length} default badges'),
+            _buildBulletPoint('Include 10+ badges per category'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withAlpha(30),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone!',
+                      style: TextStyle(color: Colors.orange, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Seed Badges'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isSeeding = true);
+      
+      try {
+        final provider = Provider.of<BadgeProvider>(context, listen: false);
+        final success = await provider.forceSeedDefaultBadges();
+        
+        if (success && mounted) {
+          _showSnackBar('✅ Seeded ${BadgeTemplate.defaultBadges.length} badges!');
+          await _loadBadges();
+        } else if (mounted) {
+          _showSnackBar('Failed to seed badges', isError: true);
+        }
+      } catch (e) {
+        if (mounted) {
+          _showSnackBar('Error: $e', isError: true);
+        }
+      }
+      
+      if (mounted) {
+        setState(() => _isSeeding = false);
+      }
+    }
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(text)),
+        ],
       ),
     );
   }
@@ -176,6 +273,25 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Manage Badges'),
+        actions: [
+          // Seed button
+          if (_isSeeding)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.auto_fix_high, color: AppColors.primary),
+              tooltip: 'Seed Default Badges',
+              onPressed: _seedDefaultBadges,
+            ),
+          const SizedBox(width: 8),
+        ],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
@@ -271,6 +387,17 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
           Text('No ${_currentCategory.name} badges yet', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Text('Add badges to the pool', style: TextStyle(color: context.textMuted)),
+          const SizedBox(height: 24),
+          // Quick seed button in empty state
+          ElevatedButton.icon(
+            onPressed: _seedDefaultBadges,
+            icon: const Icon(Icons.auto_fix_high),
+            label: const Text('Seed Default Badges'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
         ],
       ),
     );

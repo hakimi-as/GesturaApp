@@ -14,11 +14,13 @@ class ChallengeProvider extends ChangeNotifier {
   
   bool _isLoading = false;
   bool _isInitialized = false;
+  String? _lastError;
 
   List<ChallengeModel> get dailyChallenges => _dailyChallenges;
   List<ChallengeModel> get weeklyChallenges => _weeklyChallenges;
   List<ChallengeModel> get specialChallenges => _specialChallenges;
   bool get isLoading => _isLoading;
+  String? get lastError => _lastError;
 
   int get totalActiveChallenges =>
       _dailyChallenges.length + _weeklyChallenges.length + _specialChallenges.length;
@@ -37,39 +39,87 @@ class ChallengeProvider extends ChangeNotifier {
     if (_isInitialized) return;
     
     try {
+      _lastError = null;
       final poolCheck = await _firestore.collection('challengePool').limit(1).get();
 
       if (poolCheck.docs.isEmpty) {
-        debugPrint('🎯 Initializing challenge pool with defaults...');
+        debugPrint('🎯 Challenge pool empty, seeding defaults...');
         await _seedDefaultChallenges();
       }
       
       _isInitialized = true;
+      debugPrint('✅ Challenge pool initialized');
     } catch (e) {
-      debugPrint('Error initializing challenge pool: $e');
+      _lastError = e.toString();
+      debugPrint('❌ Error initializing challenge pool: $e');
+    }
+  }
+
+  /// Force seed default challenges (for admin use)
+  Future<bool> forceSeedDefaultChallenges() async {
+    try {
+      _lastError = null;
+      debugPrint('🔄 Force seeding challenge pool...');
+      
+      // Delete existing challenges first
+      final existing = await _firestore.collection('challengePool').get();
+      final batch = _firestore.batch();
+      for (final doc in existing.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      debugPrint('🗑️ Cleared ${existing.docs.length} existing challenges');
+      
+      // Clear active challenges too
+      final activeDocs = await _firestore.collection('activeChallenges').get();
+      final batch2 = _firestore.batch();
+      for (final doc in activeDocs.docs) {
+        batch2.delete(doc.reference);
+      }
+      await batch2.commit();
+      debugPrint('🗑️ Cleared ${activeDocs.docs.length} active challenges');
+      
+      // Seed fresh
+      await _seedDefaultChallenges();
+      
+      _isInitialized = true;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _lastError = e.toString();
+      debugPrint('❌ Error force seeding challenges: $e');
+      return false;
     }
   }
 
   Future<void> _seedDefaultChallenges() async {
     final batch = _firestore.batch();
 
+    // Seed daily challenges
     for (final challenge in ChallengeTemplate.defaultDailyChallenges) {
       final ref = _firestore.collection('challengePool').doc(challenge.id);
       batch.set(ref, challenge.toFirestore());
     }
 
+    // Seed weekly challenges
     for (final challenge in ChallengeTemplate.defaultWeeklyChallenges) {
       final ref = _firestore.collection('challengePool').doc(challenge.id);
       batch.set(ref, challenge.toFirestore());
     }
 
+    // Seed special challenges
     for (final challenge in ChallengeTemplate.defaultSpecialChallenges) {
       final ref = _firestore.collection('challengePool').doc(challenge.id);
       batch.set(ref, challenge.toFirestore());
     }
 
     await batch.commit();
-    debugPrint('✅ Challenge pool seeded');
+    
+    final totalCount = ChallengeTemplate.defaultDailyChallenges.length +
+        ChallengeTemplate.defaultWeeklyChallenges.length +
+        ChallengeTemplate.defaultSpecialChallenges.length;
+    
+    debugPrint('✅ Challenge pool seeded with $totalCount challenges');
   }
 
   Future<void> loadChallenges(String userId, UserModel user) async {
@@ -108,6 +158,8 @@ class ChallengeProvider extends ChangeNotifier {
         type: ChallengeType.special,
         count: 2,
       );
+      
+      debugPrint('📦 Loaded challenges: ${_dailyChallenges.length} daily, ${_weeklyChallenges.length} weekly, ${_specialChallenges.length} special');
     } catch (e) {
       debugPrint('Error loading challenges: $e');
     }
@@ -166,7 +218,10 @@ class ChallengeProvider extends ChangeNotifier {
           .where('isActive', isEqualTo: true)
           .get();
 
-      if (snapshot.docs.isEmpty) return [];
+      if (snapshot.docs.isEmpty) {
+        debugPrint('⚠️ No ${type.name} challenges in pool');
+        return [];
+      }
 
       final templates = snapshot.docs.map((d) => ChallengeTemplate.fromFirestore(d)).toList();
       
@@ -438,13 +493,20 @@ class ChallengeProvider extends ChangeNotifier {
 
   Future<List<ChallengeTemplate>> getChallengePool() async {
     try {
-      final snapshot = await _firestore
-          .collection('challengePool')
-          .orderBy('type')
-          .orderBy('createdAt', descending: true)
-          .get();
+      await initializeChallengePool();
+      
+      final snapshot = await _firestore.collection('challengePool').get();
 
-      return snapshot.docs.map((d) => ChallengeTemplate.fromFirestore(d)).toList();
+      final challenges = snapshot.docs.map((d) => ChallengeTemplate.fromFirestore(d)).toList();
+      
+      // Sort locally
+      challenges.sort((a, b) {
+        final typeCompare = a.type.index.compareTo(b.type.index);
+        if (typeCompare != 0) return typeCompare;
+        return b.createdAt.compareTo(a.createdAt);
+      });
+      
+      return challenges;
     } catch (e) {
       debugPrint('Error getting challenge pool: $e');
       return [];
@@ -453,16 +515,38 @@ class ChallengeProvider extends ChangeNotifier {
 
   Future<List<ChallengeTemplate>> getChallengesByType(ChallengeType type) async {
     try {
+      await initializeChallengePool();
+      
       final snapshot = await _firestore
           .collection('challengePool')
           .where('type', isEqualTo: type.index)
-          .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs.map((d) => ChallengeTemplate.fromFirestore(d)).toList();
+      final challenges = snapshot.docs.map((d) => ChallengeTemplate.fromFirestore(d)).toList();
+      challenges.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      return challenges;
     } catch (e) {
       debugPrint('Error getting challenges by type: $e');
       return [];
+    }
+  }
+
+  /// Get stats about the challenge pool
+  Future<Map<String, int>> getChallengePoolStats() async {
+    try {
+      final snapshot = await _firestore.collection('challengePool').get();
+      final challenges = snapshot.docs.map((d) => ChallengeTemplate.fromFirestore(d)).toList();
+      
+      return {
+        'total': challenges.length,
+        'active': challenges.where((c) => c.isActive).length,
+        'daily': challenges.where((c) => c.type == ChallengeType.daily).length,
+        'weekly': challenges.where((c) => c.type == ChallengeType.weekly).length,
+        'special': challenges.where((c) => c.type == ChallengeType.special).length,
+      };
+    } catch (e) {
+      return {'total': 0, 'active': 0, 'daily': 0, 'weekly': 0, 'special': 0};
     }
   }
 
@@ -518,6 +602,7 @@ class ChallengeProvider extends ChangeNotifier {
         batch.delete(doc.reference);
       }
       await batch.commit();
+      _isInitialized = false;
       debugPrint('✅ Active challenges cleared - will re-select on next load');
     } catch (e) {
       debugPrint('Error force refreshing: $e');

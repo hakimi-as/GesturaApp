@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart';
 import '../../models/user_model.dart';
+import '../../models/badge_model.dart';
 
 class FriendProfileScreen extends StatefulWidget {
   final String friendId;
@@ -30,6 +31,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   UserModel? _currentUser;
   String _friendshipStatus = 'none';
   bool _isLoading = true;
+  
+  // Actual unlocked badges from Firestore
+  List<BadgeModel> _friendBadges = [];
+  List<BadgeTemplate> _badgePool = [];
 
   @override
   void initState() {
@@ -51,6 +56,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
 
       if (friendDoc.exists) {
         _friend = UserModel.fromFirestore(friendDoc);
+        
+        // Load friend's actual unlocked badges
+        await _loadFriendBadges(friendDoc);
       }
 
       if (_currentUser != null) {
@@ -68,6 +76,45 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  /// Load friend's unlocked badges from their user document and badge pool
+  Future<void> _loadFriendBadges(DocumentSnapshot friendDoc) async {
+    try {
+      final data = friendDoc.data() as Map<String, dynamic>?;
+      final unlockedBadgeIds = List<String>.from(data?['unlockedBadges'] ?? []);
+      
+      // First, try to load from badgePool (Firestore templates)
+      final poolSnapshot = await FirebaseFirestore.instance
+          .collection('badgePool')
+          .where('isActive', isEqualTo: true)
+          .get();
+      
+      if (poolSnapshot.docs.isNotEmpty) {
+        _badgePool = poolSnapshot.docs
+            .map((d) => BadgeTemplate.fromFirestore(d))
+            .toList();
+        
+        // Match unlocked IDs with badge templates
+        _friendBadges = _badgePool
+            .where((template) => unlockedBadgeIds.contains(template.id))
+            .map((template) => template.toBadge(unlockedAt: DateTime.now()))
+            .toList();
+      } else {
+        // Fallback to default badges if pool is empty
+        _friendBadges = unlockedBadgeIds
+            .map((id) => BadgeModel.getBadgeById(id))
+            .where((badge) => badge != null)
+            .cast<BadgeModel>()
+            .map((badge) => badge.copyWith(unlockedAt: DateTime.now()))
+            .toList();
+      }
+      
+      debugPrint('✅ Loaded ${_friendBadges.length} badges for friend');
+    } catch (e) {
+      debugPrint('Error loading friend badges: $e');
+      _friendBadges = [];
     }
   }
 
@@ -268,7 +315,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                       ),
                     );
                   },
-                  child: Icon(Icons.copy_rounded, size: 18, color: AppColors.primary),
+                  child: const Icon(Icons.copy_rounded, size: 18, color: AppColors.primary),
                 ),
               ],
             ),
@@ -723,6 +770,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     );
   }
 
+  // ==================== UPDATED ACHIEVEMENTS SECTION ====================
   Widget _buildAchievements() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -735,49 +783,169 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: const Color(0xFFF59E0B).withAlpha(26), borderRadius: BorderRadius.circular(12)),
-                child: const Text('🏆', style: TextStyle(fontSize: 18)),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withAlpha(26),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text('🏆', style: TextStyle(fontSize: 18)),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Achievements',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Text('Recent Achievements', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              // Badge count
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_friendBadges.length} earned',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _buildAchievementBadge('🔥', 'Week Streak', _friend!.currentStreak >= 7),
-              _buildAchievementBadge('📚', '10 Lessons', _friend!.lessonsCompleted >= 10),
-              _buildAchievementBadge('🎯', 'Quiz Master', _friend!.perfectQuizzes >= 1),
-              _buildAchievementBadge('🤟', '50 Signs', _friend!.signsLearned >= 50),
-              _buildAchievementBadge('⭐', '1000 XP', _friend!.totalXP >= 1000),
-              _buildAchievementBadge('🏅', 'Level 5', _friend!.level >= 5),
-            ],
-          ),
+          
+          // Show actual earned badges or empty state
+          if (_friendBadges.isEmpty)
+            _buildNoBadgesState()
+          else
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: _friendBadges.take(8).map((badge) {
+                return _buildActualBadge(badge);
+              }).toList(),
+            ),
+            
+          // Show "more" indicator if there are more badges
+          if (_friendBadges.length > 8) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: context.bgElevated,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '+${_friendBadges.length - 8} more badges',
+                  style: TextStyle(
+                    color: context.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1);
   }
 
-  Widget _buildAchievementBadge(String emoji, String label, bool unlocked) {
+  Widget _buildNoBadgesState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: Column(
+          children: [
+            Text(
+              '🎯',
+              style: TextStyle(
+                fontSize: 36,
+                color: context.textMuted,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No badges yet',
+              style: TextStyle(
+                color: context.textMuted,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${_friend?.fullName.split(' ').first ?? 'User'} is just getting started!',
+              style: TextStyle(
+                color: context.textMuted.withAlpha(150),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build an actual badge earned by the friend
+  Widget _buildActualBadge(BadgeModel badge) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: unlocked ? AppColors.primary.withAlpha(20) : context.bgElevated,
+        gradient: LinearGradient(
+          colors: [
+            badge.tierGradientStart.withAlpha(30),
+            badge.tierGradientEnd.withAlpha(20),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: unlocked ? AppColors.primary.withAlpha(50) : context.borderColor),
+        border: Border.all(color: badge.tierColor.withAlpha(80)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji, style: TextStyle(fontSize: 18, color: unlocked ? null : context.textMuted)),
+          Text(badge.icon, style: const TextStyle(fontSize: 18)),
           const SizedBox(width: 8),
-          Text(label, style: TextStyle(color: unlocked ? context.textPrimary : context.textMuted, fontWeight: FontWeight.w500, fontSize: 12)),
-          if (unlocked) ...[const SizedBox(width: 6), const Icon(Icons.check_circle, color: AppColors.success, size: 14)],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                badge.name,
+                style: TextStyle(
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                badge.tierName,
+                style: TextStyle(
+                  color: badge.tierColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 6),
+          Icon(
+            Icons.verified,
+            color: badge.tierColor,
+            size: 14,
+          ),
         ],
       ),
     );

@@ -21,11 +21,14 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
   List<ChallengeTemplate> _challenges = [];
   List<Map<String, dynamic>> _lessonCategories = [];
   bool _isLoading = true;
+  bool _isSeeding = false;
+
+  final List<ChallengeType> _types = ChallengeType.values;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: _types.length, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         _loadChallenges();
@@ -41,18 +44,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
     super.dispose();
   }
 
-  ChallengeType get _currentType {
-    switch (_tabController.index) {
-      case 0:
-        return ChallengeType.daily;
-      case 1:
-        return ChallengeType.weekly;
-      case 2:
-        return ChallengeType.special;
-      default:
-        return ChallengeType.daily;
-    }
-  }
+  ChallengeType get _currentType => _types[_tabController.index];
 
   Future<void> _loadChallenges() async {
     setState(() => _isLoading = true);
@@ -105,6 +97,142 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
     );
   }
 
+  /// Seed default challenges
+  Future<void> _seedDefaultChallenges() async {
+    final totalCount = ChallengeTemplate.defaultDailyChallenges.length +
+        ChallengeTemplate.defaultWeeklyChallenges.length +
+        ChallengeTemplate.defaultSpecialChallenges.length;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.bgCard,
+        title: const Row(
+          children: [
+            Text('🌱', style: TextStyle(fontSize: 24)),
+            SizedBox(width: 12),
+            Text('Seed Default Challenges?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('This will:'),
+            const SizedBox(height: 12),
+            _buildBulletPoint('Delete ALL existing challenges'),
+            _buildBulletPoint('Clear active challenge selections'),
+            _buildBulletPoint('Add $totalCount default challenges'),
+            _buildBulletPoint('Daily: ${ChallengeTemplate.defaultDailyChallenges.length}'),
+            _buildBulletPoint('Weekly: ${ChallengeTemplate.defaultWeeklyChallenges.length}'),
+            _buildBulletPoint('Special: ${ChallengeTemplate.defaultSpecialChallenges.length}'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withAlpha(30),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone!',
+                      style: TextStyle(color: Colors.orange, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Seed Challenges'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isSeeding = true);
+      
+      try {
+        final provider = Provider.of<ChallengeProvider>(context, listen: false);
+        final success = await provider.forceSeedDefaultChallenges();
+        
+        if (success && mounted) {
+          _showSnackBar('✅ Seeded $totalCount challenges!');
+          await _loadChallenges();
+        } else if (mounted) {
+          _showSnackBar('Failed to seed challenges', isError: true);
+        }
+      } catch (e) {
+        if (mounted) {
+          _showSnackBar('Error: $e', isError: true);
+        }
+      }
+      
+      if (mounted) {
+        setState(() => _isSeeding = false);
+      }
+    }
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(text)),
+        ],
+      ),
+    );
+  }
+
+  String _getTypeEmoji(ChallengeType type) {
+    switch (type) {
+      case ChallengeType.daily:
+        return '📅';
+      case ChallengeType.weekly:
+        return '📆';
+      case ChallengeType.special:
+        return '✨';
+    }
+  }
+
+  String _getTypeName(ChallengeType type) {
+    switch (type) {
+      case ChallengeType.daily:
+        return 'Daily';
+      case ChallengeType.weekly:
+        return 'Weekly';
+      case ChallengeType.special:
+        return 'Special';
+    }
+  }
+
+  Color _getTypeColor(ChallengeType type) {
+    switch (type) {
+      case ChallengeType.daily:
+        return const Color(0xFF10B981);
+      case ChallengeType.weekly:
+        return const Color(0xFF6366F1);
+      case ChallengeType.special:
+        return const Color(0xFFF59E0B);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,22 +245,55 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
         ),
         title: const Text('Manage Challenges'),
         actions: [
+          // Seed button
+          if (_isSeeding)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.auto_fix_high, color: AppColors.primary),
+              tooltip: 'Seed Default Challenges',
+              onPressed: _seedDefaultChallenges,
+            ),
+          // Refresh active challenges
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _forceRefresh,
-            tooltip: 'Force Refresh Active Challenges',
+            icon: const Icon(Icons.refresh, color: AppColors.primary),
+            tooltip: 'Refresh Active Selections',
+            onPressed: () async {
+              try {
+                final provider = Provider.of<ChallengeProvider>(context, listen: false);
+                await provider.forceRefreshActiveChallenges();
+                _showSnackBar('Active challenge selections cleared');
+              } catch (e) {
+                _showSnackBar('Error: $e', isError: true);
+              }
+            },
           ),
+          const SizedBox(width: 8),
         ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary,
           labelColor: AppColors.primary,
           unselectedLabelColor: context.textMuted,
-          tabs: const [
-            Tab(text: '📅 Daily'),
-            Tab(text: '📆 Weekly'),
-            Tab(text: '⭐ Special'),
-          ],
+          tabs: _types.map((type) {
+            return Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_getTypeEmoji(type)),
+                  const SizedBox(width: 6),
+                  Text(_getTypeName(type)),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ),
       body: Column(
@@ -181,7 +342,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem('Total', _challenges.length.toString(), Icons.list),
+          _buildStatItem('Total', _challenges.length.toString(), Icons.flag),
           _buildStatItem('Active', activeCount.toString(), Icons.check_circle, color: AppColors.success),
           _buildStatItem('Category', categoryCount.toString(), Icons.folder, color: AppColors.primary),
         ],
@@ -205,17 +366,30 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(_currentType == ChallengeType.daily ? '📅' : _currentType == ChallengeType.weekly ? '📆' : '⭐', style: const TextStyle(fontSize: 60)),
+          Text(_getTypeEmoji(_currentType), style: const TextStyle(fontSize: 60)),
           const SizedBox(height: 16),
-          Text('No ${_currentType.name} challenges yet', style: Theme.of(context).textTheme.titleLarge),
+          Text('No ${_getTypeName(_currentType).toLowerCase()} challenges yet', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Text('Add challenges to the pool', style: TextStyle(color: context.textMuted)),
+          const SizedBox(height: 24),
+          // Quick seed button in empty state
+          ElevatedButton.icon(
+            onPressed: _seedDefaultChallenges,
+            icon: const Icon(Icons.auto_fix_high),
+            label: const Text('Seed Default Challenges'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildChallengeCard(ChallengeTemplate challenge, int index) {
+    final typeColor = _getTypeColor(challenge.type);
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -227,13 +401,15 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
       child: Row(
         children: [
           Container(
-            width: 50,
-            height: 50,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: challenge.isActive ? challenge.toChallenge().typeColor.withAlpha(30) : Colors.grey.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
+              color: challenge.isActive 
+                  ? typeColor.withAlpha(30) 
+                  : Colors.grey.withAlpha(30),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Center(child: Text(challenge.emoji, style: const TextStyle(fontSize: 24))),
+            child: Center(child: Text(challenge.emoji, style: const TextStyle(fontSize: 28))),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -243,12 +419,22 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
                 Row(
                   children: [
                     Expanded(
-                      child: Text(challenge.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: challenge.isActive ? context.textPrimary : context.textMuted)),
+                      child: Text(
+                        challenge.title, 
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 15, 
+                          color: challenge.isActive ? context.textPrimary : context.textMuted,
+                        ),
+                      ),
                     ),
                     if (!challenge.isActive)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.orange.withAlpha(30), borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withAlpha(30), 
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                         child: const Text('Inactive', style: TextStyle(color: Colors.orange, fontSize: 10)),
                       ),
                   ],
@@ -260,6 +446,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
                   spacing: 8,
                   runSpacing: 4,
                   children: [
+                    _buildTag(_getTypeName(challenge.type), Icons.category, color: typeColor),
                     _buildTag('Target: ${challenge.targetValue}', Icons.flag),
                     _buildTag('+${challenge.xpReward} XP', Icons.star, color: AppColors.primary),
                     if (challenge.categoryId != null)
@@ -271,12 +458,22 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
           ),
           Column(
             children: [
-              IconButton(icon: Icon(Icons.edit, color: context.textMuted, size: 20), onPressed: () => _showAddEditDialog(challenge)),
               IconButton(
-                icon: Icon(challenge.isActive ? Icons.visibility : Icons.visibility_off, color: challenge.isActive ? AppColors.success : Colors.orange, size: 20),
+                icon: Icon(Icons.edit, color: context.textMuted, size: 20), 
+                onPressed: () => _showAddEditDialog(challenge),
+              ),
+              IconButton(
+                icon: Icon(
+                  challenge.isActive ? Icons.visibility : Icons.visibility_off, 
+                  color: challenge.isActive ? AppColors.success : Colors.orange, 
+                  size: 20,
+                ),
                 onPressed: () => _toggleActive(challenge),
               ),
-              IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => _confirmDelete(challenge)),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red, size: 20), 
+                onPressed: () => _confirmDelete(challenge),
+              ),
             ],
           ),
         ],
@@ -287,13 +484,23 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
   Widget _buildTag(String text, IconData icon, {Color? color}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: (color ?? context.textMuted).withAlpha(20), borderRadius: BorderRadius.circular(6)),
+      decoration: BoxDecoration(
+        color: (color ?? context.textMuted).withAlpha(20), 
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: color ?? context.textMuted),
           const SizedBox(width: 4),
-          Text(text, style: TextStyle(fontSize: 11, color: color ?? context.textMuted, fontWeight: FontWeight.w600)),
+          Text(
+            text, 
+            style: TextStyle(
+              fontSize: 11, 
+              color: color ?? context.textMuted, 
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -318,8 +525,15 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
         title: const Text('Delete Challenge?'),
         content: Text('Are you sure you want to delete "${challenge.title}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false), 
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            style: TextButton.styleFrom(foregroundColor: Colors.red), 
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -338,33 +552,6 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
     }
   }
 
-  Future<void> _forceRefresh() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.bgCard,
-        title: const Text('Force Refresh?'),
-        content: const Text('This will clear all active challenges and re-select them randomly. All users will get new challenges.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), style: TextButton.styleFrom(foregroundColor: AppColors.primary), child: const Text('Refresh')),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        final provider = Provider.of<ChallengeProvider>(context, listen: false);
-        await provider.forceRefreshActiveChallenges();
-        if (!mounted) return;
-        _showSnackBar('Active challenges refreshed');
-      } catch (e) {
-        if (!mounted) return;
-        _showSnackBar('Error refreshing challenges', isError: true);
-      }
-    }
-  }
-
   Future<void> _showAddEditDialog(ChallengeTemplate? challenge) async {
     final isEditing = challenge != null;
 
@@ -372,7 +559,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
     final descController = TextEditingController(text: challenge?.description ?? '');
     final targetController = TextEditingController(text: challenge?.targetValue.toString() ?? '1');
     final xpController = TextEditingController(text: challenge?.xpReward.toString() ?? '50');
-    
+
     String selectedEmoji = challenge?.emoji ?? '🎯';
     ChallengeType selectedType = challenge?.type ?? _currentType;
     String selectedTrackingField = challenge?.trackingField ?? 'lessonsToday';
@@ -401,35 +588,61 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
                       onEmojiSelected: (emoji) => setDialogState(() => selectedEmoji = emoji),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Title
                     TextField(
                       controller: titleController,
-                      decoration: InputDecoration(labelText: 'Title', hintText: 'e.g., Quiz Champion', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                      decoration: InputDecoration(
+                        labelText: 'Challenge Title',
+                        hintText: 'e.g., Lesson Streak',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // Description
                     TextField(
                       controller: descController,
-                      decoration: InputDecoration(labelText: 'Description', hintText: 'e.g., Complete 3 quizzes today', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                      decoration: InputDecoration(
+                        labelText: 'Description',
+                        hintText: 'e.g., Complete 3 lessons today',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // Type dropdown
                     DropdownButtonFormField<ChallengeType>(
                       value: selectedType,
-                      decoration: InputDecoration(labelText: 'Type', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                      items: ChallengeType.values.map((type) => DropdownMenuItem(value: type, child: Text(type.name[0].toUpperCase() + type.name.substring(1)))).toList(),
+                      decoration: InputDecoration(
+                        labelText: 'Challenge Type',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: ChallengeType.values.map((type) => DropdownMenuItem(
+                        value: type,
+                        child: Row(
+                          children: [
+                            Text(_getTypeEmoji(type)),
+                            const SizedBox(width: 8),
+                            Text(_getTypeName(type)),
+                          ],
+                        ),
+                      )).toList(),
                       onChanged: (v) => setDialogState(() => selectedType = v!),
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // Tracking field dropdown
                     DropdownButtonFormField<String>(
                       value: selectedTrackingField,
-                      decoration: InputDecoration(labelText: 'What to Track', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                      items: ChallengeTemplate.trackingFieldOptions.map((opt) => DropdownMenuItem(value: opt['value'], child: Text(opt['label']!, style: const TextStyle(fontSize: 13)))).toList(),
+                      decoration: InputDecoration(
+                        labelText: 'What to Track',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: ChallengeTemplate.trackingFieldOptions.map((opt) => DropdownMenuItem(
+                        value: opt['value'], 
+                        child: Text(opt['label']!, style: const TextStyle(fontSize: 13)),
+                      )).toList(),
                       onChanged: (v) {
                         setDialogState(() {
                           selectedTrackingField = v!;
@@ -447,7 +660,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
                       DropdownButtonFormField<String>(
                         value: selectedCategoryId,
                         decoration: InputDecoration(
-                          labelText: 'Select Category *',
+                          labelText: 'Select Lesson Category *',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           fillColor: AppColors.primary.withAlpha(10),
                           filled: true,
@@ -469,22 +682,39 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
                             selectedCategoryName = cat['name'] as String;
                           });
                         },
-                        validator: (v) => v == null ? 'Please select a category' : null,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '⚠️ This tracking type requires a specific category',
+                        '⚠️ This tracking type requires a specific lesson category',
                         style: TextStyle(color: Colors.orange.shade700, fontSize: 12),
                       ),
                     ],
                     const SizedBox(height: 12),
-                    
+
                     // Target and XP
                     Row(
                       children: [
-                        Expanded(child: TextField(controller: targetController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Target', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))))),
+                        Expanded(
+                          child: TextField(
+                            controller: targetController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Target Value',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: TextField(controller: xpController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'XP Reward', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))))),
+                        Expanded(
+                          child: TextField(
+                            controller: xpController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'XP Reward',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -492,7 +722,10 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text('Cancel'),
+              ),
               ElevatedButton(
                 onPressed: () async {
                   if (titleController.text.isEmpty || descController.text.isEmpty) {
@@ -501,7 +734,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
                   }
                   
                   if (requiresCategory && selectedCategoryId == null) {
-                    _showSnackBar('Please select a category', isError: true);
+                    _showSnackBar('Please select a lesson category', isError: true);
                     return;
                   }
 
