@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/firestore_service.dart';
-import 'skeleton_painter.dart';
-import '../config/theme.dart'; 
+import '../../services/firestore_service.dart';
+import '../common/skeleton_painter.dart';
+import '../../config/theme.dart';
 
 class SignPlayer extends StatefulWidget {
   final List<String> sentence; 

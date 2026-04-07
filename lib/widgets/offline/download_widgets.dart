@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
-import '../config/theme.dart';
-import '../services/haptic_service.dart';
-import '../services/video_cache_service.dart';
-import '../services/offline_service.dart';
+import '../../config/theme.dart';
+import '../../services/haptic_service.dart';
+import '../../services/video_cache_service.dart';
+import '../../services/offline_service.dart';
 
 /// Status of a downloadable lesson
 enum DownloadStatus {

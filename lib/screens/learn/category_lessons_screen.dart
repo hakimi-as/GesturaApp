@@ -12,8 +12,8 @@ import '../../services/certificate_service.dart';
 import 'lesson_detail_screen.dart';
 
 // --- Phase 2 Integration: Imports ---
-import '../../widgets/download_widgets.dart';
-import '../../widgets/offline_widgets.dart';
+import '../../widgets/offline/download_widgets.dart';
+import '../../widgets/offline/offline_widgets.dart';
 
 class CategoryLessonsScreen extends StatefulWidget {
   final CategoryModel category;

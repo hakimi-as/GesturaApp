@@ -5,6 +5,12 @@ import '../models/badge_model.dart';
 import '../models/user_model.dart';
 import '../services/badge_service.dart';
 
+/// Badge Provider with Dynamic Badge Checking
+/// 
+/// This provider works with the dynamic BadgeService to:
+/// - Load badges from badgePool (Firestore)
+/// - Check badges based on trackingField (not hardcoded IDs)
+/// - Support all seeded badges automatically
 class BadgeProvider extends ChangeNotifier {
   final BadgeService _badgeService = BadgeService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -150,8 +156,10 @@ class BadgeProvider extends ChangeNotifier {
     required UserModel user,
     int? quizzesCompleted,
     int? perfectQuizzes,
+    int? friendsCount,
     bool? completedLessonToday,
     bool? completedCategoryToday,
+    String? completedCategoryId,
     int? lessonsCompletedToday,
   }) async {
     try {
@@ -160,8 +168,10 @@ class BadgeProvider extends ChangeNotifier {
         user: user,
         quizzesCompleted: quizzesCompleted,
         perfectQuizzes: perfectQuizzes,
+        friendsCount: friendsCount,
         completedLessonToday: completedLessonToday,
         completedCategoryToday: completedCategoryToday,
+        completedCategoryId: completedCategoryId,
         lessonsCompletedToday: lessonsCompletedToday,
       );
 
@@ -176,6 +186,19 @@ class BadgeProvider extends ChangeNotifier {
       debugPrint('Error checking badges: $e');
       return [];
     }
+  }
+
+  /// Check badges specifically for friend-related actions
+  Future<List<BadgeModel>> checkFriendBadges({
+    required String userId,
+    required UserModel user,
+    required int friendsCount,
+  }) async {
+    return checkForNewBadges(
+      userId: userId,
+      user: user,
+      friendsCount: friendsCount,
+    );
   }
 
   void clearNewlyUnlocked() {

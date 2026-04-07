@@ -5,7 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt; // NEW
 import 'package:flutter_tts/flutter_tts.dart'; // NEW
 
 import '../../config/theme.dart';
-import '../../widgets/sign_player.dart';
+import '../../widgets/video/sign_player.dart';
 
 class TranslateScreen extends StatefulWidget {
   final bool showBackButton;

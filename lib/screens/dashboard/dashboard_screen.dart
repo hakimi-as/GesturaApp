@@ -16,8 +16,8 @@ import '../../services/cloudinary_service.dart';
 import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart'; // NEW: Friend Service
 import '../../models/challenge_model.dart';
-import '../../widgets/shimmer_widgets.dart';
-import '../../widgets/streak_freeze_widgets.dart';
+import '../../widgets/common/shimmer_widgets.dart';
+import '../../widgets/gamification/streak_freeze_widgets.dart';
 
 import '../translate/translate_screen.dart';
 import '../learn/learn_screen.dart';
@@ -28,7 +28,7 @@ import '../search/search_screen.dart';
 import '../leaderboard/leaderboard_screen.dart';
 import '../challenges/challenges_screen.dart';
 import '../notifications/notifications_screen.dart';
-import '../../widgets/learning_path_widgets.dart';
+import '../../widgets/learning/learning_path_widgets.dart';
 import '../learn/learning_paths_screen.dart';
 import '../social/friends_screen.dart'; // NEW: Friends Screen
 

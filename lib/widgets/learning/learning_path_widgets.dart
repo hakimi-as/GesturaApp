@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math' as math;
 
-import '../config/theme.dart';
-import '../services/haptic_service.dart';
-import '../models/learning_path_model.dart';
-import '../services/learning_path_service.dart';
+import '../../config/theme.dart';
+import '../../services/haptic_service.dart';
+import '../../models/learning_path_model.dart';
+import '../../services/learning_path_service.dart';
 
 /// Compact learning path card for dashboard - REDESIGNED
 class LearningPathMiniCard extends StatelessWidget {

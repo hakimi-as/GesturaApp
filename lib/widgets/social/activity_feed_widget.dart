@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import '../config/theme.dart';
-import '../services/haptic_service.dart';
-import '../services/friend_service.dart';
-import '../models/friend_model.dart';
-import '../screens/social/friend_profile_screen.dart';
+import '../../config/theme.dart';
+import '../../services/haptic_service.dart';
+import '../../services/friend_service.dart';
+import '../../models/friend_model.dart';
+import '../../screens/social/friend_profile_screen.dart';
 
 class ActivityFeedWidget extends StatefulWidget {
   final String userId;

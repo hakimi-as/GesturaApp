@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-import '../config/theme.dart';
+import '../../config/theme.dart';
 
 /// Model for daily XP data point
 class DailyXPData {

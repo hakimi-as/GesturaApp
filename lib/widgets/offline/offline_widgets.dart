@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../providers/connectivity_provider.dart';
-import '../config/theme.dart';
-import '../services/offline_service.dart';
+import '../../providers/connectivity_provider.dart';
+import '../../config/theme.dart';
+import '../../services/offline_service.dart';
 
 /// Banner that appears at the top of the screen when offline
 class OfflineBanner extends StatelessWidget {

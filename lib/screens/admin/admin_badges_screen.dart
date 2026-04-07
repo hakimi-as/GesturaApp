@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../config/theme.dart';
 import '../../models/badge_model.dart';
 import '../../providers/badge_provider.dart';
-import '../../widgets/emoji_picker_widget.dart';
+import '../../widgets/common/emoji_picker_widget.dart';
 
 class AdminBadgesScreen extends StatefulWidget {
   const AdminBadgesScreen({super.key});

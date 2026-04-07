@@ -131,12 +131,12 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   Future<void> _acceptRequest(String friendshipId) async {
     HapticService.buttonTap();
     
-    final success = await FriendService.acceptFriendRequest(
+    final result = await FriendService.acceptFriendRequest(
       _currentUserId!,
       friendshipId,
     );
     
-    if (success && mounted) {
+    if (result['success'] == true && mounted) {
       HapticService.success();
       await _loadData();
     }

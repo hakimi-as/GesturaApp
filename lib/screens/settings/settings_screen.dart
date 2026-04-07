@@ -18,10 +18,10 @@ import '../profile/profile_screen.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 import '../../widgets/share/share_progress_card.dart';
-import '../../widgets/streak_freeze_widgets.dart';
+import '../../widgets/gamification/streak_freeze_widgets.dart';
 
 // --- Phase 2 Integration: Import ---
-import '../../widgets/offline_settings_widgets.dart';
+import '../../widgets/offline/offline_settings_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

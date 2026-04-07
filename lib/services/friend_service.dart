@@ -2,12 +2,22 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/friend_model.dart';
 import '../models/user_model.dart';
+import '../models/badge_model.dart';
+import '../models/challenge_model.dart';
+import 'badge_service.dart';
 
+/// Friend Service with Badge & Challenge Integration
+/// 
+/// This service handles all friend-related operations AND triggers
+/// badge/challenge checks when friendships change.
 class FriendService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final CollectionReference _friendshipsCollection = _firestore.collection('friendships');
   static final CollectionReference _usersCollection = _firestore.collection('users');
   static final CollectionReference _activitiesCollection = _firestore.collection('activities');
+  
+  // Badge service for triggering checks
+  static final BadgeService _badgeService = BadgeService();
 
   /// Send a friend request
   static Future<Map<String, dynamic>> sendFriendRequest(String fromUserId, String toUserId) async {
@@ -23,8 +33,11 @@ class FriendService {
             return {'success': false, 'message': 'Friend request already sent!'};
           } else {
             // The other user sent a request, so accept it
-            await acceptFriendRequest(fromUserId, existingFriendship.id);
-            return {'success': true, 'message': 'Friend request accepted!'};
+            final result = await acceptFriendRequest(fromUserId, existingFriendship.id);
+            if (result['success'] == true) {
+              return {'success': true, 'message': 'Friend request accepted!', 'newBadges': result['newBadges']};
+            }
+            return result;
           }
         }
       }
@@ -49,17 +62,93 @@ class FriendService {
     }
   }
 
-  /// Accept a friend request
-  static Future<bool> acceptFriendRequest(String userId, String friendshipId) async {
+  /// Accept a friend request - NOW TRIGGERS BADGE CHECKS!
+  static Future<Map<String, dynamic>> acceptFriendRequest(String userId, String friendshipId) async {
     try {
+      // Get the friendship to find the other user
+      final friendshipDoc = await _friendshipsCollection.doc(friendshipId).get();
+      if (!friendshipDoc.exists) {
+        return {'success': false, 'message': 'Friendship not found'};
+      }
+      
+      final friendship = FriendshipModel.fromFirestore(friendshipDoc);
+      final otherUserId = friendship.getFriendId(userId);
+
+      // Update friendship status
       await _friendshipsCollection.doc(friendshipId).update({
         'status': 'accepted',
         'acceptedAt': FieldValue.serverTimestamp(),
       });
-      return true;
+
+      // ========== TRIGGER BADGE CHECKS FOR BOTH USERS ==========
+      
+      List<BadgeModel> newBadgesForUser = [];
+      List<BadgeModel> newBadgesForOther = [];
+
+      // Get friend counts for both users
+      final userFriendCount = await getFriendsCount(userId);
+      final otherFriendCount = await getFriendsCount(otherUserId);
+
+      // Check badges for accepting user
+      try {
+        final userDoc = await _usersCollection.doc(userId).get();
+        if (userDoc.exists) {
+          final user = UserModel.fromFirestore(userDoc);
+          newBadgesForUser = await _badgeService.onFriendAdded(
+            userId: userId,
+            user: user,
+            totalFriends: userFriendCount,
+          );
+          debugPrint('🏅 User $userId: ${newBadgesForUser.length} new badges');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error checking badges for user: $e');
+      }
+
+      // Check badges for the other user too
+      try {
+        final otherDoc = await _usersCollection.doc(otherUserId).get();
+        if (otherDoc.exists) {
+          final otherUser = UserModel.fromFirestore(otherDoc);
+          newBadgesForOther = await _badgeService.onFriendAdded(
+            userId: otherUserId,
+            user: otherUser,
+            totalFriends: otherFriendCount,
+          );
+          debugPrint('🏅 User $otherUserId: ${newBadgesForOther.length} new badges');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error checking badges for other user: $e');
+      }
+
+      // ========== POST ACTIVITY ==========
+      
+      try {
+        final userDoc = await _usersCollection.doc(userId).get();
+        if (userDoc.exists) {
+          final user = UserModel.fromFirestore(userDoc);
+          await postActivity(
+            userId: userId,
+            userName: user.fullName,
+            userPhotoUrl: user.photoUrl,
+            activityType: 'friend_added',
+            description: 'Made a new friend!',
+            title: 'New Friend',
+          );
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error posting activity: $e');
+      }
+
+      return {
+        'success': true,
+        'message': 'Friend request accepted!',
+        'newBadges': newBadgesForUser,
+        'userFriendCount': userFriendCount,
+      };
     } catch (e) {
       debugPrint('Error accepting friend request: $e');
-      return false;
+      return {'success': false, 'message': 'Failed to accept friend request'};
     }
   }
 
@@ -384,6 +473,29 @@ class FriendService {
       return friends;
     } catch (e) {
       debugPrint('Error getting leaderboard: $e');
+      return [];
+    }
+  }
+
+  // ==================== BADGE CHECK HELPERS ====================
+
+  /// Manually trigger badge check for a user's friend count
+  /// Call this if you need to retroactively check badges
+  static Future<List<BadgeModel>> checkFriendBadges(String userId) async {
+    try {
+      final userDoc = await _usersCollection.doc(userId).get();
+      if (!userDoc.exists) return [];
+      
+      final user = UserModel.fromFirestore(userDoc);
+      final friendCount = await getFriendsCount(userId);
+      
+      return await _badgeService.onFriendAdded(
+        userId: userId,
+        user: user,
+        totalFriends: friendCount,
+      );
+    } catch (e) {
+      debugPrint('Error checking friend badges: $e');
       return [];
     }
   }

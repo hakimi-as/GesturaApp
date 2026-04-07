@@ -15,7 +15,7 @@ import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 
 // --- Phase 2 Integration: Imports ---
-import '../../widgets/download_widgets.dart';
+import '../../widgets/offline/download_widgets.dart';
 import '../../widgets/video/cached_video_player.dart';
 import '../../services/haptic_service.dart';
 import '../../services/offline_service.dart';

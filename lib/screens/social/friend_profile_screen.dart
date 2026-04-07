@@ -11,6 +11,7 @@ import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart';
 import '../../models/user_model.dart';
 import '../../models/badge_model.dart';
+import '../../widgets/badges/badge_unlock_dialog.dart';
 
 class FriendProfileScreen extends StatefulWidget {
   final String friendId;
@@ -146,11 +147,11 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
           widget.friendId,
         );
         if (friendshipId != null) {
-          final success = await FriendService.acceptFriendRequest(
+          final result = await FriendService.acceptFriendRequest(
             _currentUser!.id,
             friendshipId,
           );
-          if (success && mounted) {
+          if (result['success'] == true && mounted) {
             HapticService.success();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -160,6 +161,12 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
               ),
             );
             setState(() => _friendshipStatus = 'friends');
+            
+            // Show badge unlock dialogs if any new badges
+            final newBadges = result['newBadges'] as List<BadgeModel>?;
+            if (newBadges != null && newBadges.isNotEmpty && mounted) {
+              await BadgeUnlockDialog.showMultiple(context, newBadges);
+            }
           }
         }
         break;

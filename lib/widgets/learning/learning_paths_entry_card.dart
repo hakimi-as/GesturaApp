@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../config/theme.dart';
-import '../services/haptic_service.dart';
-import '../screens/learn/learning_paths_screen.dart';
+import '../../config/theme.dart';
+import '../../services/haptic_service.dart';
+import '../../screens/learn/learning_paths_screen.dart';
 
 /// Entry card for Learning Paths - displays on Learn Screen
 class LearningPathsEntryCard extends StatelessWidget {

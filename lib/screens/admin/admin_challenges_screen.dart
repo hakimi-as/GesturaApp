@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../config/theme.dart';
 import '../../models/challenge_model.dart';
 import '../../providers/challenge_provider.dart';
-import '../../widgets/emoji_picker_widget.dart';
+import '../../widgets/common/emoji_picker_widget.dart';
 
 class AdminChallengesScreen extends StatefulWidget {
   const AdminChallengesScreen({super.key});
