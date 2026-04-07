@@ -60,9 +60,14 @@ class QuizQuestionModel {
   final String? imageUrl;
   final String? videoUrl;
   final List<String> options;
-  final List<String?> optionImages; // Image URLs for each option (for text-to-sign quiz)
+  final List<String?> optionImages;
   final String correctAnswer;
   final int points;
+
+  // New fields
+  final String? hint;        // Short description shown after wrong answer
+  final String? category;    // Which BIM category this belongs to
+  final List<String>? letterImages; // For spelling quiz — one image URL per letter
 
   QuizQuestionModel({
     required this.id,
@@ -74,22 +79,23 @@ class QuizQuestionModel {
     this.optionImages = const [],
     required this.correctAnswer,
     this.points = 10,
+    this.hint,
+    this.category,
+    this.letterImages,
   });
 
   factory QuizQuestionModel.fromMap(Map<String, dynamic> map) {
     final options = List<String>.from(map['options'] ?? []);
     final rawOptionImages = map['optionImages'] as List<dynamic>?;
-    
-    // Convert optionImages, ensuring same length as options
+
     List<String?> optionImages = [];
     if (rawOptionImages != null) {
       optionImages = rawOptionImages.map((e) => e as String?).toList();
     }
-    // Pad with nulls if needed
     while (optionImages.length < options.length) {
       optionImages.add(null);
     }
-    
+
     return QuizQuestionModel(
       id: map['id'] ?? '',
       questionText: map['questionText'] ?? '',
@@ -100,6 +106,11 @@ class QuizQuestionModel {
       optionImages: optionImages,
       correctAnswer: map['correctAnswer'] ?? '',
       points: map['points'] ?? 10,
+      hint: map['hint'],
+      category: map['category'],
+      letterImages: map['letterImages'] != null
+          ? List<String>.from(map['letterImages'])
+          : null,
     );
   }
 
@@ -114,16 +125,15 @@ class QuizQuestionModel {
       'optionImages': optionImages,
       'correctAnswer': correctAnswer,
       'points': points,
+      'hint': hint,
+      'category': category,
+      'letterImages': letterImages,
     };
   }
 
-  /// Check if question has media (image or video)
   bool get hasMedia => imageUrl != null || videoUrl != null;
-
-  /// Check if any option has an image (for text-to-sign quiz)
   bool get hasOptionImages => optionImages.any((img) => img != null && img.isNotEmpty);
 
-  /// Get image URL for a specific option index
   String? getOptionImage(int index) {
     if (index < 0 || index >= optionImages.length) return null;
     return optionImages[index];
@@ -135,8 +145,9 @@ class QuizQuestionModel {
 
 class QuizAttemptModel {
   final String id;
-  final String oderId;
+  final String userId; // fixed: was oderId
   final String quizId;
+  final String quizType;
   final int score;
   final int totalQuestions;
   final int correctAnswers;
@@ -145,8 +156,9 @@ class QuizAttemptModel {
 
   QuizAttemptModel({
     required this.id,
-    required this.oderId,
+    required this.userId,
     required this.quizId,
+    required this.quizType,
     required this.score,
     required this.totalQuestions,
     required this.correctAnswers,
@@ -158,8 +170,23 @@ class QuizAttemptModel {
     final data = doc.data() as Map<String, dynamic>;
     return QuizAttemptModel(
       id: doc.id,
-      oderId: data['userId'] ?? '',
+      userId: data['userId'] ?? '',
       quizId: data['quizId'] ?? '',
+      quizType: data['quizType'] ?? '',
+      score: data['score'] ?? 0,
+      totalQuestions: data['totalQuestions'] ?? 0,
+      correctAnswers: data['correctAnswers'] ?? 0,
+      timeSpentSeconds: data['timeSpentSeconds'] ?? 0,
+      completedAt: (data['completedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+
+  factory QuizAttemptModel.fromMap(Map<String, dynamic> data, String id) {
+    return QuizAttemptModel(
+      id: id,
+      userId: data['userId'] ?? '',
+      quizId: data['quizId'] ?? '',
+      quizType: data['quizType'] ?? '',
       score: data['score'] ?? 0,
       totalQuestions: data['totalQuestions'] ?? 0,
       correctAnswers: data['correctAnswers'] ?? 0,
@@ -170,8 +197,9 @@ class QuizAttemptModel {
 
   Map<String, dynamic> toFirestore() {
     return {
-      'userId': oderId,
+      'userId': userId,
       'quizId': quizId,
+      'quizType': quizType,
       'score': score,
       'totalQuestions': totalQuestions,
       'correctAnswers': correctAnswers,
@@ -180,7 +208,8 @@ class QuizAttemptModel {
     };
   }
 
-  double get percentage => totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+  double get percentage =>
+      totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
   bool get isPassed => percentage >= 70;
   bool get isPerfect => percentage == 100;
 }

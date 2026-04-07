@@ -5,13 +5,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/theme.dart';
 import '../../models/badge_model.dart';
 import '../../models/challenge_model.dart';
+import '../../models/quiz_model.dart';
 import '../../providers/quiz_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/badge_provider.dart';
 import '../../providers/challenge_provider.dart';
+import '../../services/cloudinary_service.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/badges/badge_unlock_dialog.dart';
 import '../../widgets/challenges/challenge_complete_dialog.dart';
+import '../../widgets/video/video_player_widget.dart';
 
 class QuizResultScreen extends StatefulWidget {
   final String quizType;
@@ -42,19 +45,18 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     final quizProvider = Provider.of<QuizProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final badgeProvider = Provider.of<BadgeProvider>(context, listen: false);
-    final challengeProvider = Provider.of<ChallengeProvider>(context, listen: false);
+    final challengeProvider =
+        Provider.of<ChallengeProvider>(context, listen: false);
     final firestoreService = FirestoreService();
 
     final xpEarned = quizProvider.calculateXPEarned();
-    final isPerfect = quizProvider.totalQuestions > 0 && 
+    final isPerfect = quizProvider.totalQuestions > 0 &&
         quizProvider.correctAnswers == quizProvider.totalQuestions;
-    
-    // 1. Award XP
+
     if (xpEarned > 0) {
       await authProvider.addXP(xpEarned);
     }
 
-    // 2. Save Activity (this also updates quizzesCompleted and perfectQuizzes)
     if (authProvider.userId != null) {
       await firestoreService.completeQuiz(
         userId: authProvider.userId!,
@@ -65,19 +67,17 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         xpEarned: xpEarned,
       );
 
-      // 3. Refresh user data to get updated quiz stats
       await authProvider.refreshUser();
 
-      // 4. Check for new badges
       if (authProvider.currentUser != null) {
         final newBadges = await badgeProvider.checkForNewBadges(
           userId: authProvider.userId!,
           user: authProvider.currentUser!,
           quizzesCompleted: authProvider.currentUser!.quizzesCompleted,
-          perfectQuizzes: isPerfect ? authProvider.currentUser!.perfectQuizzes : null,
+          perfectQuizzes:
+              isPerfect ? authProvider.currentUser!.perfectQuizzes : null,
         );
 
-        // 5. Check for completed challenges
         final completedChallenges = await challengeProvider.updateProgress(
           userId: authProvider.userId!,
           user: authProvider.currentUser!,
@@ -85,20 +85,21 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           xpEarned: xpEarned,
           perfectQuiz: isPerfect,
         );
-        
-        if ((newBadges.isNotEmpty || completedChallenges.isNotEmpty) && mounted) {
+
+        if ((newBadges.isNotEmpty || completedChallenges.isNotEmpty) &&
+            mounted) {
           setState(() {
             _newBadges = newBadges;
             _completedChallenges = completedChallenges;
           });
-          
-          // Show dialogs after a short delay to let the result screen render
+
           Future.delayed(const Duration(milliseconds: 1500), () async {
             if (mounted && _newBadges.isNotEmpty) {
               await BadgeUnlockDialog.showMultiple(context, _newBadges);
             }
             if (mounted && _completedChallenges.isNotEmpty) {
-              await ChallengeCompleteDialog.showMultiple(context, _completedChallenges);
+              await ChallengeCompleteDialog.showMultiple(
+                  context, _completedChallenges);
             }
           });
         }
@@ -130,49 +131,50 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 children: [
                   const SizedBox(height: 40),
 
-                  // Result Icon
                   _buildResultIcon(isPassed, percentage),
                   const SizedBox(height: 24),
 
-                  // Title
                   Text(
                     _getResultTitle(percentage),
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style:
+                        Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                   ).animate().fadeIn(delay: 400.ms),
                   const SizedBox(height: 8),
 
                   Text(
                     _getResultSubtitle(percentage),
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: context.textMuted,
-                    ),
+                          color: context.textMuted,
+                        ),
                     textAlign: TextAlign.center,
                   ).animate().fadeIn(delay: 500.ms),
 
                   const SizedBox(height: 32),
 
-                  // Score Card
-                  _buildScoreCard(context, correctAnswers, totalQuestions, percentage),
+                  _buildScoreCard(
+                      context, correctAnswers, totalQuestions, percentage),
                   const SizedBox(height: 16),
 
-                  // XP Earned Card
                   _buildXPCard(context, xpEarned, score),
                   const SizedBox(height: 16),
 
-                  // Stats Row
                   _buildStatsRow(context, quizProvider),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
 
-                  // Achievements (if any)
-                  if (percentage == 100) _buildPerfectScoreBadge(context),
+                  if (percentage == 100) ...[
+                    _buildPerfectScoreBadge(context),
+                    const SizedBox(height: 16),
+                  ],
 
-                  const SizedBox(height: 24),
+                  // Wrong answer review — only shown when there are mistakes
+                  if (quizProvider.hasWrongAnswers) ...[
+                    _buildReviewSection(context, quizProvider),
+                    const SizedBox(height: 16),
+                  ],
 
-                  // Buttons
                   _buildButtons(context),
-
                   const SizedBox(height: 20),
                 ],
               ),
@@ -182,6 +184,236 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
       ),
     );
   }
+
+  // ── Review Section ────────────────────────────────────────────────────────
+
+  Widget _buildReviewSection(BuildContext context, QuizProvider quizProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('📝', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Text(
+              'Review Wrong Answers',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const Spacer(),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.error.withAlpha(30),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${quizProvider.wrongAnswers.length} missed',
+                style: const TextStyle(
+                  color: AppColors.error,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ).animate().fadeIn(delay: 900.ms),
+        const SizedBox(height: 12),
+        ...quizProvider.wrongAnswers.asMap().entries.map((entry) {
+          return _buildWrongAnswerCard(
+            context,
+            entry.value['question'] as QuizQuestionModel,
+            entry.value['selectedAnswer'] as String,
+            entry.key,
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildWrongAnswerCard(
+    BuildContext context,
+    QuizQuestionModel question,
+    String selectedAnswer,
+    int index,
+  ) {
+    final hasVideo = question.videoUrl != null;
+    final hasImage = question.imageUrl != null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sign media
+          if (hasVideo)
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              child: SizedBox(
+                width: double.infinity,
+                height: 160,
+                child: VideoPlayerWidget(
+                  videoUrl: question.videoUrl!,
+                  autoPlay: false,
+                  looping: false,
+                ),
+              ),
+            )
+          else if (hasImage)
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.network(
+                CloudinaryService.getOptimizedImage(
+                  question.imageUrl!,
+                  width: 600,
+                  height: 320,
+                ),
+                width: double.infinity,
+                height: 160,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 80,
+                  color: context.bgElevated,
+                  child: Center(
+                    child: Text(
+                      question.signEmoji,
+                      style: const TextStyle(fontSize: 40),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            Container(
+              width: double.infinity,
+              height: 80,
+              decoration: BoxDecoration(
+                color: context.bgElevated,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Center(
+                child: Text(
+                  question.signEmoji,
+                  style: const TextStyle(fontSize: 40),
+                ),
+              ),
+            ),
+
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Question
+                Text(
+                  question.questionText,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.textMuted,
+                      ),
+                ),
+                const SizedBox(height: 10),
+
+                // Your answer (wrong)
+                _buildAnswerRow(
+                  context,
+                  label: 'Your answer',
+                  answer: selectedAnswer,
+                  isCorrect: false,
+                ),
+                const SizedBox(height: 6),
+
+                // Correct answer
+                _buildAnswerRow(
+                  context,
+                  label: 'Correct answer',
+                  answer: question.correctAnswer,
+                  isCorrect: true,
+                ),
+
+                // Hint
+                if (question.hint != null && question.hint!.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withAlpha(20),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('💡', style: TextStyle(fontSize: 14)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            question.hint!,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.primary,
+                                    ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: Duration(milliseconds: 950 + index * 80));
+  }
+
+  Widget _buildAnswerRow(
+    BuildContext context, {
+    required String label,
+    required String answer,
+    required bool isCorrect,
+  }) {
+    final color = isCorrect ? AppColors.success : AppColors.error;
+    final icon = isCorrect ? Icons.check_circle : Icons.cancel;
+
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.textMuted,
+                      ),
+                ),
+                TextSpan(
+                  text: answer,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Existing widgets ───────────────────────────────────────────────────────
 
   Widget _buildResultIcon(bool isPassed, int percentage) {
     String emoji;
@@ -219,17 +451,11 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         ],
       ),
       child: Center(
-        child: Text(
-          emoji,
-          style: const TextStyle(fontSize: 70),
-        ),
+        child: Text(emoji, style: const TextStyle(fontSize: 70)),
       ),
     )
         .animate()
-        .scale(
-          duration: 600.ms,
-          curve: Curves.elasticOut,
-        )
+        .scale(duration: 600.ms, curve: Curves.elasticOut)
         .then()
         .shimmer(duration: 1000.ms);
   }
@@ -243,19 +469,15 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   }
 
   String _getResultSubtitle(int percentage) {
-    if (percentage == 100) return 'You got every question right! Amazing!';
+    if (percentage == 100) return 'You got every sign right! Amazing!';
     if (percentage >= 90) return 'Almost perfect! Outstanding performance!';
-    if (percentage >= 70) return 'You passed the quiz! Well done!';
-    if (percentage >= 50) return 'You\'re making progress. Keep going!';
-    return 'Practice makes perfect. Try again!';
+    if (percentage >= 70) return 'You passed! Review the ones you missed.';
+    if (percentage >= 50) return 'You\'re improving! Check your mistakes below.';
+    return 'Review the signs below and try again!';
   }
 
   Widget _buildScoreCard(
-    BuildContext context,
-    int correct,
-    int total,
-    int percentage,
-  ) {
+      BuildContext context, int correct, int total, int percentage) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -269,16 +491,17 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           Text(
             '$percentage%',
             style: Theme.of(context).textTheme.displayLarge?.copyWith(
-              color: _getScoreColor(percentage),
-              fontWeight: FontWeight.bold,
-            ),
+                  color: _getScoreColor(percentage),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 8),
           Text(
             '$correct out of $total correct',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: context.textSecondary,
-            ),
+            style: Theme.of(context)
+                .textTheme
+                .bodyLarge
+                ?.copyWith(color: context.textSecondary),
           ),
           const SizedBox(height: 16),
           ClipRRect(
@@ -287,7 +510,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               value: percentage / 100,
               minHeight: 12,
               backgroundColor: context.bgElevated,
-              valueColor: AlwaysStoppedAnimation<Color>(_getScoreColor(percentage)),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(_getScoreColor(percentage)),
             ),
           ),
         ],
@@ -318,13 +542,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'XP Earned',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-              ),
+              const Text('XP Earned',
+                  style: TextStyle(color: Colors.white70, fontSize: 14)),
               Text(
                 '+$xpEarned XP',
                 style: const TextStyle(
@@ -344,30 +563,25 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard(
-            context,
-            icon: '⏱️',
-            value: '${quizProvider.timeSpent}s',
-            label: 'Time Spent',
-          ),
+          child: _buildStatCard(context,
+              icon: '⏱️',
+              value: '${quizProvider.timeSpent}s',
+              label: 'Time Spent'),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(
-            context,
-            icon: '✅',
-            value: '${quizProvider.correctAnswers}',
-            label: 'Correct',
-          ),
+          child: _buildStatCard(context,
+              icon: '✅',
+              value: '${quizProvider.correctAnswers}',
+              label: 'Correct'),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(
-            context,
-            icon: '❌',
-            value: '${quizProvider.totalQuestions - quizProvider.correctAnswers}',
-            label: 'Wrong',
-          ),
+          child: _buildStatCard(context,
+              icon: '❌',
+              value:
+                  '${quizProvider.totalQuestions - quizProvider.correctAnswers}',
+              label: 'Wrong'),
         ),
       ],
     ).animate().fadeIn(delay: 800.ms);
@@ -389,19 +603,17 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         children: [
           Text(icon, style: const TextStyle(fontSize: 24)),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(value,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: context.textMuted,
-            ),
-          ),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: context.textMuted)),
         ],
       ),
     );
@@ -414,10 +626,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFD700).withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFFD700).withOpacity(0.5),
-          width: 2,
-        ),
+        border:
+            Border.all(color: const Color(0xFFFFD700).withOpacity(0.5), width: 2),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -430,15 +640,15 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               Text(
                 'Perfect Score!',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFFFFD700),
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: const Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               Text(
                 '+50 Bonus XP',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFFFFD700).withOpacity(0.8),
-                ),
+                      color: const Color(0xFFFFD700).withOpacity(0.8),
+                    ),
               ),
             ],
           ),
@@ -453,43 +663,34 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   Widget _buildButtons(BuildContext context) {
     return Column(
       children: [
-        // Try Again Button
         SizedBox(
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context); // Go back to quiz selection
-            },
+            onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.refresh),
             label: const Text('Try Again'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ),
         const SizedBox(height: 12),
-
-        // Back to Home Button
         SizedBox(
           width: double.infinity,
           height: 56,
           child: OutlinedButton.icon(
-            onPressed: () {
-              // Pop until we're back to the dashboard
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
+            onPressed: () =>
+                Navigator.popUntil(context, (route) => route.isFirst),
             icon: const Icon(Icons.home),
             label: const Text('Back to Home'),
             style: OutlinedButton.styleFrom(
               foregroundColor: context.textSecondary,
               side: BorderSide(color: context.borderColor),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ),

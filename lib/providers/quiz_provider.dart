@@ -16,6 +16,9 @@ class QuizProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Wrong answers collected during quiz for review
+  List<Map<String, dynamic>> _wrongAnswers = [];
+
   // Timer
   Timer? _timer;
   int _timeLeft = 60;
@@ -33,28 +36,29 @@ class QuizProvider with ChangeNotifier {
   String? get error => _error;
   int get timeLeft => _timeLeft;
   int get timeSpent => _timeSpent;
+  List<Map<String, dynamic>> get wrongAnswers => List.unmodifiable(_wrongAnswers);
 
   QuizQuestionModel? get currentQuestion {
-    if (_currentQuestions.isEmpty || _currentQuestionIndex >= _currentQuestions.length) {
-      return null;
-    }
+    if (_currentQuestions.isEmpty ||
+        _currentQuestionIndex >= _currentQuestions.length) return null;
     return _currentQuestions[_currentQuestionIndex];
   }
 
   int get totalQuestions => _currentQuestions.length;
-  bool get isQuizComplete => _currentQuestionIndex >= _currentQuestions.length;
-  double get progressPercentage =>
-      _currentQuestions.isEmpty ? 0 : (_currentQuestionIndex + 1) / _currentQuestions.length;
+  bool get isQuizComplete =>
+      _currentQuestionIndex >= _currentQuestions.length;
+  double get progressPercentage => _currentQuestions.isEmpty
+      ? 0
+      : (_currentQuestionIndex + 1) / _currentQuestions.length;
+  bool get hasWrongAnswers => _wrongAnswers.isNotEmpty;
 
-  // Load quizzes
+  // Load quizzes list
   Future<void> loadQuizzes() async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
-
       _quizzes = await _firestoreService.getQuizzes();
-
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -64,48 +68,74 @@ class QuizProvider with ChangeNotifier {
     }
   }
 
-  // Start quiz - fetches questions from Firestore
-  // Start quiz - fetches questions from Firestore
-  Future<void> startQuiz(String quizType, {String? quizId}) async {
+  /// Start a Sign to Text quiz generated live from lesson images/videos.
+  /// [categoryId] — optional, limits to a single category.
+  Future<void> startSignToTextQuiz({String? categoryId}) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      // Reset state
-      _currentQuestionIndex = 0;
-      _score = 0;
-      _correctAnswers = 0;
-      _selectedOptionIndex = null;
-      _isAnswered = false;
-      _timeSpent = 0;
+      _resetState();
 
-      // Fetch quizzes from Firestore
+      final questions = await _firestoreService.generateSignToTextQuestions(
+        categoryId: categoryId,
+        count: 10,
+      );
+
+      if (questions.isEmpty) {
+        _error = 'Not enough lessons with images to generate a quiz.';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      _currentQuestions = questions;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Start any other quiz type (text_to_sign, timed, spelling) from Firestore quiz docs.
+  Future<void> startQuiz(String quizType, {String? quizId}) async {
+    // Delegate Sign to Text to the lesson-based generator
+    if (quizType == 'sign_to_text') {
+      await startSignToTextQuiz();
+      return; // ignore: curly_braces_in_flow_control_structures
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _resetState();
+
       final quizzes = await _firestoreService.getQuizzes();
-      
+
       List<QuizQuestionModel> allQuestions = [];
-      
+
       if (quizId != null) {
-        // Load specific quiz
         final quiz = quizzes.firstWhere(
           (q) => q.id == quizId,
           orElse: () => quizzes.first,
         );
         allQuestions = List.from(quiz.questions);
       } else {
-        // Load all questions from quizzes of this type
         for (var quiz in quizzes) {
           if (quiz.isActive && quiz.quizType == quizType) {
             allQuestions.addAll(quiz.questions);
           }
         }
       }
-      
-      // Shuffle and limit to 10 questions max
+
       allQuestions.shuffle();
       _currentQuestions = allQuestions.take(10).toList();
 
-      // Start timer for timed quizzes
       if (quizType == 'timed') {
         _startTimer();
       }
@@ -126,16 +156,25 @@ class QuizProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Submit answer
+  // Submit answer — tracks wrong answers for review
   void submitAnswer() {
     if (_selectedOptionIndex == null || _isAnswered) return;
 
     _isAnswered = true;
 
-    if (currentQuestion != null &&
-        _selectedOptionIndex == currentQuestion!.correctAnswerIndex) {
+    final isCorrect =
+        _selectedOptionIndex == currentQuestion!.correctAnswerIndex;
+
+    if (isCorrect) {
       _correctAnswers++;
       _score += currentQuestion!.points;
+    } else {
+      // Store for review
+      _wrongAnswers.add({
+        'question': currentQuestion!,
+        'selectedIndex': _selectedOptionIndex,
+        'selectedAnswer': currentQuestion!.options[_selectedOptionIndex!],
+      });
     }
 
     notifyListeners();
@@ -159,13 +198,13 @@ class QuizProvider with ChangeNotifier {
   // Calculate XP earned
   int calculateXPEarned() {
     int xp = _correctAnswers * 5;
-    if (_correctAnswers == totalQuestions) {
+    if (_correctAnswers == totalQuestions && totalQuestions > 0) {
       xp += 50; // Perfect score bonus
     }
     return xp;
   }
 
-  // Timer methods
+  // Timer (for timed quiz — 60s total)
   void _startTimer() {
     _timeLeft = 60;
     _timer?.cancel();
@@ -181,8 +220,8 @@ class QuizProvider with ChangeNotifier {
     });
   }
 
-  // Reset quiz
-  void resetQuiz() {
+  // Reset quiz state
+  void _resetState() {
     _timer?.cancel();
     _currentQuestions = [];
     _currentQuestionIndex = 0;
@@ -192,10 +231,14 @@ class QuizProvider with ChangeNotifier {
     _isAnswered = false;
     _timeLeft = 60;
     _timeSpent = 0;
+    _wrongAnswers = [];
+  }
+
+  void resetQuiz() {
+    _resetState();
     notifyListeners();
   }
 
-  // Clear error
   void clearError() {
     _error = null;
     notifyListeners();

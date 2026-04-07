@@ -459,6 +459,90 @@ class FirestoreService {
     }
   }
 
+  // ==================== QUIZ GENERATION (Sign to Text) ====================
+
+  /// Generates Sign to Text quiz questions on-the-fly from existing lesson data.
+  /// Each question shows a sign image/video and asks the user to pick the correct name.
+  /// [categoryId] — if provided, limits questions to that category.
+  /// [count] — max number of questions to return (default 10).
+  Future<List<QuizQuestionModel>> generateSignToTextQuestions({
+    String? categoryId,
+    int count = 10,
+  }) async {
+    try {
+      List<LessonModel> lessons;
+      if (categoryId != null) {
+        lessons = await getLessons(categoryId);
+      } else {
+        lessons = await getAllLessons();
+      }
+
+      // Only use lessons that have a sign image or video
+      final usable = lessons
+          .where((l) => l.isActive && (l.imageUrl != null || l.videoUrl != null))
+          .toList();
+
+      if (usable.length < 4) return [];
+
+      // Shuffle and pick target lessons
+      usable.shuffle();
+      final targets = usable.take(count).toList();
+
+      // Build a name pool for wrong-answer distractors
+      final allNames = usable.map((l) => l.signName).toList();
+
+      return targets.map((lesson) {
+        // Pick 3 wrong answers from other lesson names
+        final distractors = (allNames
+              .where((name) => name != lesson.signName)
+              .toList()
+              ..shuffle())
+            .take(3)
+            .toList();
+
+        final options = [...distractors, lesson.signName]..shuffle();
+
+        return QuizQuestionModel(
+          id: lesson.id,
+          questionText: 'What sign is this?',
+          signEmoji: lesson.emoji,
+          imageUrl: lesson.imageUrl,
+          videoUrl: lesson.videoUrl,
+          options: options,
+          optionImages: const [],
+          correctAnswer: lesson.signName,
+          points: 10,
+          hint: lesson.description,
+          category: lesson.categoryId,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Error generating sign-to-text questions: $e');
+      return [];
+    }
+  }
+
+  /// Returns the user's most recent quiz attempts from the progress collection.
+  Future<List<Map<String, dynamic>>> getRecentQuizAttempts(
+    String userId, {
+    int limit = 5,
+  }) async {
+    try {
+      final snapshot = await _firestore
+          .collection(AppConstants.progressCollection)
+          .where('userId', isEqualTo: userId)
+          .where('type', isEqualTo: 'quiz')
+          .orderBy('completedAt', descending: true)
+          .limit(limit)
+          .get();
+
+      return snapshot.docs.map((doc) => doc.data()).toList();
+    } catch (e) {
+      debugPrint('Error fetching recent quiz attempts: $e');
+      return [];
+    }
+  }
+
   // ==================== QUIZ COMPLETION ====================
 
   Future<void> completeQuiz({
