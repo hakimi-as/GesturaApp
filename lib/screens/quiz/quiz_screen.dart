@@ -186,6 +186,12 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Widget _buildQuestionCard(BuildContext context, QuizProvider quizProvider) {
     final question = quizProvider.currentQuestion!;
+
+    // Text to Sign: the word IS the question — show it as a styled word card
+    if (widget.quizType == 'text_to_sign') {
+      return _buildTextToSignQuestionCard(context, question);
+    }
+
     final hasImage = question.imageUrl != null;
     final hasVideo = question.videoUrl != null;
 
@@ -199,7 +205,7 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
       child: Column(
         children: [
-          // Sign Display - Image, Video, or Emoji
+          // Sign Display - Video, Image, or Emoji fallback
           if (hasVideo)
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
@@ -231,21 +237,24 @@ class _QuizScreenState extends State<QuizScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Image.network(
-                  CloudinaryService.getOptimizedImage(question.imageUrl!, width: 400, height: 400),
+                  CloudinaryService.getOptimizedImage(
+                      question.imageUrl!, width: 400, height: 400),
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Center(
                       child: CircularProgressIndicator(
                         value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
                             : null,
                         color: AppColors.primary,
                       ),
                     );
                   },
                   errorBuilder: (_, __, ___) => Center(
-                    child: Text(question.signEmoji, style: const TextStyle(fontSize: 60)),
+                    child: Text(question.signEmoji,
+                        style: const TextStyle(fontSize: 60)),
                   ),
                 ),
               ),
@@ -276,8 +285,8 @@ class _QuizScreenState extends State<QuizScreen> {
           Text(
             question.questionText,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+                  fontWeight: FontWeight.w600,
+                ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
@@ -299,6 +308,80 @@ class _QuizScreenState extends State<QuizScreen> {
         ],
       ),
     ).animate().fadeIn(duration: 500.ms);
+  }
+
+  /// Question card for Text to Sign — shows the word prominently,
+  /// users will pick the matching sign from the image grid below.
+  Widget _buildTextToSignQuestionCard(
+      BuildContext context, QuizQuestionModel question) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.secondary.withAlpha(200),
+            AppColors.secondary.withAlpha(150),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withAlpha(80),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Which sign means...',
+            style: TextStyle(
+              color: Colors.white.withAlpha(200),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            question.questionText,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(50),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('✋', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 6),
+                Text(
+                  'Pick the correct sign below',
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(220),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.05);
   }
 
   Widget _buildOptionCard(

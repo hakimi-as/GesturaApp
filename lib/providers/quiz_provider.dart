@@ -100,11 +100,47 @@ class QuizProvider with ChangeNotifier {
     }
   }
 
-  /// Start any other quiz type (text_to_sign, timed, spelling) from Firestore quiz docs.
+  /// Start a Text to Sign quiz generated live from lesson images.
+  /// [categoryId] — optional, limits to a single category.
+  Future<void> startTextToSignQuiz({String? categoryId}) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      _resetState();
+
+      final questions = await _firestoreService.generateTextToSignQuestions(
+        categoryId: categoryId,
+        count: 10,
+      );
+
+      if (questions.isEmpty) {
+        _error = 'Not enough lessons with images to generate a quiz.';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      _currentQuestions = questions;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Start any other quiz type (timed, spelling) from Firestore quiz docs.
   Future<void> startQuiz(String quizType, {String? quizId}) async {
-    // Delegate Sign to Text to the lesson-based generator
+    // Delegate lesson-based types to their generators
     if (quizType == 'sign_to_text') {
       await startSignToTextQuiz();
+      return; // ignore: curly_braces_in_flow_control_structures
+    }
+    if (quizType == 'text_to_sign') {
+      await startTextToSignQuiz();
       return; // ignore: curly_braces_in_flow_control_structures
     }
 

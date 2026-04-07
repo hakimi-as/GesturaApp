@@ -239,6 +239,13 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     String selectedAnswer,
     int index,
   ) {
+    // Text to Sign: no media on question — show word + side-by-side image comparison
+    if (question.hasOptionImages) {
+      return _buildTextToSignReviewCard(
+          context, question, selectedAnswer, index);
+    }
+
+    // Sign to Text: show the sign image/video, then text answer comparison
     final hasVideo = question.videoUrl != null;
     final hasImage = question.imageUrl != null;
 
@@ -252,7 +259,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sign media
           if (hasVideo)
             ClipRRect(
               borderRadius:
@@ -272,11 +278,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.network(
-                CloudinaryService.getOptimizedImage(
-                  question.imageUrl!,
-                  width: 600,
-                  height: 320,
-                ),
+                CloudinaryService.getOptimizedImage(question.imageUrl!,
+                    width: 600, height: 320),
                 width: double.infinity,
                 height: 160,
                 fit: BoxFit.cover,
@@ -284,10 +287,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                   height: 80,
                   color: context.bgElevated,
                   child: Center(
-                    child: Text(
-                      question.signEmoji,
-                      style: const TextStyle(fontSize: 40),
-                    ),
+                    child: Text(question.signEmoji,
+                        style: const TextStyle(fontSize: 40)),
                   ),
                 ),
               ),
@@ -302,10 +303,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                     const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Center(
-                child: Text(
-                  question.signEmoji,
-                  style: const TextStyle(fontSize: 40),
-                ),
+                child: Text(question.signEmoji,
+                    style: const TextStyle(fontSize: 40)),
               ),
             ),
 
@@ -314,58 +313,26 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Question
                 Text(
                   question.questionText,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.textMuted,
-                      ),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: context.textMuted),
                 ),
                 const SizedBox(height: 10),
-
-                // Your answer (wrong)
-                _buildAnswerRow(
-                  context,
-                  label: 'Your answer',
-                  answer: selectedAnswer,
-                  isCorrect: false,
-                ),
+                _buildAnswerRow(context,
+                    label: 'Your answer',
+                    answer: selectedAnswer,
+                    isCorrect: false),
                 const SizedBox(height: 6),
-
-                // Correct answer
-                _buildAnswerRow(
-                  context,
-                  label: 'Correct answer',
-                  answer: question.correctAnswer,
-                  isCorrect: true,
-                ),
-
-                // Hint
+                _buildAnswerRow(context,
+                    label: 'Correct answer',
+                    answer: question.correctAnswer,
+                    isCorrect: true),
                 if (question.hint != null && question.hint!.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(20),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('💡', style: TextStyle(fontSize: 14)),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            question.hint!,
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.primary,
-                                    ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildHintBox(context, question.hint!),
                 ],
               ],
             ),
@@ -373,6 +340,209 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         ],
       ),
     ).animate().fadeIn(delay: Duration(milliseconds: 950 + index * 80));
+  }
+
+  /// Review card for Text to Sign wrong answers.
+  /// Shows the word asked, then the wrong sign image vs the correct sign image.
+  Widget _buildTextToSignReviewCard(
+    BuildContext context,
+    QuizQuestionModel question,
+    String selectedAnswer,
+    int index,
+  ) {
+    final selectedIdx = question.options.indexOf(selectedAnswer);
+    final correctIdx = question.correctAnswerIndex;
+    final wrongImageUrl = question.getOptionImage(selectedIdx);
+    final correctImageUrl = question.getOptionImage(correctIdx);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Word prompt
+          Row(
+            children: [
+              const Text('✋', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Text(
+                'Which sign means "${question.questionText}"?',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: context.textMuted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Side-by-side: wrong vs correct sign image
+          Row(
+            children: [
+              // Wrong answer image
+              Expanded(
+                child: Column(
+                  children: [
+                    Container(
+                      height: 120,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppColors.error, width: 2),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: wrongImageUrl != null
+                            ? Image.network(
+                                CloudinaryService.getOptimizedImage(
+                                    wrongImageUrl,
+                                    width: 300,
+                                    height: 240),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                errorBuilder: (_, __, ___) => Center(
+                                  child: Text(question.signEmoji,
+                                      style:
+                                          const TextStyle(fontSize: 32)),
+                                ),
+                              )
+                            : Center(
+                                child: Text(question.signEmoji,
+                                    style:
+                                        const TextStyle(fontSize: 32)),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cancel,
+                            color: AppColors.error, size: 14),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            selectedAnswer,
+                            style: const TextStyle(
+                              color: AppColors.error,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Arrow
+              Padding(
+                padding: const EdgeInsets.only(bottom: 28),
+                child: Icon(Icons.arrow_forward,
+                    color: context.textMuted, size: 20),
+              ),
+
+              // Correct answer image
+              Expanded(
+                child: Column(
+                  children: [
+                    Container(
+                      height: 120,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppColors.success, width: 2),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: correctImageUrl != null
+                            ? Image.network(
+                                CloudinaryService.getOptimizedImage(
+                                    correctImageUrl,
+                                    width: 300,
+                                    height: 240),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                errorBuilder: (_, __, ___) => Center(
+                                  child: Text(question.signEmoji,
+                                      style:
+                                          const TextStyle(fontSize: 32)),
+                                ),
+                              )
+                            : Center(
+                                child: Text(question.signEmoji,
+                                    style:
+                                        const TextStyle(fontSize: 32)),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.check_circle,
+                            color: AppColors.success, size: 14),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            question.correctAnswer,
+                            style: const TextStyle(
+                              color: AppColors.success,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          if (question.hint != null && question.hint!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _buildHintBox(context, question.hint!),
+          ],
+        ],
+      ),
+    ).animate().fadeIn(delay: Duration(milliseconds: 950 + index * 80));
+  }
+
+  Widget _buildHintBox(BuildContext context, String hint) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withAlpha(20),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('💡', style: TextStyle(fontSize: 14)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              hint,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAnswerRow(

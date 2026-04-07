@@ -522,6 +522,67 @@ class FirestoreService {
     }
   }
 
+  /// Generates Text to Sign quiz questions on-the-fly from existing lesson data.
+  /// Each question shows the sign NAME as text and offers 4 sign IMAGES to pick from.
+  /// [categoryId] — if provided, limits questions to that category.
+  /// [count] — max number of questions to return (default 10).
+  Future<List<QuizQuestionModel>> generateTextToSignQuestions({
+    String? categoryId,
+    int count = 10,
+  }) async {
+    try {
+      List<LessonModel> lessons;
+      if (categoryId != null) {
+        lessons = await getLessons(categoryId);
+      } else {
+        lessons = await getAllLessons();
+      }
+
+      // Only lessons with images — images are the answer options
+      final usable = lessons
+          .where((l) => l.isActive && l.imageUrl != null)
+          .toList();
+
+      if (usable.length < 4) return [];
+
+      usable.shuffle();
+      final targets = usable.take(count).toList();
+
+      return targets.map((lesson) {
+        // Pick 3 distractor lessons (with images, different from target)
+        final distractors = (usable
+              .where((l) => l.id != lesson.id)
+              .toList()
+              ..shuffle())
+            .take(3)
+            .toList();
+
+        // Shuffle all 4 together so correct isn't always in same position
+        final allFour = [lesson, ...distractors]..shuffle();
+
+        final options = allFour.map((l) => l.signName).toList();
+        final optionImages = allFour.map((l) => l.imageUrl as String?).toList();
+
+        return QuizQuestionModel(
+          id: lesson.id,
+          questionText: lesson.signName,
+          signEmoji: lesson.emoji,
+          imageUrl: null,   // No sign shown in question — image is in the options
+          videoUrl: null,
+          options: options,
+          optionImages: optionImages,
+          correctAnswer: lesson.signName,
+          points: 10,
+          hint: lesson.description,
+          category: lesson.categoryId,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Error generating text-to-sign questions: $e');
+      return [];
+    }
+  }
+
   /// Returns the user's most recent quiz attempts from the progress collection.
   Future<List<Map<String, dynamic>>> getRecentQuizAttempts(
     String userId, {
