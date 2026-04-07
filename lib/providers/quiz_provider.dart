@@ -14,15 +14,22 @@ class QuizProvider with ChangeNotifier {
   int? _selectedOptionIndex;
   bool _isAnswered = false;
   bool _isLoading = false;
+  bool _isTimedOut = false;
   String? _error;
 
   // Wrong answers collected during quiz for review
   List<Map<String, dynamic>> _wrongAnswers = [];
 
-  // Timer
+  // Global timer (legacy — used by old Firestore quiz docs)
   Timer? _timer;
   int _timeLeft = 60;
   int _timeSpent = 0;
+
+  // Per-question timer (Timed Challenge)
+  Timer? _questionTimer;
+  int _questionTimeLeft = 10;
+  static const int _questionTimerDuration = 10;
+  int _questionStartTime = 0; // epoch ms when question started
 
   // Getters
   List<QuizModel> get quizzes => _quizzes;
@@ -32,9 +39,12 @@ class QuizProvider with ChangeNotifier {
   int get correctAnswers => _correctAnswers;
   int? get selectedOptionIndex => _selectedOptionIndex;
   bool get isAnswered => _isAnswered;
+  bool get isTimedOut => _isTimedOut;
   bool get isLoading => _isLoading;
   String? get error => _error;
   int get timeLeft => _timeLeft;
+  int get questionTimeLeft => _questionTimeLeft;
+  int get questionTimerDuration => _questionTimerDuration;
   int get timeSpent => _timeSpent;
   List<Map<String, dynamic>> get wrongAnswers => List.unmodifiable(_wrongAnswers);
 
@@ -52,7 +62,8 @@ class QuizProvider with ChangeNotifier {
       : (_currentQuestionIndex + 1) / _currentQuestions.length;
   bool get hasWrongAnswers => _wrongAnswers.isNotEmpty;
 
-  // Load quizzes list
+  // ── Load quizzes list ────────────────────────────────────────────────────
+
   Future<void> loadQuizzes() async {
     try {
       _isLoading = true;
@@ -68,14 +79,13 @@ class QuizProvider with ChangeNotifier {
     }
   }
 
-  /// Start a Sign to Text quiz generated live from lesson images/videos.
-  /// [categoryId] — optional, limits to a single category.
+  // ── Sign to Text ─────────────────────────────────────────────────────────
+
   Future<void> startSignToTextQuiz({String? categoryId}) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
-
       _resetState();
 
       final questions = await _firestoreService.generateSignToTextQuestions(
@@ -100,14 +110,13 @@ class QuizProvider with ChangeNotifier {
     }
   }
 
-  /// Start a Text to Sign quiz generated live from lesson images.
-  /// [categoryId] — optional, limits to a single category.
+  // ── Text to Sign ─────────────────────────────────────────────────────────
+
   Future<void> startTextToSignQuiz({String? categoryId}) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
-
       _resetState();
 
       final questions = await _firestoreService.generateTextToSignQuestions(
@@ -132,27 +141,121 @@ class QuizProvider with ChangeNotifier {
     }
   }
 
-  /// Start any other quiz type (timed, spelling) from Firestore quiz docs.
-  Future<void> startQuiz(String quizType, {String? quizId}) async {
-    // Delegate lesson-based types to their generators
-    if (quizType == 'sign_to_text') {
-      await startSignToTextQuiz();
-      return; // ignore: curly_braces_in_flow_control_structures
-    }
-    if (quizType == 'text_to_sign') {
-      await startTextToSignQuiz();
-      return; // ignore: curly_braces_in_flow_control_structures
-    }
+  // ── Timed Challenge ───────────────────────────────────────────────────────
 
+  Future<void> startTimedChallengeQuiz() async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
+      _resetState();
 
+      final questions =
+          await _firestoreService.generateTimedChallengeQuestions(count: 15);
+
+      if (questions.isEmpty) {
+        _error = 'Not enough lessons with images to generate a quiz.';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      _currentQuestions = questions;
+      _isLoading = false;
+      notifyListeners();
+
+      // Start the first question's timer after loading
+      _startQuestionTimer();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  void _startQuestionTimer() {
+    _questionTimer?.cancel();
+    _questionTimeLeft = _questionTimerDuration;
+    _isTimedOut = false;
+    _questionStartTime = DateTime.now().millisecondsSinceEpoch;
+
+    _questionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isAnswered) {
+        timer.cancel();
+        return;
+      }
+      if (_questionTimeLeft > 0) {
+        _questionTimeLeft--;
+        _timeSpent++;
+        notifyListeners();
+      } else {
+        timer.cancel();
+        _onQuestionTimeout();
+      }
+    });
+  }
+
+  void _onQuestionTimeout() {
+    if (_isAnswered) return;
+
+    _isAnswered = true;
+    _isTimedOut = true;
+
+    // Record as missed
+    if (currentQuestion != null) {
+      _wrongAnswers.add({
+        'question': currentQuestion!,
+        'selectedIndex': -1,
+        'selectedAnswer': '⏰ Time ran out',
+      });
+    }
+    notifyListeners();
+
+    // Auto-advance after 1.2s pause
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      _advanceTimedQuestion();
+    });
+  }
+
+  void _advanceTimedQuestion() {
+    if (_currentQuestionIndex < _currentQuestions.length - 1) {
+      _currentQuestionIndex++;
+      _selectedOptionIndex = null;
+      _isAnswered = false;
+      _isTimedOut = false;
+      _startQuestionTimer();
+    } else {
+      // All questions done — mark quiz complete
+      _currentQuestionIndex = _currentQuestions.length;
+      _questionTimer?.cancel();
+    }
+    notifyListeners();
+  }
+
+  // ── startQuiz dispatcher ─────────────────────────────────────────────────
+
+  Future<void> startQuiz(String quizType, {String? quizId}) async {
+    if (quizType == 'sign_to_text') {
+      await startSignToTextQuiz();
+      return;
+    }
+    if (quizType == 'text_to_sign') {
+      await startTextToSignQuiz();
+      return;
+    }
+    if (quizType == 'timed') {
+      await startTimedChallengeQuiz();
+      return;
+    }
+
+    // Spelling and any Firestore-backed quiz types
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
       _resetState();
 
       final quizzes = await _firestoreService.getQuizzes();
-
       List<QuizQuestionModel> allQuestions = [];
 
       if (quizId != null) {
@@ -171,11 +274,6 @@ class QuizProvider with ChangeNotifier {
 
       allQuestions.shuffle();
       _currentQuestions = allQuestions.take(10).toList();
-
-      if (quizType == 'timed') {
-        _startTimer();
-      }
-
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -185,27 +283,32 @@ class QuizProvider with ChangeNotifier {
     }
   }
 
-  // Select answer
+  // ── Answer handling ───────────────────────────────────────────────────────
+
   void selectAnswer(int optionIndex) {
     if (_isAnswered) return;
     _selectedOptionIndex = optionIndex;
     notifyListeners();
   }
 
-  // Submit answer — tracks wrong answers for review
-  void submitAnswer() {
+  void submitAnswer({bool isTimedChallenge = false}) {
     if (_selectedOptionIndex == null || _isAnswered) return;
+    _questionTimer?.cancel();
 
     _isAnswered = true;
+    _isTimedOut = false;
 
     final isCorrect =
         _selectedOptionIndex == currentQuestion!.correctAnswerIndex;
 
     if (isCorrect) {
       _correctAnswers++;
-      _score += currentQuestion!.points;
+      if (isTimedChallenge) {
+        _score += _speedPoints();
+      } else {
+        _score += currentQuestion!.points;
+      }
     } else {
-      // Store for review
       _wrongAnswers.add({
         'question': currentQuestion!,
         'selectedIndex': _selectedOptionIndex,
@@ -213,34 +316,45 @@ class QuizProvider with ChangeNotifier {
       });
     }
 
+    _timeSpent += (_questionTimerDuration - _questionTimeLeft);
     notifyListeners();
   }
 
-  // Next question
-  void nextQuestion() {
+  /// Points based on how fast the answer was given (timed challenge only).
+  int _speedPoints() {
+    final elapsed = _questionTimerDuration - _questionTimeLeft;
+    if (elapsed <= 3) return 15; // Lightning fast
+    if (elapsed <= 6) return 12; // Fast
+    return 10;                   // Standard
+  }
+
+  void nextQuestion({bool isTimedChallenge = false}) {
     if (_currentQuestionIndex < _currentQuestions.length - 1) {
       _currentQuestionIndex++;
       _selectedOptionIndex = null;
       _isAnswered = false;
+      _isTimedOut = false;
+      if (isTimedChallenge) {
+        _startQuestionTimer();
+      }
       notifyListeners();
     }
   }
 
-  // Check if answer is correct
   bool isCorrectAnswer(int optionIndex) {
     return currentQuestion?.correctAnswerIndex == optionIndex;
   }
 
-  // Calculate XP earned
   int calculateXPEarned() {
     int xp = _correctAnswers * 5;
     if (_correctAnswers == totalQuestions && totalQuestions > 0) {
-      xp += 50; // Perfect score bonus
+      xp += 50;
     }
     return xp;
   }
 
-  // Timer (for timed quiz — 60s total)
+  // ── Legacy global timer (kept for old Firestore quiz docs) ────────────────
+
   void _startTimer() {
     _timeLeft = 60;
     _timer?.cancel();
@@ -256,16 +370,20 @@ class QuizProvider with ChangeNotifier {
     });
   }
 
-  // Reset quiz state
+  // ── Reset ─────────────────────────────────────────────────────────────────
+
   void _resetState() {
     _timer?.cancel();
+    _questionTimer?.cancel();
     _currentQuestions = [];
     _currentQuestionIndex = 0;
     _score = 0;
     _correctAnswers = 0;
     _selectedOptionIndex = null;
     _isAnswered = false;
+    _isTimedOut = false;
     _timeLeft = 60;
+    _questionTimeLeft = _questionTimerDuration;
     _timeSpent = 0;
     _wrongAnswers = [];
   }
@@ -283,6 +401,7 @@ class QuizProvider with ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    _questionTimer?.cancel();
     super.dispose();
   }
 }

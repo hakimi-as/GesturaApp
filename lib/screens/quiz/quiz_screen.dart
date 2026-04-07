@@ -46,23 +46,29 @@ class _QuizScreenState extends State<QuizScreen> {
     quizProvider.selectAnswer(index);
   }
 
+  bool get _isTimed => widget.quizType == 'timed';
+
   void _handleSubmit() {
     final quizProvider = Provider.of<QuizProvider>(context, listen: false);
 
     if (!quizProvider.isAnswered) {
-      quizProvider.submitAnswer();
+      quizProvider.submitAnswer(isTimedChallenge: _isTimed);
     } else {
       if (quizProvider.currentQuestionIndex < quizProvider.totalQuestions - 1) {
-        quizProvider.nextQuestion();
+        quizProvider.nextQuestion(isTimedChallenge: _isTimed);
       } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => QuizResultScreen(quizType: widget.quizType),
-          ),
-        );
+        _goToResults();
       }
     }
+  }
+
+  void _goToResults() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QuizResultScreen(quizType: widget.quizType),
+      ),
+    );
   }
 
   @override
@@ -82,51 +88,21 @@ class _QuizScreenState extends State<QuizScreen> {
             );
           },
         ),
-        actions: [
-          if (widget.quizType == 'timed')
-            Consumer<QuizProvider>(
-              builder: (context, quizProvider, child) {
-                return Container(
-                  margin: const EdgeInsets.only(right: 16),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: quizProvider.timeLeft <= 10
-                        ? AppColors.error.withAlpha(38)
-                        : AppColors.warning.withAlpha(38),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.timer,
-                        size: 18,
-                        color: quizProvider.timeLeft <= 10
-                            ? AppColors.error
-                            : AppColors.warning,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${quizProvider.timeLeft}s',
-                        style: TextStyle(
-                          color: quizProvider.timeLeft <= 10
-                              ? AppColors.error
-                              : AppColors.warning,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-        ],
+        actions: const [],
       ),
       body: Consumer<QuizProvider>(
         builder: (context, quizProvider, child) {
           if (quizProvider.isLoading) {
             return const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
+            );
+          }
+
+          // Timed challenge auto-navigates to results when all questions done
+          if (_isTimed && quizProvider.isQuizComplete) {
+            WidgetsBinding.instance.addPostFrameCallback((_) => _goToResults());
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.warning),
             );
           }
 
@@ -138,6 +114,7 @@ class _QuizScreenState extends State<QuizScreen> {
           return Column(
             children: [
               _buildProgressBar(quizProvider),
+              if (_isTimed) _buildTimerBar(quizProvider),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
@@ -145,7 +122,6 @@ class _QuizScreenState extends State<QuizScreen> {
                     children: [
                       _buildQuestionCard(context, quizProvider),
                       const SizedBox(height: 24),
-                      // Check if this is a text-to-sign quiz (has option images)
                       if (question.hasOptionImages)
                         _buildImageOptionsGrid(context, quizProvider, question)
                       else
@@ -180,6 +156,56 @@ class _QuizScreenState extends State<QuizScreen> {
           backgroundColor: context.bgCard,
           valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
         ),
+      ),
+    );
+  }
+
+  /// Colored draining timer bar for Timed Challenge — green → yellow → red.
+  Widget _buildTimerBar(QuizProvider quizProvider) {
+    final timeLeft = quizProvider.questionTimeLeft;
+    final total = quizProvider.questionTimerDuration;
+    final ratio = timeLeft / total;
+
+    Color barColor;
+    if (ratio > 0.6) {
+      barColor = AppColors.success;
+    } else if (ratio > 0.3) {
+      barColor = AppColors.warning;
+    } else {
+      barColor = AppColors.error;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        children: [
+          Icon(Icons.timer_rounded, size: 18, color: barColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: ratio,
+                minHeight: 8,
+                backgroundColor: context.bgCard,
+                valueColor: AlwaysStoppedAnimation<Color>(barColor),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '${timeLeft}s',
+              style: TextStyle(
+                color: barColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -689,19 +715,110 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Widget _buildBottomBar(BuildContext context, QuizProvider quizProvider) {
     final isAnswered = quizProvider.isAnswered;
+    final isTimedOut = quizProvider.isTimedOut;
     final hasSelection = quizProvider.selectedOptionIndex != null;
     final isLastQuestion =
         quizProvider.currentQuestionIndex >= quizProvider.totalQuestions - 1;
 
+    // Timed challenge: auto-advancing on timeout — button hidden, feedback shown
+    if (_isTimed && isTimedOut) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: context.bgSecondary,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withAlpha(26),
+                blurRadius: 10,
+                offset: const Offset(0, -5)),
+          ],
+        ),
+        child: SafeArea(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.error.withAlpha(38),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  '⏰ Time\'s up!',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Correct answer: "${quizProvider.currentQuestion?.correctAnswer}"',
+                  style: TextStyle(
+                    color: AppColors.error.withAlpha(200),
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ).animate().fadeIn(duration: 300.ms),
+        ),
+      );
+    }
+
     String buttonText;
-    if (!hasSelection) {
-      buttonText = 'Select an answer';
-    } else if (!isAnswered) {
-      buttonText = 'Submit Answer';
-    } else if (isLastQuestion) {
-      buttonText = 'See Results';
+    if (_isTimed) {
+      if (!hasSelection) {
+        buttonText = 'Select an answer';
+      } else if (!isAnswered) {
+        buttonText = 'Submit';
+      } else if (isLastQuestion) {
+        buttonText = 'See Results';
+      } else {
+        buttonText = 'Next →';
+      }
     } else {
-      buttonText = 'Next Question';
+      if (!hasSelection) {
+        buttonText = 'Select an answer';
+      } else if (!isAnswered) {
+        buttonText = 'Submit Answer';
+      } else if (isLastQuestion) {
+        buttonText = 'See Results';
+      } else {
+        buttonText = 'Next Question';
+      }
+    }
+
+    String? feedbackText;
+    Color feedbackColor = AppColors.success;
+
+    if (isAnswered && !isTimedOut) {
+      final selectedIdx = quizProvider.selectedOptionIndex;
+      if (selectedIdx != null) {
+        final isCorrect = quizProvider.isCorrectAnswer(selectedIdx);
+        if (isCorrect) {
+          if (_isTimed) {
+            final elapsed = quizProvider.questionTimerDuration -
+                quizProvider.questionTimeLeft;
+            if (elapsed <= 3) {
+              feedbackText = '⚡ Lightning fast! +15 pts';
+            } else if (elapsed <= 6) {
+              feedbackText = '✓ Fast! +12 pts';
+            } else {
+              feedbackText = '✓ Correct! +10 pts';
+            }
+          } else {
+            feedbackText =
+                '✓ Correct! +${quizProvider.currentQuestion?.points ?? 10} XP';
+          }
+          feedbackColor = AppColors.success;
+        } else {
+          feedbackText =
+              '✗ Wrong! Answer: "${quizProvider.currentQuestion?.correctAnswer}"';
+          feedbackColor = AppColors.error;
+        }
+      }
     }
 
     return Container(
@@ -710,35 +827,28 @@ class _QuizScreenState extends State<QuizScreen> {
         color: context.bgSecondary,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(26),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
+              color: Colors.black.withAlpha(26),
+              blurRadius: 10,
+              offset: const Offset(0, -5)),
         ],
       ),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isAnswered)
+            if (feedbackText != null)
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: quizProvider.isCorrectAnswer(quizProvider.selectedOptionIndex!)
-                      ? AppColors.success.withAlpha(38)
-                      : AppColors.error.withAlpha(38),
+                  color: feedbackColor.withAlpha(38),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  quizProvider.isCorrectAnswer(quizProvider.selectedOptionIndex!)
-                      ? '✓ Correct! +${quizProvider.currentQuestion!.points} XP'
-                      : '✗ Wrong! The answer was "${quizProvider.currentQuestion!.correctAnswer}"',
+                  feedbackText,
                   style: TextStyle(
-                    color: quizProvider.isCorrectAnswer(quizProvider.selectedOptionIndex!)
-                        ? AppColors.success
-                        : AppColors.error,
+                    color: feedbackColor,
                     fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,

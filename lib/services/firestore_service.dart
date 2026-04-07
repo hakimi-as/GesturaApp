@@ -583,6 +583,55 @@ class FirestoreService {
     }
   }
 
+  /// Generates Timed Challenge questions — 15 mixed questions from ALL categories.
+  /// Same sign-image → text-answer format as Sign to Text but with a broader pool.
+  Future<List<QuizQuestionModel>> generateTimedChallengeQuestions({
+    int count = 15,
+  }) async {
+    try {
+      final lessons = await getAllLessons();
+
+      // Only lessons with images or videos
+      final usable = lessons
+          .where((l) => l.isActive && (l.imageUrl != null || l.videoUrl != null))
+          .toList();
+
+      if (usable.length < 4) return [];
+
+      usable.shuffle();
+      final targets = usable.take(count).toList();
+      final allNames = usable.map((l) => l.signName).toList();
+
+      return targets.map((lesson) {
+        final distractors = (allNames
+              .where((name) => name != lesson.signName)
+              .toList()
+              ..shuffle())
+            .take(3)
+            .toList();
+
+        final options = [...distractors, lesson.signName]..shuffle();
+
+        return QuizQuestionModel(
+          id: lesson.id,
+          questionText: 'What sign is this?',
+          signEmoji: lesson.emoji,
+          imageUrl: lesson.imageUrl,
+          videoUrl: lesson.videoUrl,
+          options: options,
+          optionImages: const [],
+          correctAnswer: lesson.signName,
+          points: 15, // Max points — reduced by provider based on speed
+          hint: lesson.description,
+          category: lesson.categoryId,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Error generating timed challenge questions: $e');
+      return [];
+    }
+  }
+
   /// Returns the user's most recent quiz attempts from the progress collection.
   Future<List<Map<String, dynamic>>> getRecentQuizAttempts(
     String userId, {
