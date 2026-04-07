@@ -232,6 +232,36 @@ class QuizProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Spelling Quiz ─────────────────────────────────────────────────────────
+
+  Future<void> startSpellingQuiz() async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+      _resetState();
+
+      final questions =
+          await _firestoreService.generateSpellingQuestions(count: 10);
+
+      if (questions.isEmpty) {
+        _error =
+            'Not enough alphabet letter images found.\nMake sure the Alphabet category has lessons with images.';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      _currentQuestions = questions;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
   // ── startQuiz dispatcher ─────────────────────────────────────────────────
 
   Future<void> startQuiz(String quizType, {String? quizId}) async {
@@ -248,7 +278,12 @@ class QuizProvider with ChangeNotifier {
       return;
     }
 
-    // Spelling and any Firestore-backed quiz types
+    if (quizType == 'spelling') {
+      await startSpellingQuiz();
+      return;
+    }
+
+    // Any remaining Firestore-backed quiz types
     try {
       _isLoading = true;
       _error = null;

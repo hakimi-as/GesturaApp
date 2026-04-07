@@ -239,6 +239,11 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     String selectedAnswer,
     int index,
   ) {
+    // Spelling Quiz: show letter images + word comparison
+    if (question.letterImages != null && question.letterImages!.isNotEmpty) {
+      return _buildSpellingReviewCard(context, question, selectedAnswer, index);
+    }
+
     // Text to Sign: no media on question — show word + side-by-side image comparison
     if (question.hasOptionImages) {
       return _buildTextToSignReviewCard(
@@ -337,6 +342,100 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               ],
             ),
           ),
+        ],
+      ),
+    ).animate().fadeIn(delay: Duration(milliseconds: 950 + index * 80));
+  }
+
+  /// Review card for Spelling Quiz wrong answers.
+  /// Shows the fingerspelling letter sequence + your wrong word vs correct word.
+  Widget _buildSpellingReviewCard(
+    BuildContext context,
+    QuizQuestionModel question,
+    String selectedAnswer,
+    int index,
+  ) {
+    final letters = question.letterImages!;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              const Text('✍️', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Text(
+                'What word was spelled?',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: context.textMuted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Letter image sequence
+          SizedBox(
+            height: 72,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: letters.map((imageUrl) {
+                  return Container(
+                    width: 58,
+                    height: 68,
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: context.bgElevated,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: AppColors.accent.withAlpha(80)),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(9),
+                      child: Image.network(
+                        CloudinaryService.getOptimizedImage(imageUrl,
+                            width: 120, height: 140),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Text('?',
+                              style: TextStyle(
+                                  fontSize: 24, color: AppColors.accent)),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Word comparison
+          _buildAnswerRow(context,
+              label: 'Your answer',
+              answer: selectedAnswer,
+              isCorrect: false),
+          const SizedBox(height: 6),
+          _buildAnswerRow(context,
+              label: 'Correct answer',
+              answer: question.correctAnswer,
+              isCorrect: true),
+
+          if (question.hint != null && question.hint!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _buildHintBox(context, question.hint!),
+          ],
         ],
       ),
     ).animate().fadeIn(delay: Duration(milliseconds: 950 + index * 80));

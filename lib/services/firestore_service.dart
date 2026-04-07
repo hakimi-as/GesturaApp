@@ -632,6 +632,86 @@ class FirestoreService {
     }
   }
 
+  /// Generates Spelling Quiz questions from the alphabet category lessons.
+  /// Each question shows a sequence of fingerspelling sign images (one per letter)
+  /// and asks the user to identify the word being spelled.
+  Future<List<QuizQuestionModel>> generateSpellingQuestions({
+    int count = 10,
+  }) async {
+    try {
+      // Load alphabet lessons to build letter → imageUrl map
+      final alphabetLessons = await getLessons('alphabet');
+      final Map<String, String> letterToImage = {};
+      for (final lesson in alphabetLessons) {
+        if (lesson.signName.length == 1 && lesson.imageUrl != null) {
+          letterToImage[lesson.signName.toUpperCase()] = lesson.imageUrl!;
+        }
+      }
+
+      if (letterToImage.isEmpty) {
+        debugPrint('No alphabet lesson images found for spelling quiz');
+        return [];
+      }
+
+      // Built-in BIM-appropriate word list (3–5 letters, common vocabulary)
+      const wordList = [
+        'CAT', 'DOG', 'BUS', 'CAR', 'SUN', 'MAP', 'BAG', 'CUP', 'PEN', 'BOX',
+        'FISH', 'BIRD', 'BOOK', 'CAKE', 'BALL', 'DOOR', 'FIRE', 'HAND', 'MILK', 'RICE',
+        'BABY', 'BLUE', 'COLD', 'FAST', 'GOOD', 'HAIR', 'JUMP', 'LAMP', 'MOON', 'NOSE',
+        'RAIN', 'ROAD', 'SING', 'TALL', 'WALK', 'WARM', 'KING', 'OPEN', 'SEAT', 'DARK',
+        'APPLE', 'BLACK', 'BREAD', 'CHAIR', 'CLEAN', 'DANCE', 'EARTH', 'FAITH', 'FLAME',
+        'GLASS', 'HAPPY', 'HEART', 'HORSE', 'HOUSE', 'LIGHT', 'NIGHT', 'OCEAN', 'PEACE',
+        'PLANT', 'RIVER', 'SMILE', 'SMALL', 'SMART', 'SPEED', 'STAND', 'SWEET', 'TEACH',
+        'THINK', 'THREE', 'TIGER', 'TRAIN', 'TRUST', 'VOICE', 'WATER', 'WHITE', 'YOUNG',
+      ];
+
+      // Only keep words where every letter has a fingerspelling image
+      final validWords = wordList
+          .where((word) => word.split('').every(letterToImage.containsKey))
+          .toList()
+        ..shuffle();
+
+      if (validWords.length < 4) {
+        debugPrint('Not enough valid words with all letter images (found ${validWords.length})');
+        return [];
+      }
+
+      final targets = validWords.take(count).toList();
+
+      return targets.map((word) {
+        // Build ordered letter image list
+        final letterImages =
+            word.split('').map((l) => letterToImage[l]!).toList();
+
+        // 3 distractor words
+        final distractors = (validWords.where((w) => w != word).toList()
+              ..shuffle())
+            .take(3)
+            .toList();
+
+        final options = [...distractors, word]..shuffle();
+
+        return QuizQuestionModel(
+          id: 'spelling_$word',
+          questionText: 'What word is being spelled?',
+          signEmoji: '✍️',
+          imageUrl: null,
+          videoUrl: null,
+          options: options,
+          optionImages: const [],
+          correctAnswer: word,
+          points: 10,
+          letterImages: letterImages,
+          category: 'alphabet',
+          hint: '${word.length}-letter word',
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Error generating spelling questions: $e');
+      return [];
+    }
+  }
+
   /// Returns the user's most recent quiz attempts from the progress collection.
   Future<List<Map<String, dynamic>>> getRecentQuizAttempts(
     String userId, {

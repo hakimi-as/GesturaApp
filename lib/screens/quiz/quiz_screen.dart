@@ -213,6 +213,11 @@ class _QuizScreenState extends State<QuizScreen> {
   Widget _buildQuestionCard(BuildContext context, QuizProvider quizProvider) {
     final question = quizProvider.currentQuestion!;
 
+    // Spelling Quiz: show fingerspelling letter images
+    if (widget.quizType == 'spelling') {
+      return _buildSpellingQuestionCard(context, question);
+    }
+
     // Text to Sign: the word IS the question — show it as a styled word card
     if (widget.quizType == 'text_to_sign') {
       return _buildTextToSignQuestionCard(context, question);
@@ -314,6 +319,168 @@ class _QuizScreenState extends State<QuizScreen> {
                   fontWeight: FontWeight.w600,
                 ),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withAlpha(38),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '+${question.points} XP',
+              style: const TextStyle(
+                color: AppColors.warning,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 500.ms);
+  }
+
+  /// Question card for Spelling Quiz — shows a horizontal row of fingerspelling
+  /// sign images (one per letter). User picks which word is being spelled.
+  Widget _buildSpellingQuestionCard(
+      BuildContext context, QuizQuestionModel question) {
+    final letters = question.letterImages ?? [];
+    final wordLength = question.correctAnswer.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('✍️', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Text(
+                'What word is being spelled?',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$wordLength-letter word',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: context.textMuted,
+                ),
+          ),
+          const SizedBox(height: 16),
+
+          // Fingerspelling letter images — horizontal scroll
+          SizedBox(
+            height: 100,
+            child: letters.isEmpty
+                ? Center(
+                    child: Text(
+                      question.signEmoji,
+                      style: const TextStyle(fontSize: 48),
+                    ),
+                  )
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: letters.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final imageUrl = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 68,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: context.bgElevated,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.accent.withAlpha(80),
+                                  ),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(11),
+                                  child: Image.network(
+                                    CloudinaryService.getOptimizedImage(
+                                      imageUrl,
+                                      width: 140,
+                                      height: 160,
+                                    ),
+                                    fit: BoxFit.cover,
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.accent,
+                                            value: loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (_, __, ___) => Center(
+                                      child: Text(
+                                        question.correctAnswer[idx],
+                                        style: TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.accent,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ).animate().fadeIn(
+                              delay: Duration(milliseconds: 80 * idx),
+                            );
+                      }).toList(),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 12),
+
+          // Letter count hint: _ _ _ (blank tiles)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(wordLength, (i) {
+              return Container(
+                width: 24,
+                height: 4,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withAlpha(120),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              );
+            }),
           ),
           const SizedBox(height: 8),
           Container(
