@@ -108,7 +108,6 @@ def _download_with_ytdlp(url: str, out_path: str, start_sec: float = 0.0, end_se
 
     cmd = [
         "yt-dlp", "--no-playlist", "--max-filesize", "200M",
-        "--impersonate", "chrome",
         "-f", "bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "-o", out_path,
     ]
