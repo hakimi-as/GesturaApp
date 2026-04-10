@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/category_model.dart';
 import '../../models/lesson_model.dart';
 import '../../services/firestore_service.dart';
@@ -24,6 +25,7 @@ class _AdminLessonsScreenState extends State<AdminLessonsScreen> {
   List<CategoryModel> _categories = [];
   bool _isLoading = true;
   String? _selectedCategoryId;
+  bool _sortAlphabetically = true; // true = A→Z, false = newest first
 
   @override
   void initState() {
@@ -51,8 +53,15 @@ class _AdminLessonsScreenState extends State<AdminLessonsScreen> {
   }
 
   List<LessonModel> get _filteredLessons {
-    if (_selectedCategoryId == null) return _lessons;
-    return _lessons.where((l) => l.categoryId == _selectedCategoryId).toList();
+    final list = _selectedCategoryId == null
+        ? List<LessonModel>.from(_lessons)
+        : _lessons.where((l) => l.categoryId == _selectedCategoryId).toList();
+    if (_sortAlphabetically) {
+      list.sort((a, b) => a.signName.toLowerCase().compareTo(b.signName.toLowerCase()));
+    } else {
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
+    return list;
   }
 
   @override
@@ -113,6 +122,33 @@ class _AdminLessonsScreenState extends State<AdminLessonsScreen> {
                         color: context.textMuted,
                       ),
                 ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => setState(() => _sortAlphabetically = !_sortAlphabetically),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: context.bgCard,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: context.borderColor),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _sortAlphabetically ? Icons.sort_by_alpha : Icons.schedule,
+                          size: 14,
+                          color: context.textMuted,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _sortAlphabetically ? 'A → Z' : 'Newest',
+                          style: TextStyle(fontSize: 12, color: context.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -142,7 +178,7 @@ class _AdminLessonsScreenState extends State<AdminLessonsScreen> {
             : () => _showAddEditDialog(null),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add),
-        label: const Text('Add Lesson'),
+        label: Text(AppLocalizations.of(context).addLesson),
       ),
     );
   }
