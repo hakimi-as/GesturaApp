@@ -143,12 +143,24 @@ def _extract_frames(video_path: str) -> list:
 
 
 def _download_with_ytdlp(url: str, out_path: str):
-    """Download a video from YouTube / TikTok / Instagram / direct URL."""
+    """Download a video from TikTok / Instagram / direct URL.
+    Note: YouTube blocks server-side downloads — users should upload the file directly.
+    """
+    is_youtube = any(x in url for x in ["youtube.com", "youtu.be"])
+
+    if is_youtube:
+        raise ValueError(
+            "YouTube blocks automated downloads from server IPs.\n"
+            "Please download the video manually and use the 'Upload a File' option instead.\n"
+            "TikTok, Instagram Reels, and direct MP4 links work fine."
+        )
+
     cmd = [
         "yt-dlp",
         "--no-playlist",
-        "--max-filesize", "200M",       # safety limit
-        "-f", "bestvideo[ext=mp4][height<=720]+bestaudio/best[ext=mp4]/best",
+        "--max-filesize", "200M",
+        "--js-runtime", "nodejs",
+        "-f", "bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "-o", out_path,
         url,
     ]

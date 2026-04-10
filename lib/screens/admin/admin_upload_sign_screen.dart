@@ -736,9 +736,9 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 const SizedBox(height: 4),
                 Text(
-                  'Upload a sign language video and it will be automatically '
-                  'converted to skeleton JSON using MediaPipe on your '
-                  'HuggingFace Space — no manual conversion needed.',
+                  'Upload a video file OR paste a TikTok / Instagram / direct MP4 link '
+                  'to auto-convert to skeleton JSON. '
+                  'YouTube links are blocked by YouTube on server IPs — download and upload the file instead.',
                   style: TextStyle(fontSize: 12, color: Colors.grey[700], height: 1.4),
                 ),
               ]),
@@ -777,8 +777,8 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
         TextField(
           controller: _urlController,
           decoration: InputDecoration(
-            labelText: 'YouTube / TikTok / Instagram / Direct URL',
-            hintText: 'https://youtube.com/watch?v=...',
+            labelText: 'TikTok / Instagram / Direct MP4 URL',
+            hintText: 'https://tiktok.com/... or https://example.com/sign.mp4',
             border: const OutlineInputBorder(),
             prefixIcon: const Icon(Icons.link),
             suffixIcon: _urlController.text.isNotEmpty
