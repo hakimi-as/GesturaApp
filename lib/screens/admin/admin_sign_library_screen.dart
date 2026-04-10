@@ -325,13 +325,16 @@ class _SignListByCategoryState extends State<SignListByCategory> with AutomaticK
   final Set<String> _selectedWords = {};
   bool _isSelectionMode = false;
 
+  // Sort state
+  bool _sortAlphabetically = true; // true = A→Z, false = newest first
+
   // Pagination state
   final List<Map<String, dynamic>> _signs = [];
   bool _isLoading = false;
   bool _hasMore = true;
   DocumentSnapshot? _lastDocument;
   final ScrollController _scrollController = ScrollController();
-  
+
   // Initial load flag
   bool _initialLoadDone = false;
 
@@ -371,7 +374,11 @@ class _SignListByCategoryState extends State<SignListByCategory> with AutomaticK
         query = query.where('category', isEqualTo: widget.currentTabName);
       }
       
-      query = query.orderBy('word').limit(_pageSize);
+      if (_sortAlphabetically) {
+        query = query.orderBy('word').limit(_pageSize);
+      } else {
+        query = query.orderBy(FieldPath.documentId, descending: true).limit(_pageSize);
+      }
       
       if (_lastDocument != null) {
         query = query.startAfterDocument(_lastDocument!);
@@ -432,6 +439,17 @@ class _SignListByCategoryState extends State<SignListByCategory> with AutomaticK
       _initialLoadDone = false;
     });
     await _loadSigns();
+  }
+
+  void _toggleSort() {
+    setState(() {
+      _sortAlphabetically = !_sortAlphabetically;
+      _signs.clear();
+      _lastDocument = null;
+      _hasMore = true;
+      _initialLoadDone = false;
+    });
+    _loadSigns();
   }
 
   void _toggleSelection(String word) {
@@ -522,6 +540,47 @@ class _SignListByCategoryState extends State<SignListByCategory> with AutomaticK
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Sort toggle
+        if (!_isSelectionMode)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              children: [
+                Text(
+                  '${_signs.length} signs${_hasMore ? '+' : ''}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: _toggleSort,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _sortAlphabetically ? Icons.sort_by_alpha : Icons.schedule,
+                          size: 14,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _sortAlphabetically ? 'A → Z' : 'Newest',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
