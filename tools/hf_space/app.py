@@ -9,9 +9,12 @@ Endpoints:
 
 import os
 import tempfile
+import urllib.request
 import subprocess
 import cv2
 import mediapipe as mp
+from mediapipe.tasks import python as mp_python
+from mediapipe.tasks.python import vision as mp_vision
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -19,32 +22,148 @@ from typing import Optional
 
 app = FastAPI(title="Gestura Sign Processor")
 
-# mp.solutions.holistic is available in mediapipe==0.9.3.0
-# It runs as a single unified model with smooth_landmarks=True,
-# which is why it produces stable output — same as the local extract_holistic.py.
-mp_holistic = mp.solutions.holistic
+# ── Download mediapipe models at startup ───────────────────────────────────
+MODEL_DIR = "/tmp/mediapipe_models"
+os.makedirs(MODEL_DIR, exist_ok=True)
 
-print("Gestura Space is live.")
+MODELS = {
+    "pose": (
+        "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",
+        os.path.join(MODEL_DIR, "pose.task"),
+    ),
+    "hand": (
+        "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
+        os.path.join(MODEL_DIR, "hand.task"),
+    ),
+    "face": (
+        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
+        os.path.join(MODEL_DIR, "face.task"),
+    ),
+}
+
+for name, (url, path) in MODELS.items():
+    if not os.path.exists(path):
+        print(f"Downloading {name} model...")
+        urllib.request.urlretrieve(url, path)
+        print(f"  {name} ready.")
+
+print("All models ready. Space is live.")
+
+
+# ── Landmarker factory (VIDEO mode = temporal tracking enabled) ────────────
+# Fresh instances per request — VIDEO mode timestamps must increase
+# monotonically within one session and can't be shared across requests.
+
+def _make_landmarkers():
+    pose = mp_vision.PoseLandmarker.create_from_options(
+        mp_vision.PoseLandmarkerOptions(
+            base_options=mp_python.BaseOptions(model_asset_path=MODELS["pose"][1]),
+            running_mode=mp_vision.RunningMode.VIDEO,
+            num_poses=1,
+            min_pose_detection_confidence=0.5,
+            min_pose_presence_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+    )
+    hands = mp_vision.HandLandmarker.create_from_options(
+        mp_vision.HandLandmarkerOptions(
+            base_options=mp_python.BaseOptions(model_asset_path=MODELS["hand"][1]),
+            running_mode=mp_vision.RunningMode.VIDEO,
+            num_hands=2,
+            min_hand_detection_confidence=0.5,
+            min_hand_presence_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+    )
+    face = mp_vision.FaceLandmarker.create_from_options(
+        mp_vision.FaceLandmarkerOptions(
+            base_options=mp_python.BaseOptions(model_asset_path=MODELS["face"][1]),
+            running_mode=mp_vision.RunningMode.VIDEO,
+            num_faces=1,
+            min_face_detection_confidence=0.5,
+            min_face_presence_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+    )
+    return pose, hands, face
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
-def _get_landmarks(landmarks_obj):
-    """Convert a NormalizedLandmarkList to a list of {x, y, z} dicts."""
-    if not landmarks_obj:
+def _to_list(landmarks):
+    if not landmarks:
         return []
+    return [{"x": lm.x, "y": lm.y, "z": lm.z} for lm in landmarks]
+
+
+def _build_frame(pose_res, hand_res, face_res):
+    pose_lm = pose_res.pose_landmarks[0] if pose_res.pose_landmarks else []
+
+    left_hand, right_hand = [], []
+    if hand_res.hand_landmarks and hand_res.handedness:
+        for lm, hd in zip(hand_res.hand_landmarks, hand_res.handedness):
+            if hd[0].category_name == "Left":
+                left_hand = lm
+            else:
+                right_hand = lm
+
+    face_lm = face_res.face_landmarks[0] if face_res.face_landmarks else []
+
+    return {
+        "pose":       _to_list(pose_lm),
+        "left_hand":  _to_list(left_hand),
+        "right_hand": _to_list(right_hand),
+        "face":       _to_list(face_lm),
+    }
+
+
+def _smooth_frames(frames: list, alpha: float = 0.5) -> list:
+    """
+    Exponential moving average across frames — replicates smooth_landmarks=True.
+    alpha=0.5: equal weight between current detection and previous smoothed position.
+    Lower alpha → smoother but more lag. Higher alpha → less smoothing.
+    """
+    if len(frames) <= 1:
+        return frames
+
+    def _ema_landmarks(prev_lms, curr_lms):
+        # If either list is empty or lengths differ (hand appeared/disappeared),
+        # use current as-is — don't blend with stale positions.
+        if not prev_lms or not curr_lms or len(prev_lms) != len(curr_lms):
+            return curr_lms
+        return [
+            {
+                "x": alpha * c["x"] + (1 - alpha) * p["x"],
+                "y": alpha * c["y"] + (1 - alpha) * p["y"],
+                "z": alpha * c["z"] + (1 - alpha) * p["z"],
+            }
+            for p, c in zip(prev_lms, curr_lms)
+        ]
+
+    smoothed = [frames[0]]
+    for curr in frames[1:]:
+        prev = smoothed[-1]
+        smoothed.append({
+            key: _ema_landmarks(prev[key], curr[key])
+            for key in ("pose", "left_hand", "right_hand", "face")
+        })
+
+    # Round after smoothing (not before — rounding before would amplify jitter)
+    def _round_lms(lms):
+        return [{"x": round(lm["x"], 3), "y": round(lm["y"], 3), "z": round(lm["z"], 3)}
+                for lm in lms]
+
     return [
-        {"x": round(lm.x, 3), "y": round(lm.y, 3), "z": round(lm.z, 3)}
-        for lm in landmarks_obj.landmark
+        {key: _round_lms(f[key]) for key in ("pose", "left_hand", "right_hand", "face")}
+        for f in smoothed
     ]
 
 
 def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.0) -> list:
     """
     Sample ~150 frames from a video, optionally trimmed to [start_sec, end_sec].
-    Uses mp.solutions.holistic with smooth_landmarks=True for stable output.
-    A fresh holistic instance is created per video so state doesn't bleed
-    between requests.
+    VIDEO mode provides mediapipe-level temporal tracking; EMA smoothing is
+    applied on top to remove residual jitter.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -61,21 +180,16 @@ def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.
         raise ValueError(f"Invalid trim: start ({start_sec}s) must be before end ({end_sec}s).")
 
     clip_length = end_frame - start_frame
-    step        = max(1, clip_length // 150)   # target ~150 frames
+    step        = max(1, clip_length // 150)
 
     if start_frame > 0:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-    frames = []
-    idx    = 0
+    pose, hands, face = _make_landmarkers()
+    raw_frames = []
+    idx = 0
 
-    with mp_holistic.Holistic(
-        static_image_mode=False,
-        model_complexity=1,
-        smooth_landmarks=True,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5,
-    ) as holistic:
+    try:
         while cap.isOpened():
             frame_pos = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
             if frame_pos >= end_frame:
@@ -85,20 +199,24 @@ def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.
                 break
 
             if idx % step == 0:
-                rgb     = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                results = holistic.process(rgb)
+                timestamp_ms = int(frame_pos * 1000 / fps)
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
-                frames.append({
-                    "pose":       _get_landmarks(results.pose_landmarks),
-                    "left_hand":  _get_landmarks(results.left_hand_landmarks),
-                    "right_hand": _get_landmarks(results.right_hand_landmarks),
-                    "face":       _get_landmarks(results.face_landmarks),
-                })
+                pose_res = pose.detect_for_video(img, timestamp_ms)
+                hand_res = hands.detect_for_video(img, timestamp_ms)
+                face_res = face.detect_for_video(img, timestamp_ms)
+
+                raw_frames.append(_build_frame(pose_res, hand_res, face_res))
 
             idx += 1
+    finally:
+        cap.release()
+        pose.close()
+        hands.close()
+        face.close()
 
-    cap.release()
-    return frames
+    return _smooth_frames(raw_frames)
 
 
 def _download_with_ytdlp(url: str, out_path: str, start_sec: float = 0.0, end_sec: float = 0.0):
