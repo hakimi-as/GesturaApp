@@ -34,6 +34,8 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
   String _videoFileName = '';
   final TextEditingController _signNameController = TextEditingController();
   final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _startSecController = TextEditingController();
+  final TextEditingController _endSecController = TextEditingController();
   ProcessingStatus? _processingStatus;
   String _processingMessage = '';
   List<Map<String, dynamic>> _processedFrames = [];
@@ -51,6 +53,8 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
     _tabController.dispose();
     _signNameController.dispose();
     _urlController.dispose();
+    _startSecController.dispose();
+    _endSecController.dispose();
     for (var file in _selectedFiles) {
       file['controller'].dispose();
     }
@@ -328,9 +332,25 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
     });
   }
 
+  /// Parse "M:SS" or "MM:SS" or plain seconds string → double seconds.
+  double _parseTime(String text) {
+    text = text.trim();
+    if (text.isEmpty) return 0.0;
+    if (text.contains(':')) {
+      final parts = text.split(':');
+      final m = double.tryParse(parts[0]) ?? 0;
+      final s = double.tryParse(parts[1]) ?? 0;
+      return m * 60 + s;
+    }
+    return double.tryParse(text) ?? 0.0;
+  }
+
   Future<void> _processUrl() async {
     final url = _urlController.text.trim();
     if (url.isEmpty) return;
+
+    final startSec = _parseTime(_startSecController.text);
+    final endSec   = _parseTime(_endSecController.text);
 
     setState(() {
       _processingStatus = ProcessingStatus.uploading;
@@ -342,6 +362,8 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
 
     final result = await VideoProcessingService.processVideoUrl(
       url: url,
+      startSec: startSec,
+      endSec: endSec,
       onStatus: (status, message) {
         if (mounted) setState(() { _processingStatus = status; _processingMessage = message; });
       },
@@ -367,9 +389,14 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
       _processedFrames = [];
     });
 
+    final startSec = _parseTime(_startSecController.text);
+    final endSec   = _parseTime(_endSecController.text);
+
     final result = await VideoProcessingService.processVideo(
       videoBytes: _pickedVideoBytes!,
       filename: _videoFileName,
+      startSec: startSec,
+      endSec: endSec,
       onStatus: (status, message) {
         if (mounted) setState(() { _processingStatus = status; _processingMessage = message; });
       },
@@ -426,6 +453,8 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
           _videoFileName = '';
           _signNameController.clear();
           _urlController.clear();
+          _startSecController.clear();
+          _endSecController.clear();
           _processingStatus = null;
           _processedFrames = [];
         });
@@ -709,6 +738,53 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
 
   // ── Video tab widget ───────────────────────────────────────────────────────
 
+  Widget _buildTrimRow() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        const Icon(Icons.content_cut, size: 16, color: Colors.grey),
+        const SizedBox(width: 6),
+        Text('Trim (optional)',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[600])),
+        const SizedBox(width: 6),
+        Text('— extract just one sign from a longer video',
+            style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+      ]),
+      const SizedBox(height: 6),
+      Row(children: [
+        Expanded(
+          child: TextField(
+            controller: _startSecController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Start',
+              hintText: '0:03',
+              border: OutlineInputBorder(),
+              isDense: true,
+              prefixIcon: Icon(Icons.play_arrow, size: 18),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: TextField(
+            controller: _endSecController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'End',
+              hintText: '0:06',
+              border: OutlineInputBorder(),
+              isDense: true,
+              prefixIcon: Icon(Icons.stop, size: 18),
+            ),
+          ),
+        ),
+      ]),
+      const SizedBox(height: 4),
+      Text('Format: M:SS (e.g. 0:03) or plain seconds (e.g. 3). Leave blank to process entire video.',
+          style: TextStyle(fontSize: 10, color: Colors.grey[400])),
+    ]);
+  }
+
   Widget _buildVideoTab() {
     final bool canProcess = _pickedVideoBytes != null &&
         _processingStatus != ProcessingStatus.uploading &&
@@ -791,6 +867,11 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
           onChanged: (_) => setState(() {}),
           onSubmitted: (_) => _processUrl(),
         ),
+
+        const SizedBox(height: 10),
+
+        // Trim controls (shared between URL and file upload)
+        _buildTrimRow(),
 
         const SizedBox(height: 10),
 

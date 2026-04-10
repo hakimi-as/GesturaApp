@@ -2,8 +2,8 @@
 Gestura — HuggingFace Space: Sign Language Video → Skeleton JSON
 ================================================================
 Endpoints:
-  POST /process       — upload a video file
-  POST /process-url   — provide a YouTube / direct URL
+  POST /process       — upload a video file (+ optional start_sec / end_sec)
+  POST /process-url   — provide a TikTok / Instagram / direct URL (+ optional trim)
   GET  /health        — liveness check
 """
 
@@ -15,9 +15,10 @@ import cv2
 import mediapipe as mp
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision as mp_vision
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from typing import Optional
 
 app = FastAPI(title="Gestura Sign Processor")
 
@@ -93,7 +94,7 @@ def _to_list(landmarks):
 def _process_frame(rgb):
     img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
-    pose_res  = _pose.detect(img)
+    pose_res = _pose.detect(img)
     hand_res  = _hands.detect(img)
     face_res  = _face.detect(img)
 
@@ -117,19 +118,38 @@ def _process_frame(rgb):
     }
 
 
-def _extract_frames(video_path: str) -> list:
-    """Sample ~150 frames from a video file and run skeleton detection."""
+def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.0) -> list:
+    """
+    Sample ~150 frames from a video, optionally trimmed to [start_sec, end_sec].
+    If end_sec is 0 (or not provided), processes until the end of the video.
+    """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise ValueError("Could not open video file.")
 
-    total     = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    max_frames = min(total, 600)
-    step       = max(1, max_frames // 150)
+    fps         = cap.get(cv2.CAP_PROP_FPS) or 30
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    start_frame = int(start_sec * fps) if start_sec > 0 else 0
+    end_frame   = int(end_sec * fps)   if end_sec   > 0 else total_frames
+    end_frame   = min(end_frame, total_frames)
+
+    if start_frame >= end_frame:
+        raise ValueError(f"Invalid trim: start ({start_sec}s) must be before end ({end_sec}s).")
+
+    clip_length = end_frame - start_frame
+    step        = max(1, clip_length // 150)   # target ~150 frames
+
+    # Seek to start
+    if start_frame > 0:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
     frames = []
     idx = 0
     while cap.isOpened():
+        current = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+        if current >= end_frame:
+            break
         ret, frame = cap.read()
         if not ret:
             break
@@ -142,16 +162,13 @@ def _extract_frames(video_path: str) -> list:
     return frames
 
 
-def _download_with_ytdlp(url: str, out_path: str):
-    """Download a video from TikTok / Instagram / direct URL.
-    Note: YouTube blocks server-side downloads — users should upload the file directly.
-    """
+def _download_with_ytdlp(url: str, out_path: str, start_sec: float = 0.0, end_sec: float = 0.0):
+    """Download from TikTok / Instagram / direct URL. YouTube is blocked on server IPs."""
     is_youtube = any(x in url for x in ["youtube.com", "youtu.be"])
-
     if is_youtube:
         raise ValueError(
             "YouTube blocks automated downloads from server IPs.\n"
-            "Please download the video manually and use the 'Upload a File' option instead.\n"
+            "Please download the video manually and use 'Upload a File' instead.\n"
             "TikTok, Instagram Reels, and direct MP4 links work fine."
         )
 
@@ -162,11 +179,27 @@ def _download_with_ytdlp(url: str, out_path: str):
         "--js-runtime", "nodejs",
         "-f", "bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "-o", out_path,
-        url,
     ]
+
+    # Trim at download time if possible — much faster than downloading full video
+    if start_sec > 0 or end_sec > 0:
+        start_str = _sec_to_hms(start_sec)
+        end_str   = _sec_to_hms(end_sec) if end_sec > 0 else ""
+        section   = f"*{start_str}-{end_str}" if end_str else f"*{start_str}-inf"
+        cmd += ["--download-sections", section, "--force-keyframes-at-cuts"]
+
+    cmd.append(url)
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     if result.returncode != 0:
         raise ValueError(f"yt-dlp error: {result.stderr.strip() or result.stdout.strip()}")
+
+
+def _sec_to_hms(seconds: float) -> str:
+    """Convert seconds to HH:MM:SS.mmm string for yt-dlp."""
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = seconds % 60
+    return f"{h:02d}:{m:02d}:{s:06.3f}"
 
 
 # ── Routes ─────────────────────────────────────────────────────────────────
@@ -177,15 +210,19 @@ async def health():
 
 
 @app.post("/process")
-async def process_file(video: UploadFile = File(...)):
-    """Accept a video file upload and return skeleton JSON."""
+async def process_file(
+    video: UploadFile = File(...),
+    start_sec: float = Form(0.0),
+    end_sec: float   = Form(0.0),
+):
+    """Accept a video file and return skeleton JSON. Optionally trim with start_sec / end_sec."""
     suffix = os.path.splitext(video.filename or "video.mp4")[1] or ".mp4"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(await video.read())
         tmp_path = tmp.name
 
     try:
-        frames = _extract_frames(tmp_path)
+        frames = _extract_frames(tmp_path, start_sec, end_sec)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     finally:
@@ -199,11 +236,13 @@ async def process_file(video: UploadFile = File(...)):
 
 class UrlRequest(BaseModel):
     url: str
+    start_sec: Optional[float] = 0.0
+    end_sec:   Optional[float] = 0.0
 
 
 @app.post("/process-url")
 async def process_url(body: UrlRequest):
-    """Accept a YouTube / TikTok / Instagram / direct MP4 URL and return skeleton JSON."""
+    """Accept a TikTok / Instagram / direct MP4 URL and return skeleton JSON."""
     url = body.url.strip()
     if not url:
         raise HTTPException(status_code=400, detail="URL is required.")
@@ -211,20 +250,20 @@ async def process_url(body: UrlRequest):
     with tempfile.TemporaryDirectory() as tmpdir:
         out_path = os.path.join(tmpdir, "video.mp4")
         try:
-            _download_with_ytdlp(url, out_path)
+            _download_with_ytdlp(url, out_path, body.start_sec or 0.0, body.end_sec or 0.0)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         except subprocess.TimeoutExpired:
             raise HTTPException(status_code=408, detail="Video download timed out.")
 
         if not os.path.exists(out_path):
-            # yt-dlp may choose a different extension
             files = os.listdir(tmpdir)
             if not files:
                 raise HTTPException(status_code=400, detail="Download produced no file. Check the URL.")
             out_path = os.path.join(tmpdir, files[0])
 
         try:
+            # For URL downloads, trimming is already done by yt-dlp, so no need to trim again
             frames = _extract_frames(out_path)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))

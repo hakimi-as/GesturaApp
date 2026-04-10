@@ -26,6 +26,8 @@ class VideoProcessingService {
   static Future<VideoProcessingResult> processVideo({
     required Uint8List videoBytes,
     required String filename,
+    double startSec = 0.0,
+    double endSec = 0.0,
     void Function(ProcessingStatus status, String message)? onStatus,
     int timeoutSec = 300,
   }) async {
@@ -39,6 +41,8 @@ class VideoProcessingService {
         videoBytes,
         filename: filename,
       ));
+      if (startSec > 0) request.fields['start_sec'] = startSec.toString();
+      if (endSec > 0)   request.fields['end_sec']   = endSec.toString();
 
       final streamedResponse = await request.send().timeout(
         Duration(seconds: timeoutSec),
@@ -82,6 +86,8 @@ class VideoProcessingService {
   /// Process a video from a YouTube / TikTok / direct URL.
   static Future<VideoProcessingResult> processVideoUrl({
     required String url,
+    double startSec = 0.0,
+    double endSec = 0.0,
     void Function(ProcessingStatus status, String message)? onStatus,
     int timeoutSec = 300,
   }) async {
@@ -92,7 +98,7 @@ class VideoProcessingService {
       final response = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'url': url}),
+        body: json.encode({'url': url, 'start_sec': startSec, 'end_sec': endSec}),
       ).timeout(
         Duration(seconds: timeoutSec),
         onTimeout: () => throw TimeoutException('Timed out after ${timeoutSec}s.'),
