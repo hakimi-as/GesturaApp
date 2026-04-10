@@ -471,11 +471,11 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
   /// Reduces frame data to fit Firestore's 1MB document limit.
   /// Drops face landmarks and caps precision + frame count.
   List<Map<String, dynamic>> _compressFrames(List<Map<String, dynamic>> frames) {
-    // Cap at 100 frames (drop evenly if more)
+    // Cap at 150 frames (drop evenly if more)
     List<Map<String, dynamic>> sampled = frames;
-    if (frames.length > 100) {
-      final step = frames.length / 100;
-      sampled = List.generate(100, (i) => frames[(i * step).round().clamp(0, frames.length - 1)]);
+    if (frames.length > 150) {
+      final step = frames.length / 150;
+      sampled = List.generate(150, (i) => frames[(i * step).round().clamp(0, frames.length - 1)]);
     }
 
     return sampled.map((frame) {
@@ -493,9 +493,9 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
     return landmarks.map((lm) {
       if (lm is! Map) return <String, dynamic>{};
       return {
-        'x': double.parse((lm['x'] as num).toStringAsFixed(2)),
-        'y': double.parse((lm['y'] as num).toStringAsFixed(2)),
-        'z': double.parse((lm['z'] as num).toStringAsFixed(2)),
+        'x': double.parse((lm['x'] as num).toStringAsFixed(3)),
+        'y': double.parse((lm['y'] as num).toStringAsFixed(3)),
+        'z': double.parse((lm['z'] as num).toStringAsFixed(3)),
       };
     }).toList();
   }
