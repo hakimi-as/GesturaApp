@@ -1,6 +1,9 @@
 """
 Gestura — HuggingFace Space: Sign Language Video → Skeleton JSON
 ================================================================
+Uses mp.solutions.holistic (still present in mediapipe==0.10.9),
+same model and settings as local extract_holistic.py.
+
 Endpoints:
   POST /process       — upload a video file (+ optional start_sec / end_sec)
   POST /process-url   — provide a TikTok / Instagram / direct URL (+ optional trim)
@@ -9,13 +12,9 @@ Endpoints:
 
 import os
 import tempfile
-import urllib.request
 import subprocess
 import cv2
-import numpy as np
 import mediapipe as mp
-from mediapipe.tasks import python as mp_python
-from mediapipe.tasks.python import vision as mp_vision
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -23,161 +22,27 @@ from typing import Optional
 
 app = FastAPI(title="Gestura Sign Processor")
 
-# ── Download mediapipe models at startup ───────────────────────────────────
-MODEL_DIR = "/tmp/mediapipe_models"
-os.makedirs(MODEL_DIR, exist_ok=True)
+mp_holistic = mp.solutions.holistic
 
-MODELS = {
-    "pose": (
-        "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",
-        os.path.join(MODEL_DIR, "pose.task"),
-    ),
-    "hand": (
-        "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
-        os.path.join(MODEL_DIR, "hand.task"),
-    ),
-}
-
-for name, (url, path) in MODELS.items():
-    if not os.path.exists(path):
-        print(f"Downloading {name} model...")
-        urllib.request.urlretrieve(url, path)
-        print(f"  {name} ready.")
-
-print("All models ready. Space is live.")
-
-
-# ── Landmarker factory (VIDEO mode = built-in temporal tracking) ───────────
-
-def _make_landmarkers():
-    pose = mp_vision.PoseLandmarker.create_from_options(
-        mp_vision.PoseLandmarkerOptions(
-            base_options=mp_python.BaseOptions(model_asset_path=MODELS["pose"][1]),
-            running_mode=mp_vision.RunningMode.VIDEO,
-            num_poses=1,
-            min_pose_detection_confidence=0.5,
-            min_pose_presence_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
-    )
-    hands = mp_vision.HandLandmarker.create_from_options(
-        mp_vision.HandLandmarkerOptions(
-            base_options=mp_python.BaseOptions(model_asset_path=MODELS["hand"][1]),
-            running_mode=mp_vision.RunningMode.VIDEO,
-            num_hands=2,
-            min_hand_detection_confidence=0.5,
-            min_hand_presence_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
-    )
-    return pose, hands
-
-
-# ── Gaussian smoothing ─────────────────────────────────────────────────────
-
-def _gaussian_kernel(sigma: float):
-    """Build a 1D Gaussian kernel (pure numpy, no scipy needed)."""
-    size = int(6 * sigma + 1) | 1          # ensure odd
-    x    = np.arange(size) - size // 2
-    k    = np.exp(-x ** 2 / (2 * sigma ** 2))
-    return k / k.sum()
-
-
-def _smooth_series(values: np.ndarray, sigma: float) -> np.ndarray:
-    """Convolve a 1-D array with a Gaussian kernel (edge-padded)."""
-    kernel  = _gaussian_kernel(sigma)
-    half    = len(kernel) // 2
-    padded  = np.pad(values, half, mode="edge")
-    return np.convolve(padded, kernel, mode="valid")[: len(values)]
-
-
-def _smooth_frames(frames: list, sigma: float = 2.5) -> list:
-    """
-    Apply Gaussian smoothing over the time axis for every landmark coordinate.
-    sigma=2.5 gives strong smoothing comparable to smooth_landmarks=True in
-    the holistic model. Only smooths landmark groups that are consistently
-    present (skips frames where a hand was not detected).
-    """
-    if len(frames) <= 2:
-        return frames
-
-    keys = ("pose", "left_hand", "right_hand")
-
-    for key in keys:
-        # How many landmarks does this group have when it IS detected?
-        n_lm = max((len(f.get(key, [])) for f in frames), default=0)
-        if n_lm == 0:
-            continue
-
-        for coord in ("x", "y", "z"):
-            # Build (n_frames, n_landmarks) array; NaN where not detected
-            series = np.full((len(frames), n_lm), np.nan)
-            for i, f in enumerate(frames):
-                lms = f.get(key, [])
-                for j in range(min(len(lms), n_lm)):
-                    series[i, j] = lms[j][coord]
-
-            # Smooth each landmark's time series independently
-            for j in range(n_lm):
-                col      = series[:, j]
-                detected = ~np.isnan(col)
-                if detected.sum() < 3:
-                    continue
-                # Smooth only the detected segment(s)
-                col[detected] = _smooth_series(col[detected], sigma)
-                series[:, j]  = col
-
-            # Write smoothed values back into frames
-            for i, f in enumerate(frames):
-                lms = f.get(key, [])
-                for j in range(min(len(lms), n_lm)):
-                    if not np.isnan(series[i, j]):
-                        lms[j][coord] = float(series[i, j])
-
-    # Round after smoothing (rounding before would re-introduce quantisation noise)
-    for f in frames:
-        for key in keys:
-            for lm in f.get(key, []):
-                lm["x"] = round(lm["x"], 3)
-                lm["y"] = round(lm["y"], 3)
-                lm["z"] = round(lm["z"], 3)
-
-    return frames
+print("Gestura Space is live.")
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
-def _to_list(landmarks):
-    if not landmarks:
+def _get_landmarks(landmarks_obj):
+    if not landmarks_obj:
         return []
-    # Keep floats unrounded here — smoothing rounds afterwards
-    return [{"x": lm.x, "y": lm.y, "z": lm.z} for lm in landmarks]
-
-
-def _build_frame(pose_res, hand_res):
-    pose_lm = pose_res.pose_landmarks[0] if pose_res.pose_landmarks else []
-
-    left_hand, right_hand = [], []
-    if hand_res.hand_landmarks and hand_res.handedness:
-        for lm, hd in zip(hand_res.hand_landmarks, hand_res.handedness):
-            if hd[0].category_name == "Left":
-                left_hand = lm
-            else:
-                right_hand = lm
-
-    return {
-        "pose":       _to_list(pose_lm),
-        "left_hand":  _to_list(left_hand),
-        "right_hand": _to_list(right_hand),
-    }
+    return [
+        {"x": round(lm.x, 4), "y": round(lm.y, 4), "z": round(lm.z, 4)}
+        for lm in landmarks_obj.landmark
+    ]
 
 
 def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.0) -> list:
     """
-    1. Decode every frame in the clip (temporal continuity for VIDEO mode).
-    2. Run pose + hand detection on every frame.
-    3. Apply Gaussian smoothing over the time axis (sigma=2.5).
-    4. Subsample to ~150 frames for Firestore.
+    Process every frame through mp.solutions.holistic with smooth_landmarks=True,
+    identical to local extract_holistic.py. Subsamples to ~150 frames after
+    detection so Firestore stays under 1MB.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -196,10 +61,15 @@ def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.
     if start_frame > 0:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-    pose, hands = _make_landmarkers()
-    all_frames  = []
+    all_frames = []
 
-    try:
+    with mp_holistic.Holistic(
+        static_image_mode=False,
+        model_complexity=1,
+        smooth_landmarks=True,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5,
+    ) as holistic:
         while cap.isOpened():
             frame_pos = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
             if frame_pos >= end_frame:
@@ -208,24 +78,19 @@ def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.
             if not ret:
                 break
 
-            timestamp_ms = int(frame_pos * 1000 / fps)
-            rgb          = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            img          = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+            rgb     = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = holistic.process(rgb)
 
-            pose_res = pose.detect_for_video(img, timestamp_ms)
-            hand_res = hands.detect_for_video(img, timestamp_ms)
+            all_frames.append({
+                "pose":       _get_landmarks(results.pose_landmarks),
+                "left_hand":  _get_landmarks(results.left_hand_landmarks),
+                "right_hand": _get_landmarks(results.right_hand_landmarks),
+            })
 
-            all_frames.append(_build_frame(pose_res, hand_res))
+    cap.release()
 
-    finally:
-        cap.release()
-        pose.close()
-        hands.close()
-
-    # Gaussian smooth BEFORE subsampling (full temporal resolution = best smoothing)
-    all_frames = _smooth_frames(all_frames, sigma=2.5)
-
-    # Subsample to ~150 frames after smoothing
+    # Subsample to ~150 frames after detection (not before — skipping frames
+    # during detection breaks holistic's temporal smoother)
     if len(all_frames) > 150:
         step       = len(all_frames) / 150
         all_frames = [all_frames[int(i * step)] for i in range(150)]

@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-mediapipe
+mediapipe==0.10.9
 opencv-python-headless
 python-multipart
 yt-dlp
