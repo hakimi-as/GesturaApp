@@ -7,7 +7,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/badge_provider.dart';
 import '../../providers/challenge_provider.dart';
 import '../../models/category_model.dart';
-import '../../models/progress_model.dart';
 import '../../models/badge_model.dart';
 import '../../models/challenge_model.dart';
 import '../../services/firestore_service.dart';
@@ -20,6 +19,7 @@ import '../badges/badges_screen.dart';
 import '../challenges/challenges_screen.dart';
 import 'learning_paths_screen.dart';
 import '../../services/haptic_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class LearnScreen extends StatefulWidget {
   final bool showBackButton;
@@ -51,6 +51,7 @@ class _LearnScreenState extends State<LearnScreen> {
   
   // For quiz accuracy
   double _averageQuizAccuracy = 0.0;
+  Map<String, int> _bestScoresByType = {};
 
   @override
   void initState() {
@@ -116,6 +117,20 @@ class _LearnScreenState extends State<LearnScreen> {
         // Load quiz accuracy
         quizAccuracy = await _firestoreService.getAverageQuizAccuracy(authProvider.userId!);
 
+        // Load best scores per quiz type
+        final recentAttempts = await _firestoreService.getRecentQuizAttempts(authProvider.userId!, limit: 20);
+        final Map<String, int> bestScores = {};
+        for (final attempt in recentAttempts) {
+          final type = attempt['quizType'] as String? ?? '';
+          final total = attempt['totalQuestions'] as int? ?? 0;
+          final correct = attempt['correctAnswers'] as int? ?? 0;
+          final score = total > 0 ? (correct / total * 100).round() : 0;
+          if (!bestScores.containsKey(type) || bestScores[type]! < score) {
+            bestScores[type] = score;
+          }
+        }
+        setState(() => _bestScoresByType = bestScores);
+
         // Load daily challenges
         final user = authProvider.currentUser;
         if (user != null && mounted) {
@@ -173,7 +188,7 @@ class _LearnScreenState extends State<LearnScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text('Learn'),
+                  Text(AppLocalizations.of(context).learnTitle),
                 ],
               ),
               actions: [
@@ -700,7 +715,7 @@ class _LearnScreenState extends State<LearnScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '$actualLessonCount+ signs',
+                  '$actualLessonCount+ ${AppLocalizations.of(context).signsLabel}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: context.textMuted,
                         fontSize: 11,
@@ -1091,57 +1106,64 @@ class _LearnScreenState extends State<LearnScreen> {
           ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
 
           // Section Title
-          _buildSectionTitle('📝', 'Choose Quiz Type'),
+          _buildSectionTitle('📝', AppLocalizations.of(context).chooseQuizType),
 
           // Quiz Types Grid
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              mainAxisSpacing: 14,
-              crossAxisSpacing: 14,
-              childAspectRatio: 0.95,
-              children: [
-                _buildQuizTypeCard(
-                  icon: '👁️',
-                  iconBgColor: const Color(0xFF6366F1),
-                  title: 'Sign to Text',
-                  subtitle: 'Watch and identify',
-                  info: '10 questions',
-                  xpReward: '+50 XP',
-                  onTap: () => _startQuiz('sign_to_text'),
-                ),
-                _buildQuizTypeCard(
-                  icon: '👆',
-                  iconBgColor: const Color(0xFFF59E0B),
-                  title: 'Text to Sign',
-                  subtitle: 'Find the correct sign',
-                  info: '10 questions',
-                  xpReward: '+50 XP',
-                  onTap: () => _startQuiz('text_to_sign'),
-                ),
-                _buildQuizTypeCard(
-                  icon: '⏱️',
-                  iconBgColor: const Color(0xFF10B981),
-                  title: 'Timed Challenge',
-                  subtitle: 'Beat the clock',
-                  info: '60 seconds',
-                  xpReward: '+5 XP each',
-                  onTap: () => _startQuiz('timed'),
-                ),
-                _buildQuizTypeCard(
-                  icon: '🔤',
-                  iconBgColor: const Color(0xFFEF4444),
-                  title: 'Spelling Quiz',
-                  subtitle: 'Finger-spell words',
-                  info: '5 words',
-                  xpReward: '+75 XP',
-                  onTap: () => _startQuiz('spelling'),
-                ),
-              ],
-            ),
+            child: Builder(builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                mainAxisSpacing: 14,
+                crossAxisSpacing: 14,
+                childAspectRatio: 0.80,
+                children: [
+                  _buildQuizTypeCard(
+                    icon: '👁️',
+                    iconBgColor: const Color(0xFF6366F1),
+                    title: l10n.signToText,
+                    subtitle: l10n.signToTextDesc,
+                    info: '10 ${l10n.questions}',
+                    xpReward: '+50 XP',
+                    bestScore: _bestScoresByType['sign_to_text'] ?? 0,
+                    onTap: () => _startQuiz('sign_to_text'),
+                  ),
+                  _buildQuizTypeCard(
+                    icon: '👆',
+                    iconBgColor: const Color(0xFFF59E0B),
+                    title: l10n.textToSign,
+                    subtitle: l10n.textToSignDesc,
+                    info: '10 ${l10n.questions}',
+                    xpReward: '+50 XP',
+                    bestScore: _bestScoresByType['text_to_sign'] ?? 0,
+                    onTap: () => _startQuiz('text_to_sign'),
+                  ),
+                  _buildQuizTypeCard(
+                    icon: '⏱️',
+                    iconBgColor: const Color(0xFF10B981),
+                    title: l10n.timedChallenge,
+                    subtitle: l10n.timedChallengeDesc,
+                    info: '15 ${l10n.questions}',
+                    xpReward: '+5 XP each',
+                    bestScore: _bestScoresByType['timed'] ?? 0,
+                    onTap: () => _startQuiz('timed'),
+                  ),
+                  _buildQuizTypeCard(
+                    icon: '🔤',
+                    iconBgColor: const Color(0xFFEF4444),
+                    title: l10n.spellingQuiz,
+                    subtitle: l10n.spellingQuizDesc,
+                    info: '10 ${l10n.questions}',
+                    xpReward: '+50 XP',
+                    bestScore: _bestScoresByType['spelling'] ?? 0,
+                    onTap: () => _startQuiz('spelling'),
+                  ),
+                ],
+              );
+            }),
           ).animate().fadeIn(delay: 300.ms),
 
           const SizedBox(height: 100),
@@ -1158,6 +1180,7 @@ class _LearnScreenState extends State<LearnScreen> {
     required String info,
     required String xpReward,
     required VoidCallback onTap,
+    int bestScore = 0,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -1190,14 +1213,15 @@ class _LearnScreenState extends State<LearnScreen> {
                   ),
             ),
             const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textMuted,
-                    fontSize: 11,
-                  ),
+            Expanded(
+              child: Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: context.textMuted,
+                      fontSize: 11,
+                    ),
+              ),
             ),
-            const Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1210,18 +1234,61 @@ class _LearnScreenState extends State<LearnScreen> {
                 ),
                 Text(
                   xpReward,
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: iconBgColor,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: bestScore / 100,
+                minHeight: 6,
+                backgroundColor: iconBgColor.withAlpha(40),
+                valueColor: AlwaysStoppedAnimation<Color>(iconBgColor),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              bestScore > 0
+                  ? '${AppLocalizations.of(context).bestScore}: $bestScore%'
+                  : AppLocalizations.of(context).notPlayedYet,
+              style: TextStyle(
+                color: bestScore > 0 ? iconBgColor : context.textMuted,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _reloadBestScores() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.userId == null) return;
+    try {
+      final recentAttempts = await _firestoreService.getRecentQuizAttempts(
+        authProvider.userId!,
+        limit: 20,
+      );
+      final Map<String, int> bestScores = {};
+      for (final attempt in recentAttempts) {
+        final type = attempt['quizType'] as String? ?? '';
+        final total = attempt['totalQuestions'] as int? ?? 0;
+        final correct = attempt['correctAnswers'] as int? ?? 0;
+        final score = total > 0 ? (correct / total * 100).round() : 0;
+        if (!bestScores.containsKey(type) || bestScores[type]! < score) {
+          bestScores[type] = score;
+        }
+      }
+      if (mounted) setState(() => _bestScoresByType = bestScores);
+    } catch (_) {}
   }
 
   void _startQuiz(String type) {
@@ -1248,7 +1315,7 @@ class _LearnScreenState extends State<LearnScreen> {
       MaterialPageRoute(
         builder: (_) => QuizListScreen(quizType: type, title: title),
       ),
-    );
+    ).then((_) => _reloadBestScores());
   }
 
   // ==================== PROGRESS TAB ====================
@@ -1505,7 +1572,6 @@ class _LearnScreenState extends State<LearnScreen> {
       builder: (context, badgeProvider, child) {
         final unlockedBadges = badgeProvider.userBadges;
         final lockedBadges = badgeProvider.lockedBadges;
-        final stats = badgeProvider.stats;
         final totalBadges = BadgeModel.allBadges.length;
         final unlockedCount = unlockedBadges.length;
 

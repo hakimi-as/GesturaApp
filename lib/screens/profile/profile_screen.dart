@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/theme.dart';
 import '../../config/constants.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../services/firestore_service.dart';
@@ -97,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Profile updated successfully!'),
+              content: Text(AppLocalizations.of(context).profileUpdated),
               backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -128,7 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('My Profile'),
+        title: Text(AppLocalizations.of(context).myProfile),
         actions: [
           if (!_isEditing)
             IconButton(
@@ -150,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final user = authProvider.currentUser;
 
           if (user == null) {
-            return const Center(child: Text('No user data'));
+            return Center(child: Text(AppLocalizations.of(context).noUserData));
           }
 
           return SingleChildScrollView(
@@ -197,7 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.circular(35),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -207,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.circular(35),
                 child: hasPhotoUrl
                     ? Image.network(
-                        CloudinaryService.getOptimizedImage(user!.photoUrl!, width: 240, height: 240),
+                        CloudinaryService.getOptimizedImage(user.photoUrl!, width: 240, height: 240),
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
@@ -297,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Personal Information',
+            AppLocalizations.of(context).profileTitle,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -306,21 +307,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           _buildInfoField(
             context,
-            label: 'Full Name',
+            label: AppLocalizations.of(context).fullName,
             icon: Icons.person_outline,
             child: _isEditing
                 ? TextFormField(
                     controller: _nameController,
                     style: TextStyle(color: context.textPrimary),
-                    decoration: const InputDecoration(
-                      hintText: 'Enter your name',
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context).enterFullName,
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       isDense: true,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your name';
+                        return AppLocalizations.of(context).pleaseEnterName;
                       }
                       return null;
                     },
@@ -334,7 +335,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           _buildInfoField(
             context,
-            label: 'Email',
+            label: AppLocalizations.of(context).email,
             icon: Icons.email_outlined,
             child: Text(
               user.email,
@@ -347,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           _buildInfoField(
             context,
-            label: 'I am a',
+            label: AppLocalizations.of(context).iAmA,
             icon: Icons.diversity_3_outlined,
             child: _isEditing
                 ? _buildUserTypeSelector()
@@ -417,7 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.15) : context.bgElevated,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : context.bgElevated,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.transparent,
@@ -448,7 +449,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'My Stats',
+            AppLocalizations.of(context).myStats,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -461,7 +462,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   context,
                   emoji: '⭐',
                   value: '${user.totalXP}',
-                  label: 'Total XP',
+                  label: AppLocalizations.of(context).totalXP,
                 ),
               ),
               Expanded(
@@ -469,7 +470,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   context,
                   emoji: '🏆',
                   value: 'Lv ${user.level}',
-                  label: 'Level',
+                  label: AppLocalizations.of(context).level,
                 ),
               ),
               Expanded(
@@ -477,7 +478,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   context,
                   emoji: '🔥',
                   value: '${user.currentStreak}',
-                  label: 'Streak',
+                  label: AppLocalizations.of(context).streak,
                 ),
               ),
               Expanded(
@@ -485,7 +486,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   context,
                   emoji: '📚',
                   value: '${progressProvider.userStats.totalSignsLearned}',
-                  label: 'Signs',
+                  label: AppLocalizations.of(context).signsLabel,
                 ),
               ),
             ],
@@ -535,7 +536,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Preferences',
+            AppLocalizations.of(context).preferences,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -544,7 +545,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           _buildInfoField(
             context,
-            label: 'Preferred Sign Language',
+            label: AppLocalizations.of(context).preferredSignLanguage,
             icon: Icons.sign_language,
             child: _isEditing
                 ? _buildSignLanguageSelector()
@@ -568,7 +569,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withOpacity(0.15) : context.bgElevated,
+              color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : context.bgElevated,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isSelected ? AppColors.primary : Colors.transparent,
@@ -609,9 +610,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   strokeWidth: 2,
                 ),
               )
-            : const Text(
-                'Save Changes',
-                style: TextStyle(
+            : Text(
+                AppLocalizations.of(context).save,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

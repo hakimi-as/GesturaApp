@@ -6,16 +6,27 @@ import '../../services/firestore_service.dart';
 import '../common/skeleton_painter.dart';
 import '../../config/theme.dart';
 
+/// Describes one resolved segment in a translated sentence.
+class SignSegment {
+  final String label;
+  /// 'bim' = found in database, 'fingerspell' = spelled letter-by-letter
+  final String type;
+  const SignSegment({required this.label, required this.type});
+}
+
 class SignPlayer extends StatefulWidget {
-  final List<String> sentence; 
+  final List<String> sentence;
   final bool autoPlay;
-  final bool isAlphabetMode; // NEW: indicates if playing alphabet letters
+  final bool isAlphabetMode;
+  /// Called once loading is complete with the resolved segments list.
+  final void Function(List<SignSegment>)? onLoadComplete;
 
   const SignPlayer({
-    super.key, 
+    super.key,
     required this.sentence,
     this.autoPlay = true,
     this.isAlphabetMode = false,
+    this.onLoadComplete,
   });
 
   @override
@@ -27,7 +38,8 @@ class _SignPlayerState extends State<SignPlayer> {
 
   // Data
   final List<List<Map<String, dynamic>>> _sequence = [];
-  final List<String> _sequenceLabels = []; 
+  final List<String> _sequenceLabels = [];
+  final List<String> _sequenceTypes = []; // 'bim' | 'fingerspell'
   
   // State
   int _currentWordIndex = 0;
@@ -110,11 +122,12 @@ class _SignPlayerState extends State<SignPlayer> {
   }
 
   Future<void> _loadSentence() async {
-    _stop(); 
+    _stop();
     setState(() {
       _isLoading = true;
       _sequence.clear();
       _sequenceLabels.clear();
+      _sequenceTypes.clear();
       _statusMessage = "Loading signs...";
     });
 
@@ -128,20 +141,22 @@ class _SignPlayerState extends State<SignPlayer> {
         if (frames != null && frames.isNotEmpty) {
           _sequence.add(frames);
           _sequenceLabels.add('Letter ${char.toUpperCase()}');
+          _sequenceTypes.add('fingerspell');
         }
         continue;
       }
 
       // Try to fetch as a phrase first
       String phraseKey = rawInput.trim().toLowerCase()
-          .replaceAll(RegExp(r'\s+'), '_') 
-          .replaceAll(RegExp(r'[^a-z0-9_]'), ''); 
+          .replaceAll(RegExp(r'\s+'), '_')
+          .replaceAll(RegExp(r'[^a-z0-9_]'), '');
 
       List<Map<String, dynamic>>? phraseFrames = await _fetchWordData(phraseKey);
 
       if (phraseFrames != null && phraseFrames.isNotEmpty) {
         _sequence.add(phraseFrames);
         _sequenceLabels.add(rawInput.toUpperCase());
+        _sequenceTypes.add('bim');
       } else {
         // Split into words
         List<String> words = rawInput.trim().split(RegExp(r'\s+'));
@@ -150,25 +165,22 @@ class _SignPlayerState extends State<SignPlayer> {
           String wordKey = word.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
           if (wordKey.isEmpty) continue;
 
-          // Try to fetch as a word
           List<Map<String, dynamic>>? wordFrames = await _fetchWordData(wordKey);
 
           if (wordFrames != null && wordFrames.isNotEmpty) {
             _sequence.add(wordFrames);
             _sequenceLabels.add(word.toUpperCase());
+            _sequenceTypes.add('bim');
           } else {
-            // Fingerspell - split into characters (these are LETTERS)
+            // Fingerspell - split into characters
             List<String> characters = wordKey.split('');
             for (String char in characters) {
               if (char == '_') continue;
-              
-              // Fingerspelling uses LETTER signs
               List<Map<String, dynamic>>? letterFrames = await _fetchLetterData(char);
-              
               if (letterFrames != null && letterFrames.isNotEmpty) {
                 _sequence.add(letterFrames);
-                // Show "Letter X" for fingerspelled characters
                 _sequenceLabels.add('Letter ${char.toUpperCase()}');
+                _sequenceTypes.add('fingerspell');
               }
             }
           }
@@ -183,7 +195,30 @@ class _SignPlayerState extends State<SignPlayer> {
           _statusMessage = "No signs found.";
         }
       });
-      
+
+      if (widget.onLoadComplete != null) {
+        // Build a word-level summary (collapse consecutive fingerspelled letters into one word)
+        final segments = <SignSegment>[];
+        String fsWord = '';
+        for (int i = 0; i < _sequenceLabels.length; i++) {
+          final type = i < _sequenceTypes.length ? _sequenceTypes[i] : 'bim';
+          if (type == 'fingerspell') {
+            final char = _sequenceLabels[i].replaceFirst('Letter ', '');
+            fsWord += char;
+          } else {
+            if (fsWord.isNotEmpty) {
+              segments.add(SignSegment(label: fsWord, type: 'fingerspell'));
+              fsWord = '';
+            }
+            segments.add(SignSegment(label: _sequenceLabels[i], type: 'bim'));
+          }
+        }
+        if (fsWord.isNotEmpty) {
+          segments.add(SignSegment(label: fsWord, type: 'fingerspell'));
+        }
+        widget.onLoadComplete!(segments);
+      }
+
       if (_sequence.isNotEmpty && widget.autoPlay) {
         _play();
       }
@@ -286,9 +321,14 @@ class _SignPlayerState extends State<SignPlayer> {
     }
 
     String currentLabel = "";
+    String currentType = 'bim';
     if (_currentWordIndex < _sequenceLabels.length) {
       currentLabel = _sequenceLabels[_currentWordIndex];
+      currentType = _currentWordIndex < _sequenceTypes.length ? _sequenceTypes[_currentWordIndex] : 'bim';
     }
+    final isBim = currentType == 'bim';
+    final badgeColor = isBim ? Colors.green : Colors.blueAccent;
+    final badgeText = isBim ? 'BIM' : 'A-B-C';
 
     return Column(
       children: [
@@ -314,25 +354,44 @@ class _SignPlayerState extends State<SignPlayer> {
                     ),
                   ),
                   
-                  // Label - shows "Letter X" for letters, "WORD" for words
+                  // Label overlay — sign name + BIM / A-B-C badge
                   Positioned(
-                    top: 20, 
-                    left: 0, 
+                    top: 20,
+                    left: 0,
                     right: 0,
                     child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.5))
-                        ),
-                        child: Text(
-                          currentLabel, 
-                          style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(color: badgeColor.withValues(alpha: 0.6)),
+                            ),
+                            child: Text(
+                              currentLabel,
+                              style: const TextStyle(
+                                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: badgeColor.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              badgeText,
+                              style: const TextStyle(
+                                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -380,9 +439,26 @@ class _SignPlayerState extends State<SignPlayer> {
                     "CONTROLS",
                     style: TextStyle(color: context.textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1),
                   ),
-                  Text(
-                    "Playing: $currentLabel",
-                    style: const TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  Row(
+                    children: [
+                      Text(
+                        "Playing: $currentLabel",
+                        style: const TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 10),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

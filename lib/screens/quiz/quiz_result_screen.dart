@@ -15,6 +15,11 @@ import '../../services/firestore_service.dart';
 import '../../widgets/badges/badge_unlock_dialog.dart';
 import '../../widgets/challenges/challenge_complete_dialog.dart';
 import '../../widgets/video/video_player_widget.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/analytics_service.dart';
+import '../../services/offline_service.dart';
+import '../../services/notification_service.dart';
+import '../../providers/connectivity_provider.dart';
 
 class QuizResultScreen extends StatefulWidget {
   final String quizType;
@@ -33,6 +38,13 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   List<BadgeModel> _newBadges = [];
   List<ChallengeModel> _completedChallenges = [];
 
+  // Cached quiz values — captured before the first await so they survive
+  // QuizScreen.dispose() calling resetQuiz() mid-flight.
+  int _cachedCorrect = 0;
+  int _cachedTotal = 0;
+  int _cachedScore = 0;
+  int _cachedXP = 0;
+
   @override
   void initState() {
     super.initState();
@@ -49,76 +61,133 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         Provider.of<ChallengeProvider>(context, listen: false);
     final firestoreService = FirestoreService();
 
+    // Capture all quiz values NOW (synchronously) before any await.
+    // QuizScreen.dispose() calls resetQuiz() which zeros everything out,
+    // and that can happen during the first await below.
     final xpEarned = quizProvider.calculateXPEarned();
-    final isPerfect = quizProvider.totalQuestions > 0 &&
-        quizProvider.correctAnswers == quizProvider.totalQuestions;
+    final quizScore = quizProvider.score;
+    final totalQuestions = quizProvider.totalQuestions;
+    final correctAnswers = quizProvider.correctAnswers;
+    final isPerfect = totalQuestions > 0 && correctAnswers == totalQuestions;
+
+    _xpAdded = true;
+    // Store in state so the build() method always shows correct values
+    // even after the quiz provider is reset.
+    setState(() {
+      _cachedCorrect = correctAnswers;
+      _cachedTotal = totalQuestions;
+      _cachedScore = quizScore;
+      _cachedXP = xpEarned;
+    });
+
+    await AnalyticsService.logQuizCompleted(
+      quizType: widget.quizType,
+      score: quizScore,
+      correctAnswers: correctAnswers,
+      totalQuestions: totalQuestions,
+      xpEarned: xpEarned,
+    );
 
     if (xpEarned > 0) {
       await authProvider.addXP(xpEarned);
     }
 
     if (authProvider.userId != null) {
-      await firestoreService.completeQuiz(
-        userId: authProvider.userId!,
-        quizType: widget.quizType,
-        score: quizProvider.score,
-        totalQuestions: quizProvider.totalQuestions,
-        correctAnswers: quizProvider.correctAnswers,
-        xpEarned: xpEarned,
-      );
-
-      await authProvider.refreshUser();
-
-      if (authProvider.currentUser != null) {
-        final newBadges = await badgeProvider.checkForNewBadges(
+      if (ConnectivityService.isOffline) {
+        // Queue quiz completion for later sync
+        await OfflineService.queueQuizComplete(
           userId: authProvider.userId!,
-          user: authProvider.currentUser!,
-          quizzesCompleted: authProvider.currentUser!.quizzesCompleted,
-          perfectQuizzes:
-              isPerfect ? authProvider.currentUser!.perfectQuizzes : null,
-        );
-
-        final completedChallenges = await challengeProvider.updateProgress(
-          userId: authProvider.userId!,
-          user: authProvider.currentUser!,
-          quizzesCompleted: 1,
+          quizType: widget.quizType,
+          score: quizScore,
           xpEarned: xpEarned,
-          perfectQuiz: isPerfect,
+          totalQuestions: totalQuestions,
+          correctAnswers: correctAnswers,
         );
 
-        if ((newBadges.isNotEmpty || completedChallenges.isNotEmpty) &&
-            mounted) {
-          setState(() {
-            _newBadges = newBadges;
-            _completedChallenges = completedChallenges;
-          });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.cloud_off, color: Colors.white, size: 18),
+                  SizedBox(width: 10),
+                  Text('Result saved — will sync when online'),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        await firestoreService.completeQuiz(
+          userId: authProvider.userId!,
+          quizType: widget.quizType,
+          score: quizScore,
+          totalQuestions: totalQuestions,
+          correctAnswers: correctAnswers,
+          xpEarned: xpEarned,
+        );
 
-          Future.delayed(const Duration(milliseconds: 1500), () async {
-            if (mounted && _newBadges.isNotEmpty) {
-              await BadgeUnlockDialog.showMultiple(context, _newBadges);
-            }
-            if (mounted && _completedChallenges.isNotEmpty) {
-              await ChallengeCompleteDialog.showMultiple(
-                  context, _completedChallenges);
-            }
-          });
+        await authProvider.refreshUser();
+
+        if (authProvider.currentUser != null) {
+          final newBadges = await badgeProvider.checkForNewBadges(
+            userId: authProvider.userId!,
+            user: authProvider.currentUser!,
+            quizzesCompleted: authProvider.currentUser!.quizzesCompleted,
+            perfectQuizzes:
+                isPerfect ? authProvider.currentUser!.perfectQuizzes : null,
+          );
+
+          final completedChallenges = await challengeProvider.updateProgress(
+            userId: authProvider.userId!,
+            user: authProvider.currentUser!,
+            quizzesCompleted: 1,
+            xpEarned: xpEarned,
+            perfectQuiz: isPerfect,
+          );
+
+          if ((newBadges.isNotEmpty || completedChallenges.isNotEmpty) &&
+              mounted) {
+            setState(() {
+              _newBadges = newBadges;
+              _completedChallenges = completedChallenges;
+            });
+
+            Future.delayed(const Duration(milliseconds: 1500), () async {
+              if (mounted && _newBadges.isNotEmpty) {
+                await BadgeUnlockDialog.showMultiple(context, _newBadges);
+                for (final badge in _newBadges) {
+                  NotificationService().showAchievementUnlocked(badge.name, badge.xpReward);
+                }
+              }
+              if (mounted && _completedChallenges.isNotEmpty) {
+                await ChallengeCompleteDialog.showMultiple(
+                    context, _completedChallenges);
+                for (final c in _completedChallenges) {
+                  NotificationService().showChallengeCompleted(c.title, c.xpReward);
+                }
+              }
+            });
+          }
         }
       }
     }
 
-    setState(() => _xpAdded = true);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgPrimary,
-      body: Consumer<QuizProvider>(
-        builder: (context, quizProvider, child) {
-          final correctAnswers = quizProvider.correctAnswers;
-          final totalQuestions = quizProvider.totalQuestions;
-          final score = quizProvider.score;
-          final xpEarned = quizProvider.calculateXPEarned();
+      body: Builder(
+        builder: (context) {
+          final correctAnswers = _cachedCorrect;
+          final totalQuestions = _cachedTotal;
+          final score = _cachedScore;
+          final xpEarned = _cachedXP;
+          final quizProvider = Provider.of<QuizProvider>(context, listen: false);
           final percentage = totalQuestions > 0
               ? (correctAnswers / totalQuestions * 100).toInt()
               : 0;
@@ -135,7 +204,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                   const SizedBox(height: 24),
 
                   Text(
-                    _getResultTitle(percentage),
+                    _getResultTitle(context, percentage),
                     style:
                         Theme.of(context).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
@@ -144,7 +213,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                   const SizedBox(height: 8),
 
                   Text(
-                    _getResultSubtitle(percentage),
+                    _getResultSubtitle(context, percentage),
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: context.textMuted,
                         ),
@@ -196,7 +265,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             const Text('📝', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Review Wrong Answers',
+              AppLocalizations.of(context).reviewWrongAnswers,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -210,7 +279,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                '${quizProvider.wrongAnswers.length} missed',
+                AppLocalizations.of(context).missedCount(quizProvider.wrongAnswers.length),
                 style: const TextStyle(
                   color: AppColors.error,
                   fontSize: 12,
@@ -327,12 +396,12 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 ),
                 const SizedBox(height: 10),
                 _buildAnswerRow(context,
-                    label: 'Your answer',
+                    label: AppLocalizations.of(context).yourAnswer,
                     answer: selectedAnswer,
                     isCorrect: false),
                 const SizedBox(height: 6),
                 _buildAnswerRow(context,
-                    label: 'Correct answer',
+                    label: AppLocalizations.of(context).correctAnswerIs,
                     answer: question.correctAnswer,
                     isCorrect: true),
                 if (question.hint != null && question.hint!.isNotEmpty) ...[
@@ -374,7 +443,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               const Text('✍️', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 8),
               Text(
-                'What word was spelled?',
+                AppLocalizations.of(context).whatWordSpelled,
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
@@ -423,12 +492,12 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
 
           // Word comparison
           _buildAnswerRow(context,
-              label: 'Your answer',
+              label: AppLocalizations.of(context).yourAnswer,
               answer: selectedAnswer,
               isCorrect: false),
           const SizedBox(height: 6),
           _buildAnswerRow(context,
-              label: 'Correct answer',
+              label: AppLocalizations.of(context).correctAnswerIs,
               answer: question.correctAnswer,
               isCorrect: true),
 
@@ -470,12 +539,16 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             children: [
               const Text('✋', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 8),
-              Text(
-                'Which sign means "${question.questionText}"?',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: context.textMuted),
+              Expanded(
+                child: Text(
+                  '${AppLocalizations.of(context).whichSignMeans} "${question.questionText}"?',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: context.textMuted),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
               ),
             ],
           ),
@@ -709,11 +782,11 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
       width: 140,
       height: 140,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(70),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 30,
             spreadRadius: 10,
           ),
@@ -729,20 +802,22 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         .shimmer(duration: 1000.ms);
   }
 
-  String _getResultTitle(int percentage) {
-    if (percentage == 100) return 'Perfect Score!';
-    if (percentage >= 90) return 'Excellent!';
-    if (percentage >= 70) return 'Great Job!';
-    if (percentage >= 50) return 'Good Effort!';
-    return 'Keep Practicing!';
+  String _getResultTitle(BuildContext context, int percentage) {
+    final l10n = AppLocalizations.of(context);
+    if (percentage == 100) return l10n.perfectScoreLabel;
+    if (percentage >= 90) return l10n.excellent;
+    if (percentage >= 70) return l10n.greatJob;
+    if (percentage >= 50) return l10n.goodEffort;
+    return l10n.keepPracticing;
   }
 
-  String _getResultSubtitle(int percentage) {
-    if (percentage == 100) return 'You got every sign right! Amazing!';
-    if (percentage >= 90) return 'Almost perfect! Outstanding performance!';
-    if (percentage >= 70) return 'You passed! Review the ones you missed.';
-    if (percentage >= 50) return 'You\'re improving! Check your mistakes below.';
-    return 'Review the signs below and try again!';
+  String _getResultSubtitle(BuildContext context, int percentage) {
+    final l10n = AppLocalizations.of(context);
+    if (percentage == 100) return l10n.perfectScoreMsg;
+    if (percentage >= 90) return l10n.excellentMsg;
+    if (percentage >= 70) return l10n.greatJobMsg;
+    if (percentage >= 50) return l10n.goodEffortMsg;
+    return l10n.keepPracticingMsg;
   }
 
   Widget _buildScoreCard(
@@ -766,7 +841,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '$correct out of $total correct',
+            AppLocalizations.of(context).correctOutOf(correct, total),
             style: Theme.of(context)
                 .textTheme
                 .bodyLarge
@@ -797,7 +872,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -811,8 +886,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('XP Earned',
-                  style: TextStyle(color: Colors.white70, fontSize: 14)),
+              Text(AppLocalizations.of(context).xpEarned,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14)),
               Text(
                 '+$xpEarned XP',
                 style: const TextStyle(
@@ -835,14 +910,14 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           child: _buildStatCard(context,
               icon: '⏱️',
               value: '${quizProvider.timeSpent}s',
-              label: 'Time Spent'),
+              label: AppLocalizations.of(context).timeSpent),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(context,
               icon: '✅',
               value: '${quizProvider.correctAnswers}',
-              label: 'Correct'),
+              label: AppLocalizations.of(context).correct),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -850,7 +925,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               icon: '❌',
               value:
                   '${quizProvider.totalQuestions - quizProvider.correctAnswers}',
-              label: 'Wrong'),
+              label: AppLocalizations.of(context).wrong),
         ),
       ],
     ).animate().fadeIn(delay: 800.ms);
@@ -882,7 +957,10 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
-                  ?.copyWith(color: context.textMuted)),
+                  ?.copyWith(color: context.textMuted),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center),
         ],
       ),
     );
@@ -893,10 +971,10 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFD700).withOpacity(0.15),
+        color: const Color(0xFFFFD700).withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
         border:
-            Border.all(color: const Color(0xFFFFD700).withOpacity(0.5), width: 2),
+            Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.5), width: 2),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -907,16 +985,16 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Perfect Score!',
+                AppLocalizations.of(context).perfectScoreLabel,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: const Color(0xFFFFD700),
                       fontWeight: FontWeight.bold,
                     ),
               ),
               Text(
-                '+50 Bonus XP',
+                AppLocalizations.of(context).bonusXP,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFFFFD700).withOpacity(0.8),
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.8),
                     ),
               ),
             ],
@@ -938,7 +1016,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           child: ElevatedButton.icon(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.refresh),
-            label: const Text('Try Again'),
+            label: Text(AppLocalizations.of(context).tryAgain),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(
@@ -954,7 +1032,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             onPressed: () =>
                 Navigator.popUntil(context, (route) => route.isFirst),
             icon: const Icon(Icons.home),
-            label: const Text('Back to Home'),
+            label: Text(AppLocalizations.of(context).backToHome),
             style: OutlinedButton.styleFrom(
               foregroundColor: context.textSecondary,
               side: BorderSide(color: context.borderColor),

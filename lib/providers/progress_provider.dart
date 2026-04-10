@@ -217,6 +217,12 @@ class ProgressProvider with ChangeNotifier {
     return _progressList.any((p) => p.lessonId == lessonId && p.isCompleted);
   }
 
+  // Update daily goals with actual progress
+  void refreshDailyGoals(int lessonsCompletedToday) {
+    _dailyGoals = DailyGoalModel.getTodaysGoals(currentProgress: lessonsCompletedToday);
+    notifyListeners();
+  }
+
   // Reset provider (for logout)
   void reset() {
     _progressList = [];

@@ -29,8 +29,6 @@ class QuizProvider with ChangeNotifier {
   Timer? _questionTimer;
   int _questionTimeLeft = 10;
   static const int _questionTimerDuration = 10;
-  int _questionStartTime = 0; // epoch ms when question started
-
   // Getters
   List<QuizModel> get quizzes => _quizzes;
   List<QuizQuestionModel> get currentQuestions => _currentQuestions;
@@ -177,7 +175,6 @@ class QuizProvider with ChangeNotifier {
     _questionTimer?.cancel();
     _questionTimeLeft = _questionTimerDuration;
     _isTimedOut = false;
-    _questionStartTime = DateTime.now().millisecondsSinceEpoch;
 
     _questionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_isAnswered) {
@@ -386,23 +383,6 @@ class QuizProvider with ChangeNotifier {
       xp += 50;
     }
     return xp;
-  }
-
-  // ── Legacy global timer (kept for old Firestore quiz docs) ────────────────
-
-  void _startTimer() {
-    _timeLeft = 60;
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_timeLeft > 0) {
-        _timeLeft--;
-        _timeSpent++;
-        notifyListeners();
-      } else {
-        timer.cancel();
-        notifyListeners();
-      }
-    });
   }
 
   // ── Reset ─────────────────────────────────────────────────────────────────

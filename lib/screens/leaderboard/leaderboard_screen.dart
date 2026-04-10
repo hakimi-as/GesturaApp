@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart';
@@ -57,7 +58,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       final currentUserId = authProvider.userId ?? '';
 
       if (_selectedScope == 'global') {
-        await _loadGlobalLeaderboard(currentUserId);
+        await _loadGlobalLeaderboard(currentUserId, _tabController.index);
       } else {
         await _loadFriendsLeaderboard(currentUserId);
       }
@@ -70,12 +71,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     }
   }
 
-  Future<void> _loadGlobalLeaderboard(String currentUserId) async {
+  /// Returns the Firestore sort field and display label for the current tab
+  String _getSortField(int tabIndex) {
+    switch (tabIndex) {
+      case 0: return 'currentStreak';   // Weekly → streak
+      case 1: return 'lessonsCompleted'; // Monthly → lessons
+      default: return 'totalXP';         // All-time → XP
+    }
+  }
+
+  Future<void> _loadGlobalLeaderboard(String currentUserId, int tabIndex) async {
     final firestore = FirebaseFirestore.instance;
+    final sortField = _getSortField(tabIndex);
 
     final snapshot = await firestore
         .collection('users')
-        .orderBy('totalXP', descending: true)
+        .orderBy(sortField, descending: true)
         .limit(50)
         .get();
 
@@ -182,7 +193,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           const Text('🏆', style: TextStyle(fontSize: 24)),
           const SizedBox(width: 8),
           Text(
-            'Leaderboard',
+            AppLocalizations.of(context).leaderboard,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -291,7 +302,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _selectedScope == 'global' ? 'Global Ranking' : 'Friends Ranking',
+                      _selectedScope == 'global' ? AppLocalizations.of(context).globalRanking : AppLocalizations.of(context).friendsRanking,
                       style: TextStyle(
                         color: Colors.white.withAlpha(180),
                         fontSize: 12,
@@ -309,16 +320,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   ],
                 ),
               ),
-              // XP
+              // Score for current tab
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text(
-                    '⭐',
-                    style: TextStyle(fontSize: 20),
+                  Text(
+                    _tabController.index == 0 ? '🔥' : _tabController.index == 1 ? '📚' : '⭐',
+                    style: const TextStyle(fontSize: 20),
                   ),
                   Text(
-                    '${user.totalXP} XP',
+                    _tabController.index == 0
+                        ? '${user.currentStreak} ${AppLocalizations.of(context).daysLabel}'
+                        : _tabController.index == 1
+                            ? '${user.lessonsCompleted} ${AppLocalizations.of(context).lessonsLabel}'
+                            : '${user.totalXP} XP',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -367,10 +382,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Global',
+                      AppLocalizations.of(context).global,
                       style: TextStyle(
-                        color: _selectedScope == 'global' 
-                            ? Colors.white 
+                        color: _selectedScope == 'global'
+                            ? Colors.white
                             : context.textMuted,
                         fontWeight: FontWeight.w600,
                       ),
@@ -409,10 +424,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Friends',
+                      AppLocalizations.of(context).friends,
                       style: TextStyle(
-                        color: _selectedScope == 'friends' 
-                            ? Colors.white 
+                        color: _selectedScope == 'friends'
+                            ? Colors.white
                             : context.textMuted,
                         fontWeight: FontWeight.w600,
                       ),
@@ -446,10 +461,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         unselectedLabelColor: context.textMuted,
         labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         dividerColor: Colors.transparent,
-        tabs: const [
-          Tab(text: 'Weekly'),
-          Tab(text: 'Monthly'),
-          Tab(text: 'All Time'),
+        tabs: [
+          Tab(text: AppLocalizations.of(context).weekly),
+          Tab(text: AppLocalizations.of(context).monthly),
+          Tab(text: AppLocalizations.of(context).allTime),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms);
@@ -503,18 +518,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           const Text('🏆', style: TextStyle(fontSize: 60)),
           const SizedBox(height: 16),
           Text(
-            'No rankings yet',
+            AppLocalizations.of(context).noRankingsYet,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Start learning to appear on the leaderboard!',
+            AppLocalizations.of(context).startLearningLeaderboard,
             style: TextStyle(
               color: context.textMuted,
               fontSize: 14,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -529,14 +545,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           const Text('👥', style: TextStyle(fontSize: 60)),
           const SizedBox(height: 16),
           Text(
-            'No friends yet',
+            AppLocalizations.of(context).noFriendsYet,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Add friends to compete with them!',
+            AppLocalizations.of(context).addFriendsCompete,
             style: TextStyle(
               color: context.textMuted,
               fontSize: 14,
@@ -546,7 +562,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              // Navigate to friends screen
               Navigator.pushNamed(context, '/friends');
             },
             style: ElevatedButton.styleFrom(
@@ -556,7 +571,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Find Friends'),
+            child: Text(AppLocalizations.of(context).findFriends),
           ),
         ],
       ),
@@ -612,9 +627,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'YOU',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context).youLabel,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
@@ -627,14 +642,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Text(
-                        '🔥 ${user.currentStreak} streak',
-                        style: TextStyle(color: context.textMuted, fontSize: 12),
+                      Flexible(
+                        child: Text(
+                          '🔥 ${user.currentStreak} ${AppLocalizations.of(context).streakStat}',
+                          style: TextStyle(color: context.textMuted, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        '🤟 ${user.signsLearned} signs',
-                        style: TextStyle(color: context.textMuted, fontSize: 12),
+                      Flexible(
+                        child: Text(
+                          '🤟 ${user.signsLearned} ${AppLocalizations.of(context).signsStat}',
+                          style: TextStyle(color: context.textMuted, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
                     ],
                   ),
@@ -645,14 +668,25 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${user.totalXP}',
+                  _tabController.index == 0
+                      ? '${user.currentStreak}'
+                      : _tabController.index == 1
+                          ? '${user.lessonsCompleted}'
+                          : '${user.totalXP}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                     color: isCurrentUser ? AppColors.primary : context.textPrimary,
                   ),
                 ),
-                Text('XP', style: TextStyle(color: context.textMuted, fontSize: 11)),
+                Text(
+                  _tabController.index == 0
+                      ? AppLocalizations.of(context).daysLabel
+                      : _tabController.index == 1
+                          ? AppLocalizations.of(context).lessonsLabel
+                          : 'XP',
+                  style: TextStyle(color: context.textMuted, fontSize: 11),
+                ),
               ],
             ),
           ],
@@ -711,9 +745,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'YOU',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context).youLabel,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.bold,

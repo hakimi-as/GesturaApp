@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/category_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
@@ -77,7 +78,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
         onPressed: () => _showAddEditDialog(null),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add),
-        label: const Text('Add Category'),
+        label: Text(AppLocalizations.of(context).addCategory),
       ),
     );
   }
@@ -208,7 +209,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
           ElevatedButton.icon(
             onPressed: () => _showAddEditDialog(null),
             icon: const Icon(Icons.add),
-            label: const Text('Add Category'),
+            label: Text(AppLocalizations.of(context).addCategory),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
             ),
@@ -616,7 +617,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                 };
 
                 if (isEditing) {
-                  await _firestoreService.updateCategory(category!.id, data);
+                  await _firestoreService.updateCategory(category.id, data);
                   _showSnackBar('Category updated');
                 } else {
                   data['lessonCount'] = 0;

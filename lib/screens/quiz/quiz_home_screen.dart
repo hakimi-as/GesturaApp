@@ -4,9 +4,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
-import 'quiz_screen.dart';
+import 'quiz_list_screen.dart';
 
 class QuizHomeScreen extends StatefulWidget {
   const QuizHomeScreen({super.key});
@@ -19,6 +20,21 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   List<Map<String, dynamic>> _recentAttempts = [];
   bool _loadingScores = true;
+
+  /// Best score (0–100) per quiz type from recent attempts.
+  Map<String, int> get _bestScoreByType {
+    final Map<String, int> best = {};
+    for (final attempt in _recentAttempts) {
+      final type = attempt['quizType'] as String? ?? '';
+      final total = attempt['totalQuestions'] as int? ?? 0;
+      final correct = attempt['correctAnswers'] as int? ?? 0;
+      final score = total > 0 ? (correct / total * 100).round() : 0;
+      if (!best.containsKey(type) || best[type]! < score) {
+        best[type] = score;
+      }
+    }
+    return best;
+  }
 
   @override
   void initState() {
@@ -45,6 +61,7 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: context.bgPrimary,
       appBar: AppBar(
@@ -53,7 +70,7 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
           icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Quiz'),
+        title: Text(l10n.quizTitle),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -64,54 +81,17 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
             const SizedBox(height: 24),
 
             Text(
-              'Choose Quiz Type',
+              l10n.chooseQuizType,
               style: Theme.of(context).textTheme.titleLarge,
             ).animate().fadeIn(delay: 200.ms),
             const SizedBox(height: 16),
 
-            _buildQuizTypeCard(
-              context,
-              icon: '👁️',
-              title: 'Sign to Text',
-              description: 'See a BIM sign and pick what it means',
-              color: AppColors.primary,
-              quizType: 'sign_to_text',
-            ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
-            const SizedBox(height: 12),
-
-            _buildQuizTypeCard(
-              context,
-              icon: '✋',
-              title: 'Text to Sign',
-              description: 'Read a word and pick the correct sign image',
-              color: AppColors.secondary,
-              quizType: 'text_to_sign',
-            ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1),
-            const SizedBox(height: 12),
-
-            _buildQuizTypeCard(
-              context,
-              icon: '⏱️',
-              title: 'Timed Challenge',
-              description: 'Answer as many as you can in 60 seconds',
-              color: AppColors.warning,
-              quizType: 'timed',
-            ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1),
-            const SizedBox(height: 12),
-
-            _buildQuizTypeCard(
-              context,
-              icon: '✍️',
-              title: 'Spelling Quiz',
-              description: 'Identify words from fingerspelling sign sequences',
-              color: AppColors.accent,
-              quizType: 'spelling',
-            ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.1),
+            _buildQuizGrid(context),
 
             const SizedBox(height: 24),
 
             Text(
-              'Recent Scores',
+              l10n.recentScores,
               style: Theme.of(context).textTheme.titleLarge,
             ).animate().fadeIn(delay: 700.ms),
             const SizedBox(height: 16),
@@ -124,6 +104,7 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
   }
 
   Widget _buildHeaderCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
@@ -135,7 +116,7 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppColors.accent.withOpacity(0.3),
+                color: AppColors.accent.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -148,23 +129,23 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Test Your Knowledge',
+                      l10n.testKnowledge,
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.9), fontSize: 14),
+                          color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Take a quiz and earn XP!',
-                      style: TextStyle(
+                    Text(
+                      l10n.quizHeaderSubtitle,
+                      style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Total XP: ${user?.totalXP ?? 0}',
+                      '${l10n.totalXP}: ${user?.totalXP ?? 0}',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.9), fontSize: 14),
+                          color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
                     ),
                   ],
                 ),
@@ -173,7 +154,7 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Center(
@@ -187,65 +168,169 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
     );
   }
 
+  Widget _buildQuizGrid(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final quizTypes = [
+      _QuizCardData(
+        icon: '👁️',
+        title: l10n.signToText,
+        description: l10n.signToTextFullDesc,
+        color: AppColors.primary,
+        quizType: 'sign_to_text',
+        questionCount: 10,
+        xp: 50,
+      ),
+      _QuizCardData(
+        icon: '✋',
+        title: l10n.textToSign,
+        description: l10n.textToSignFullDesc,
+        color: AppColors.secondary,
+        quizType: 'text_to_sign',
+        questionCount: 10,
+        xp: 50,
+      ),
+      _QuizCardData(
+        icon: '⏱️',
+        title: l10n.timedChallenge,
+        description: l10n.timedChallengeFullDesc,
+        color: AppColors.warning,
+        quizType: 'timed',
+        questionCount: 15,
+        xp: 75,
+      ),
+      _QuizCardData(
+        icon: '✍️',
+        title: l10n.spellingQuiz,
+        description: l10n.spellingQuizFullDesc,
+        color: AppColors.accent,
+        quizType: 'spelling',
+        questionCount: 10,
+        xp: 50,
+      ),
+    ];
+
+    final bestScores = _bestScoreByType;
+
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 0.82,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: quizTypes.asMap().entries.map((entry) {
+        final i = entry.key;
+        final data = entry.value;
+        final best = bestScores[data.quizType] ?? 0;
+
+        return _buildQuizTypeCard(context, data, best)
+            .animate()
+            .fadeIn(delay: Duration(milliseconds: 300 + i * 100))
+            .slideY(begin: 0.1);
+      }).toList(),
+    );
+  }
+
   Widget _buildQuizTypeCard(
-    BuildContext context, {
-    required String icon,
-    required String title,
-    required String description,
-    required Color color,
-    required String quizType,
-  }) {
+    BuildContext context,
+    _QuizCardData data,
+    int bestScore,
+  ) {
+    final l10n = AppLocalizations.of(context);
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => QuizScreen(quizType: quizType),
-          ),
-        );
-      },
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QuizListScreen(quizType: data.quizType, title: data.title),
+        ),
+      ),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.bgCard,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: context.borderColor),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
           children: [
+            // Icon
             Container(
-              width: 56,
-              height: 56,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: data.color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(
-                child: Text(icon, style: const TextStyle(fontSize: 28)),
+                child: Text(data.icon, style: const TextStyle(fontSize: 26)),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(height: 10),
+            // Title
+            Text(
+              data.title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            // Description
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: context.textMuted,
-                        ),
-                  ),
-                ],
+              child: Text(
+                data.description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: context.textMuted,
+                      height: 1.3,
+                    ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: color, size: 18),
+            const SizedBox(height: 8),
+            // Bottom row: question count + XP
+            Row(
+              children: [
+                Text(
+                  '${data.questionCount} ${l10n.questions}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.textMuted,
+                        fontSize: 11,
+                      ),
+                ),
+                const Spacer(),
+                Text(
+                  '+${data.xp} XP',
+                  style: TextStyle(
+                    color: data.color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            // Progress bar (shows best score, always visible)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: bestScore / 100,
+                minHeight: 6,
+                backgroundColor: data.color.withValues(alpha: 0.25),
+                valueColor: AlwaysStoppedAnimation<Color>(data.color),
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Label below bar
+            Text(
+              bestScore > 0 ? '${l10n.bestScore}: $bestScore%' : l10n.notPlayedYet,
+              style: TextStyle(
+                color: bestScore > 0 ? data.color : context.textMuted,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
@@ -278,7 +363,7 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
             const Text('📝', style: TextStyle(fontSize: 40)),
             const SizedBox(height: 12),
             Text(
-              'No quizzes taken yet',
+              AppLocalizations.of(context).noQuizzesYet,
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
@@ -286,7 +371,7 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Complete a quiz to see your scores here',
+              AppLocalizations.of(context).completeQuizPrompt,
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
@@ -316,6 +401,7 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
           final completedAt = attempt['completedAt'];
           final xpEarned = attempt['xpEarned'] as int? ?? 0;
 
+          final l10n = AppLocalizations.of(context);
           String dateLabel = '';
           if (completedAt != null) {
             try {
@@ -323,11 +409,11 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
               final now = DateTime.now();
               final diff = now.difference(dt);
               if (diff.inDays == 0) {
-                dateLabel = 'Today';
+                dateLabel = l10n.today;
               } else if (diff.inDays == 1) {
-                dateLabel = 'Yesterday';
+                dateLabel = l10n.yesterday;
               } else if (diff.inDays < 7) {
-                dateLabel = '${diff.inDays} days ago';
+                dateLabel = '${diff.inDays} ${l10n.daysAgoLabel}';
               } else {
                 dateLabel = DateFormat('d MMM').format(dt);
               }
@@ -365,11 +451,11 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _quizTypeName(quizType),
+                            _quizTypeName(context, quizType),
                             style: Theme.of(context).textTheme.titleSmall,
                           ),
                           Text(
-                            '$correct/$totalQ correct · $dateLabel',
+                            '$correct/$totalQ ${l10n.correct} · $dateLabel',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -407,18 +493,19 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
     ).animate().fadeIn(delay: 800.ms);
   }
 
-  String _quizTypeName(String type) {
+  String _quizTypeName(BuildContext context, String type) {
+    final l10n = AppLocalizations.of(context);
     switch (type) {
       case 'sign_to_text':
-        return 'Sign to Text';
+        return l10n.signToText;
       case 'text_to_sign':
-        return 'Text to Sign';
+        return l10n.textToSign;
       case 'timed':
-        return 'Timed Challenge';
+        return l10n.timedChallenge;
       case 'spelling':
-        return 'Spelling Quiz';
+        return l10n.spellingQuiz;
       default:
-        return 'Quiz';
+        return l10n.quizTitle;
     }
   }
 
@@ -427,4 +514,24 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
     if (score >= 70) return AppColors.warning;
     return AppColors.error;
   }
+}
+
+class _QuizCardData {
+  final String icon;
+  final String title;
+  final String description;
+  final Color color;
+  final String quizType;
+  final int questionCount;
+  final int xp;
+
+  const _QuizCardData({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.color,
+    required this.quizType,
+    required this.questionCount,
+    required this.xp,
+  });
 }

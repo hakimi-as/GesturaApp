@@ -7,6 +7,8 @@ import '../../models/quiz_model.dart';
 import '../../providers/quiz_provider.dart';
 import '../../services/cloudinary_service.dart';
 import '../../widgets/video/video_player_widget.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/analytics_service.dart';
 import 'quiz_result_screen.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -33,6 +35,7 @@ class _QuizScreenState extends State<QuizScreen> {
   Future<void> _startQuiz() async {
     final quizProvider = Provider.of<QuizProvider>(context, listen: false);
     await quizProvider.startQuiz(widget.quizType, quizId: widget.quizId);
+    AnalyticsService.logQuizStarted(quizType: widget.quizType);
   }
 
   @override
@@ -81,13 +84,21 @@ class _QuizScreenState extends State<QuizScreen> {
           icon: Icon(Icons.close, color: context.textPrimary),
           onPressed: () => _showExitDialog(),
         ),
-        title: Consumer<QuizProvider>(
-          builder: (context, quizProvider, child) {
-            return Text(
-              'Question ${quizProvider.currentQuestionIndex + 1}/${quizProvider.totalQuestions}',
-            );
-          },
-        ),
+        title: Builder(builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Text(
+            widget.quizType == 'sign_to_text'
+                ? l10n.signToText
+                : widget.quizType == 'text_to_sign'
+                    ? l10n.textToSign
+                    : widget.quizType == 'timed'
+                        ? l10n.timedChallenge
+                        : widget.quizType == 'spelling'
+                            ? l10n.spellingQuiz
+                            : l10n.quizTitle,
+            style: const TextStyle(fontSize: 16),
+          );
+        }),
         actions: const [],
       ),
       body: Consumer<QuizProvider>(
@@ -108,7 +119,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
           final question = quizProvider.currentQuestion;
           if (question == null) {
-            return const Center(child: Text('No questions available'));
+            return Center(child: Text(AppLocalizations.of(context).noQuestionsAvailable));
           }
 
           return Column(
@@ -146,16 +157,66 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildProgressBar(QuizProvider quizProvider) {
-    return Container(
-      height: 6,
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(3),
-        child: LinearProgressIndicator(
-          value: quizProvider.progressPercentage,
-          backgroundColor: context.bgCard,
-          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-        ),
+    final current = quizProvider.currentQuestionIndex + 1;
+    final total = quizProvider.totalQuestions;
+    final percent = total > 0 ? ((current / total) * 100).round() : 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$current / $total',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    AppLocalizations.of(context).questions,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '$percent%',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: total > 0 ? current / total : 0,
+              minHeight: 6,
+              backgroundColor: context.bgCard,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -251,42 +312,64 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
             ).animate().fadeIn(duration: 400.ms)
           else if (hasImage)
-            Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                color: context.bgElevated,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withAlpha(51),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.network(
-                  CloudinaryService.getOptimizedImage(
-                      question.imageUrl!, width: 400, height: 400),
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
-                            : null,
-                        color: AppColors.primary,
+            GestureDetector(
+              onTap: () => _showFullscreenImage(context, question.imageUrl!),
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: context.bgElevated,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withAlpha(51),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.network(
+                        CloudinaryService.getOptimizedImage(
+                            question.imageUrl!, width: 400, height: 400),
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: AppColors.primary,
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(question.signEmoji,
+                              style: const TextStyle(fontSize: 60)),
+                        ),
                       ),
-                    );
-                  },
-                  errorBuilder: (_, __, ___) => Center(
-                    child: Text(question.signEmoji,
-                        style: const TextStyle(fontSize: 60)),
-                  ),
+                    ),
+                    // Tap-to-enlarge hint
+                    Positioned(
+                      bottom: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(120),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(Icons.zoom_in, color: Colors.white, size: 14),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ).animate().scale(duration: 400.ms, curve: Curves.elasticOut)
@@ -365,7 +448,7 @@ class _QuizScreenState extends State<QuizScreen> {
               const Text('✍️', style: TextStyle(fontSize: 18)),
               const SizedBox(width: 8),
               Text(
-                'What word is being spelled?',
+                AppLocalizations.of(context).whatWordSpelled,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -374,7 +457,7 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            '$wordLength-letter word',
+            AppLocalizations.of(context).nLetterWord(wordLength),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: context.textMuted,
                 ),
@@ -420,7 +503,7 @@ class _QuizScreenState extends State<QuizScreen> {
                                       width: 140,
                                       height: 160,
                                     ),
-                                    fit: BoxFit.cover,
+                                    fit: BoxFit.contain,
                                     loadingBuilder:
                                         (context, child, loadingProgress) {
                                       if (loadingProgress == null) return child;
@@ -531,7 +614,7 @@ class _QuizScreenState extends State<QuizScreen> {
       child: Column(
         children: [
           Text(
-            'Which sign means...',
+            '${AppLocalizations.of(context).whichSignMeans}...',
             style: TextStyle(
               color: Colors.white.withAlpha(200),
               fontSize: 14,
@@ -562,7 +645,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 const Text('✋', style: TextStyle(fontSize: 14)),
                 const SizedBox(width: 6),
                 Text(
-                  'Pick the correct sign below',
+                  AppLocalizations.of(context).pickCorrectSign,
                   style: TextStyle(
                     color: Colors.white.withAlpha(220),
                     fontSize: 12,
@@ -737,32 +820,35 @@ class _QuizScreenState extends State<QuizScreen> {
               children: [
                 // Option image
                 if (optionImage != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: Image.network(
-                      CloudinaryService.getOptimizedImage(optionImage, width: 300, height: 300),
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                : null,
-                            color: AppColors.primary,
+                  GestureDetector(
+                    onLongPress: () => _showFullscreenImage(context, optionImage),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.network(
+                        CloudinaryService.getOptimizedImage(optionImage, width: 300, height: 300),
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: AppColors.primary,
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.broken_image, color: context.textMuted, size: 40),
+                              const SizedBox(height: 4),
+                              Text(option, style: TextStyle(color: context.textMuted)),
+                            ],
                           ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.broken_image, color: context.textMuted, size: 40),
-                            const SizedBox(height: 4),
-                            Text(option, style: TextStyle(color: context.textMuted)),
-                          ],
                         ),
                       ),
                     ),
@@ -823,34 +909,8 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                 ),
 
-                // Option label at bottom
-                if (option.isNotEmpty && optionImage != null)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(150),
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(14),
-                          bottomRight: Radius.circular(14),
-                        ),
-                      ),
-                      child: Text(
-                        option,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
+                // Option label intentionally hidden — showing sign names
+                // would give away the answer in text_to_sign quiz.
 
                 // Check mark for selected
                 if (isSelected && !isAnswered)
@@ -901,59 +961,63 @@ class _QuizScreenState extends State<QuizScreen> {
           ],
         ),
         child: SafeArea(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: AppColors.error.withAlpha(38),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                const Text(
-                  '⏰ Time\'s up!',
-                  style: TextStyle(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+          child: Builder(builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.error.withAlpha(38),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '⏰ ${l10n.timeUp}',
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Correct answer: "${quizProvider.currentQuestion?.correctAnswer}"',
-                  style: TextStyle(
-                    color: AppColors.error.withAlpha(200),
-                    fontSize: 13,
+                  const SizedBox(height: 4),
+                  Text(
+                    '${l10n.correctAnswerIs}: "${quizProvider.currentQuestion?.correctAnswer}"',
+                    style: TextStyle(
+                      color: AppColors.error.withAlpha(200),
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ).animate().fadeIn(duration: 300.ms),
+                ],
+              ),
+            ).animate().fadeIn(duration: 300.ms);
+          }),
         ),
       );
     }
 
+    final l10n = AppLocalizations.of(context);
     String buttonText;
     if (_isTimed) {
       if (!hasSelection) {
-        buttonText = 'Select an answer';
+        buttonText = l10n.selectAnAnswer;
       } else if (!isAnswered) {
-        buttonText = 'Submit';
+        buttonText = l10n.submit;
       } else if (isLastQuestion) {
-        buttonText = 'See Results';
+        buttonText = l10n.seeResults;
       } else {
-        buttonText = 'Next →';
+        buttonText = '${l10n.next} →';
       }
     } else {
       if (!hasSelection) {
-        buttonText = 'Select an answer';
+        buttonText = l10n.selectAnAnswer;
       } else if (!isAnswered) {
-        buttonText = 'Submit Answer';
+        buttonText = l10n.submitAnswer;
       } else if (isLastQuestion) {
-        buttonText = 'See Results';
+        buttonText = l10n.seeResults;
       } else {
-        buttonText = 'Next Question';
+        buttonText = l10n.nextQuestion;
       }
     }
 
@@ -964,25 +1028,26 @@ class _QuizScreenState extends State<QuizScreen> {
       final selectedIdx = quizProvider.selectedOptionIndex;
       if (selectedIdx != null) {
         final isCorrect = quizProvider.isCorrectAnswer(selectedIdx);
+        final l10n = AppLocalizations.of(context);
         if (isCorrect) {
           if (_isTimed) {
             final elapsed = quizProvider.questionTimerDuration -
                 quizProvider.questionTimeLeft;
             if (elapsed <= 3) {
-              feedbackText = '⚡ Lightning fast! +15 pts';
+              feedbackText = '${l10n.lightningFastFeedback} +15 pts';
             } else if (elapsed <= 6) {
-              feedbackText = '✓ Fast! +12 pts';
+              feedbackText = '${l10n.fastFeedback} +12 pts';
             } else {
-              feedbackText = '✓ Correct! +10 pts';
+              feedbackText = '${l10n.correctFeedback} +10 pts';
             }
           } else {
             feedbackText =
-                '✓ Correct! +${quizProvider.currentQuestion?.points ?? 10} XP';
+                '${l10n.correctFeedback} +${quizProvider.currentQuestion?.points ?? 10} XP';
           }
           feedbackColor = AppColors.success;
         } else {
           feedbackText =
-              '✗ Wrong! Answer: "${quizProvider.currentQuestion?.correctAnswer}"';
+              '${l10n.wrongFeedback} "${quizProvider.currentQuestion?.correctAnswer}"';
           feedbackColor = AppColors.error;
         }
       }
@@ -1051,20 +1116,66 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
+  void _showFullscreenImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Image.network(
+                    CloudinaryService.getOptimizedImage(imageUrl, width: 800, height: 800),
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 48,
+                right: 16,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(Icons.close, color: Colors.white, size: 22),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showExitDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: context.bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Quit Quiz?'),
-        content: const Text(
-          'Your progress will be lost. Are you sure you want to quit?',
-        ),
+        title: Text(AppLocalizations.of(context).quitQuiz),
+        content: Text(AppLocalizations.of(context).quitQuizMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1074,7 +1185,7 @@ class _QuizScreenState extends State<QuizScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
             ),
-            child: const Text('Quit'),
+            child: Text(AppLocalizations.of(context).quit),
           ),
         ],
       ),

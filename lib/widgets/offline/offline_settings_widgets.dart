@@ -334,11 +334,12 @@ class _OfflineSettingsSectionState extends State<OfflineSettingsSection> {
                 TextButton(
                   onPressed: () async {
                     HapticService.buttonTap();
+                    final messenger = ScaffoldMessenger.of(context);
                     final result = await OfflineService.syncPendingItems();
                     await _loadStats();
-                    
+
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         SnackBar(
                           content: Text(
                             result.isComplete 

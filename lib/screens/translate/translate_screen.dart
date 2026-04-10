@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt; // NEW
 import 'package:flutter_tts/flutter_tts.dart'; // NEW
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/video/sign_player.dart';
 
 class TranslateScreen extends StatefulWidget {
@@ -32,7 +33,8 @@ class _TranslateScreenState extends State<TranslateScreen>
   bool _isCameraActive = false;
   bool _isTranslating = false;
   String _translationOutput = '';
-  List<String> _currentSentence = []; 
+  List<String> _currentSentence = [];
+  List<SignSegment> _signSegments = [];
   final int _maxCharacters = 200;
 
   @override
@@ -79,7 +81,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                     child: const Icon(Icons.translate, color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Text('Translate'),
+                  Text(AppLocalizations.of(context).navTranslate),
                 ],
               ),
             )
@@ -120,7 +122,7 @@ class _TranslateScreenState extends State<TranslateScreen>
           ),
           const SizedBox(width: 12),
           Text(
-            'Translate',
+            AppLocalizations.of(context).navTranslate,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
@@ -139,8 +141,8 @@ class _TranslateScreenState extends State<TranslateScreen>
       ),
       child: Row(
         children: [
-          _buildTabBtn(0, '👋', 'Sign → Text'),
-          _buildTabBtn(1, '📝', 'Text → Sign'),
+          _buildTabBtn(0, '👋', AppLocalizations.of(context).signToTextTab),
+          _buildTabBtn(1, '📝', AppLocalizations.of(context).textToSignTab),
         ],
       ),
     ).animate().fadeIn(delay: 100.ms);
@@ -223,7 +225,7 @@ class _TranslateScreenState extends State<TranslateScreen>
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Text(
-            'Point your camera at sign language gestures to translate them in real-time',
+            AppLocalizations.of(context).pointCameraAtSigns,
             textAlign: TextAlign.center,
             style: TextStyle(color: context.textMuted, fontSize: 14, height: 1.5),
           ),
@@ -244,12 +246,12 @@ class _TranslateScreenState extends State<TranslateScreen>
                 ),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('📷', style: TextStyle(fontSize: 18)),
-                SizedBox(width: 10),
-                Text('Start Camera', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+                const Text('📷', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 10),
+                Text(AppLocalizations.of(context).startCamera, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
               ],
             ),
           ),
@@ -267,9 +269,9 @@ class _TranslateScreenState extends State<TranslateScreen>
             children: [
               Icon(Icons.videocam, color: AppColors.primary, size: 60),
               const SizedBox(height: 16),
-              Text('Camera Active', style: TextStyle(color: context.textSecondary, fontSize: 16)),
+              Text(AppLocalizations.of(context).cameraActive, style: TextStyle(color: context.textSecondary, fontSize: 16)),
               const SizedBox(height: 8),
-              Text('Show a sign to translate', style: TextStyle(color: context.textMuted, fontSize: 14)),
+              Text(AppLocalizations.of(context).showSignToTranslate, style: TextStyle(color: context.textMuted, fontSize: 14)),
             ],
           ),
         ),
@@ -286,12 +288,12 @@ class _TranslateScreenState extends State<TranslateScreen>
                   color: AppColors.error,
                   borderRadius: BorderRadius.circular(30),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.stop, color: Colors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text('Stop Camera', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    const Icon(Icons.stop, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context).stopCamera, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -318,7 +320,7 @@ class _TranslateScreenState extends State<TranslateScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'TRANSLATION OUTPUT',
+                AppLocalizations.of(context).translationOutput,
                 style: TextStyle(color: context.textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1),
               ),
               Container(
@@ -327,13 +329,13 @@ class _TranslateScreenState extends State<TranslateScreen>
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text('ASL → English', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
+                child: Text(AppLocalizations.of(context).aslToEnglish, style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
-            _translationOutput.isEmpty ? 'Waiting for gestures...' : _translationOutput,
+            _translationOutput.isEmpty ? AppLocalizations.of(context).waitingForGestures : _translationOutput,
             style: TextStyle(
               color: _translationOutput.isEmpty ? context.textMuted : context.textPrimary,
               fontSize: 16,
@@ -343,11 +345,11 @@ class _TranslateScreenState extends State<TranslateScreen>
           const SizedBox(height: 20),
           Row(
             children: [
-              _buildOutputActionButton(icon: Icons.volume_up, label: 'Speak', onTap: _speakOutput),
+              _buildOutputActionButton(icon: Icons.volume_up, label: AppLocalizations.of(context).speak, onTap: _speakOutput),
               const SizedBox(width: 10),
-              _buildOutputActionButton(icon: Icons.copy, label: 'Copy', onTap: _copyOutput),
+              _buildOutputActionButton(icon: Icons.copy, label: AppLocalizations.of(context).copy, onTap: _copyOutput),
               const SizedBox(width: 10),
-              _buildOutputActionButton(icon: Icons.delete_outline, label: 'Clear', onTap: _clearOutput),
+              _buildOutputActionButton(icon: Icons.delete_outline, label: AppLocalizations.of(context).clear, onTap: _clearOutput),
             ],
           ),
         ],
@@ -365,8 +367,12 @@ class _TranslateScreenState extends State<TranslateScreen>
           _buildTextInputSection(),
           const SizedBox(height: 20),
           _buildSignPreview(),
+          if (_signSegments.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildSegmentBreakdown(),
+          ],
           const SizedBox(height: 20),
-          _buildCurrentSignSection(), // Now includes speaker button!
+          _buildCurrentSignSection(),
           const SizedBox(height: 20),
         ],
       ),
@@ -389,7 +395,7 @@ class _TranslateScreenState extends State<TranslateScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'ENTER TEXT',
+                AppLocalizations.of(context).enterText,
                 style: TextStyle(color: context.textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1),
               ),
               Text('${_textController.text.length}/$_maxCharacters', style: TextStyle(color: context.textMuted, fontSize: 11)),
@@ -402,7 +408,7 @@ class _TranslateScreenState extends State<TranslateScreen>
             maxLines: 3,
             style: TextStyle(color: context.textPrimary, fontSize: 16),
             decoration: InputDecoration(
-              hintText: 'Type a word or sentence...',
+              hintText: AppLocalizations.of(context).typeWordSentence,
               hintStyle: TextStyle(color: context.textMuted, fontSize: 14),
               border: InputBorder.none,
               counterText: '',
@@ -414,15 +420,15 @@ class _TranslateScreenState extends State<TranslateScreen>
             children: [
               // UPDATED: Voice Input Button
               _buildInputActionButton(
-                icon: _isListening ? Icons.mic_off : Icons.mic, 
-                label: _isListening ? 'Listening...' : 'Voice', 
+                icon: _isListening ? Icons.mic_off : Icons.mic,
+                label: _isListening ? AppLocalizations.of(context).listening : AppLocalizations.of(context).voice,
                 onTap: _startVoiceInput,
                 isActive: _isListening,
               ),
               const SizedBox(width: 10),
-              _buildInputActionButton(icon: Icons.delete_outline, label: 'Clear', onTap: () {
+              _buildInputActionButton(icon: Icons.delete_outline, label: AppLocalizations.of(context).clear, onTap: () {
                 _textController.clear();
-                setState(() => _currentSentence = []);
+                setState(() { _currentSentence = []; _signSegments = []; });
               }),
               const Spacer(),
               GestureDetector(
@@ -436,12 +442,12 @@ class _TranslateScreenState extends State<TranslateScreen>
                       BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 5)),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('🤟', style: TextStyle(fontSize: 16)),
-                      SizedBox(width: 8),
-                      Text('Translate', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                      const Text('🤟', style: TextStyle(fontSize: 16)),
+                      const SizedBox(width: 8),
+                      Text(AppLocalizations.of(context).translateBtn, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
                     ],
                   ),
                 ),
@@ -490,6 +496,9 @@ class _TranslateScreenState extends State<TranslateScreen>
           ? SignPlayer(
               sentence: _currentSentence,
               key: ValueKey(_currentSentence.join()),
+              onLoadComplete: (segments) {
+                if (mounted) setState(() => _signSegments = segments);
+              },
             )
           : Container(
               // Keep placeholder styling or make it match animation box style
@@ -524,7 +533,7 @@ class _TranslateScreenState extends State<TranslateScreen>
         ),
         const SizedBox(height: 20),
         Text(
-          _isTranslating ? 'Translating...' : 'Ready to translate',
+          _isTranslating ? AppLocalizations.of(context).translating : AppLocalizations.of(context).readyToTranslate,
           style: TextStyle(color: context.textSecondary, fontSize: 16),
         ),
       ],
@@ -547,14 +556,14 @@ class _TranslateScreenState extends State<TranslateScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('CURRENT SIGN', style: TextStyle(color: context.textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1)),
+              Text(AppLocalizations.of(context).currentSign, style: TextStyle(color: context.textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text('English → MSL', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
+                child: Text(AppLocalizations.of(context).englishToMsl, style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -565,7 +574,7 @@ class _TranslateScreenState extends State<TranslateScreen>
             children: [
               Expanded(
                 child: Text(
-                  _currentSentence.isEmpty ? 'Type something to see ML animation' : _currentSentence.join(' ').toUpperCase(),
+                  _currentSentence.isEmpty ? AppLocalizations.of(context).typeSomethingToSee : _currentSentence.join(' ').toUpperCase(),
                   style: TextStyle(
                     color: _currentSentence.isEmpty ? context.textMuted : context.textPrimary,
                     fontSize: 16,
@@ -577,7 +586,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                 IconButton(
                   onPressed: _speakCurrentSign,
                   icon: const Icon(Icons.volume_up, color: Colors.blueAccent),
-                  tooltip: "Speak Sign",
+                  tooltip: AppLocalizations.of(context).speakSign,
                 ),
             ],
           ),
@@ -615,7 +624,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     if (_translationOutput.isEmpty) return;
     Clipboard.setData(ClipboardData(text: _translationOutput));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✓ Copied to clipboard'), behavior: SnackBarBehavior.floating),
+      SnackBar(content: Text(AppLocalizations.of(context).copiedToClipboard), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -626,6 +635,8 @@ class _TranslateScreenState extends State<TranslateScreen>
   // UPDATED: Real Voice Input Logic
   void _startVoiceInput() async {
     if (!_isListening) {
+      final messenger = ScaffoldMessenger.of(context);
+      final micDeniedMsg = AppLocalizations.of(context).micAccessDenied;
       bool available = await _speech.initialize(
         onStatus: (status) => debugPrint('onStatus: $status'),
         onError: (errorNotification) => debugPrint('onError: $errorNotification'),
@@ -638,7 +649,7 @@ class _TranslateScreenState extends State<TranslateScreen>
           }),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Microphone access denied or unavailable')));
+        messenger.showSnackBar(SnackBar(content: Text(micDeniedMsg)));
       }
     } else {
       setState(() => _isListening = false);
@@ -663,6 +674,87 @@ class _TranslateScreenState extends State<TranslateScreen>
     });
   }
   
+  Widget _buildSegmentBreakdown() {
+    final bimCount = _signSegments.where((s) => s.type == 'bim').length;
+    final fsCount = _signSegments.where((s) => s.type == 'fingerspell').length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'WORD BREAKDOWN',
+                style: TextStyle(color: context.textMuted, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
+              ),
+              const Spacer(),
+              if (bimCount > 0)
+                _buildCountBadge('$bimCount BIM', Colors.green),
+              if (bimCount > 0 && fsCount > 0) const SizedBox(width: 6),
+              if (fsCount > 0)
+                _buildCountBadge('$fsCount Fingerspelled', Colors.blueAccent),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _signSegments.map((seg) {
+              final isBim = seg.type == 'bim';
+              final color = isBim ? Colors.green : Colors.blueAccent;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: color.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isBim ? '🤟' : '✍️',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      seg.label,
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountBadge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+    );
+  }
+
   Widget _buildOutputActionButton({required IconData icon, required String label, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,

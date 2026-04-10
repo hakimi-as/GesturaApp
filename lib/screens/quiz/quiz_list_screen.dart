@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/theme.dart';
 import '../../models/quiz_model.dart';
 import '../../services/firestore_service.dart';
+import '../../l10n/app_localizations.dart';
 import 'quiz_screen.dart';
 
 class QuizListScreen extends StatefulWidget {
@@ -96,11 +97,28 @@ class _QuizListScreenState extends State<QuizListScreen> {
         children: [
           Text(_getTypeEmoji(), style: const TextStyle(fontSize: 60)),
           const SizedBox(height: 16),
-          Text('No quizzes available', style: Theme.of(context).textTheme.titleLarge),
+          Text(AppLocalizations.of(context).noQuizzesAvailable, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
-            'Check back later for new quizzes',
+            AppLocalizations.of(context).checkBackLater,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.textMuted),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => QuizScreen(quizType: widget.quizType),
+              ),
+            ),
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: Text(AppLocalizations.of(context).quickStart),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _getTypeColor(),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
           ),
         ],
       ),
@@ -162,7 +180,7 @@ class _QuizListScreenState extends State<QuizListScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '${quiz.questionCount} questions',
+                          '${quiz.questionCount} ${AppLocalizations.of(context).questions}',
                           style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
                         ),
                       ),

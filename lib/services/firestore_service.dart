@@ -561,7 +561,7 @@ class FirestoreService {
         final allFour = [lesson, ...distractors]..shuffle();
 
         final options = allFour.map((l) => l.signName).toList();
-        final optionImages = allFour.map((l) => l.imageUrl as String?).toList();
+        final optionImages = allFour.map((l) => l.imageUrl).toList();
 
         return QuizQuestionModel(
           id: lesson.id,
@@ -715,18 +715,32 @@ class FirestoreService {
   /// Returns the user's most recent quiz attempts from the progress collection.
   Future<List<Map<String, dynamic>>> getRecentQuizAttempts(
     String userId, {
-    int limit = 5,
+    int limit = 20,
   }) async {
     try {
+      // Single-field where only — avoids composite index requirement.
+      // We filter by type and sort in Dart.
       final snapshot = await _firestore
           .collection(AppConstants.progressCollection)
           .where('userId', isEqualTo: userId)
-          .where('type', isEqualTo: 'quiz')
-          .orderBy('completedAt', descending: true)
-          .limit(limit)
           .get();
 
-      return snapshot.docs.map((doc) => doc.data()).toList();
+      final quizDocs = snapshot.docs
+          .map((doc) => doc.data())
+          .where((data) => data['type'] == 'quiz')
+          .toList();
+
+      // Sort by completedAt descending in Dart
+      quizDocs.sort((a, b) {
+        final aTs = a['completedAt'];
+        final bTs = b['completedAt'];
+        if (aTs == null && bTs == null) return 0;
+        if (aTs == null) return 1;
+        if (bTs == null) return -1;
+        return bTs.compareTo(aTs);
+      });
+
+      return quizDocs.take(limit).toList();
     } catch (e) {
       debugPrint('Error fetching recent quiz attempts: $e');
       return [];
@@ -1042,6 +1056,33 @@ class FirestoreService {
 
   Future<List<LessonModel>> getLessonsByCategory(String categoryId) async {
     return getLessons(categoryId);
+  }
+
+  // ==================== ANALYTICS ====================
+
+  /// Returns XP earned for each of the last [days] days, starting from [days-1]
+  /// days ago up to and including today. Index 0 = oldest day.
+  Future<List<int>> getWeeklyXP(String userId, {int days = 7}) async {
+    final result = List.filled(days, 0);
+    final now = DateTime.now();
+    for (int i = days - 1; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      final key = DateFormat('yyyy-MM-dd').format(date);
+      try {
+        final doc = await _firestore
+            .collection(AppConstants.usersCollection)
+            .doc(userId)
+            .collection('daily_xp')
+            .doc(key)
+            .get();
+        if (doc.exists) {
+          result[days - 1 - i] = (doc.data()?['xpEarned'] ?? 0) as int;
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+    return result;
   }
 
   // ==================== DAILY GOALS ====================

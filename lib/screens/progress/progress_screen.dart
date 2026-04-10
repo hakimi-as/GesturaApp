@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../models/achievement_model.dart';
@@ -32,6 +33,9 @@ class _ProgressScreenState extends State<ProgressScreen>
     if (authProvider.userId != null) {
       await progressProvider.loadUserProgress(authProvider.userId!);
       await progressProvider.loadAchievements(authProvider.userId!);
+      // Wire actual today's lesson count into daily goals
+      final lessonsToday = authProvider.currentUser?.lessonsCompletedToday ?? 0;
+      progressProvider.refreshDailyGoals(lessonsToday);
     }
   }
 
@@ -51,7 +55,7 @@ class _ProgressScreenState extends State<ProgressScreen>
           icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('My Progress'),
+        title: Text(AppLocalizations.of(context).myProgressTitle),
       ),
       body: Column(
         children: [
@@ -77,10 +81,10 @@ class _ProgressScreenState extends State<ProgressScreen>
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
-              tabs: const [
-                Tab(text: 'Overview'),
-                Tab(text: 'Achievements'),
-                Tab(text: 'History'),
+              tabs: [
+                Tab(text: AppLocalizations.of(context).progressOverviewTab),
+                Tab(text: AppLocalizations.of(context).progressAchievementsTab),
+                Tab(text: AppLocalizations.of(context).progressHistoryTab),
               ],
             ),
           ).animate().fadeIn(delay: 300.ms),
@@ -117,7 +121,7 @@ class _ProgressScreenState extends State<ProgressScreen>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -128,9 +132,9 @@ class _ProgressScreenState extends State<ProgressScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildSummaryItem('⭐', '${user?.totalXP ?? 0}', 'Total XP'),
-                  _buildSummaryItem('🔥', '${user?.currentStreak ?? 0}', 'Day Streak'),
-                  _buildSummaryItem('📚', '${stats.totalSignsLearned}', 'Signs Learned'),
+                  _buildSummaryItem('⭐', '${user?.totalXP ?? 0}', AppLocalizations.of(context).totalXP),
+                  _buildSummaryItem('🔥', '${user?.currentStreak ?? 0}', AppLocalizations.of(context).dayStreakLabel),
+                  _buildSummaryItem('📚', '${stats.totalSignsLearned}', AppLocalizations.of(context).signsLearned),
                 ],
               ),
               const SizedBox(height: 16),
@@ -141,16 +145,16 @@ class _ProgressScreenState extends State<ProgressScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Level ${user?.level ?? 1}',
+                        '${AppLocalizations.of(context).level} ${user?.level ?? 1}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        '${user?.xpToNextLevel ?? 100} XP to Level ${(user?.level ?? 1) + 1}',
+                        '${user?.xpToNextLevel ?? 100} ${AppLocalizations.of(context).xpToLevel} ${(user?.level ?? 1) + 1}',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 12,
                         ),
                       ),
@@ -162,7 +166,7 @@ class _ProgressScreenState extends State<ProgressScreen>
                     child: LinearProgressIndicator(
                       value: user?.levelProgress ?? 0,
                       minHeight: 8,
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   ),
@@ -191,7 +195,7 @@ class _ProgressScreenState extends State<ProgressScreen>
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             fontSize: 12,
           ),
         ),
@@ -211,7 +215,7 @@ class _ProgressScreenState extends State<ProgressScreen>
             children: [
               // Weekly Activity
               Text(
-                'Weekly Activity',
+                AppLocalizations.of(context).weeklyActivity,
                 style: Theme.of(context).textTheme.titleLarge,
               ).animate().fadeIn(delay: 400.ms),
               const SizedBox(height: 12),
@@ -220,7 +224,7 @@ class _ProgressScreenState extends State<ProgressScreen>
 
               // Detailed Stats
               Text(
-                'Detailed Stats',
+                AppLocalizations.of(context).detailedStats,
                 style: Theme.of(context).textTheme.titleLarge,
               ).animate().fadeIn(delay: 500.ms),
               const SizedBox(height: 12),
@@ -229,7 +233,7 @@ class _ProgressScreenState extends State<ProgressScreen>
 
               // Daily Goals
               Text(
-                'Daily Goals',
+                AppLocalizations.of(context).dailyGoalsSection,
                 style: Theme.of(context).textTheme.titleLarge,
               ).animate().fadeIn(delay: 600.ms),
               const SizedBox(height: 12),
@@ -243,9 +247,13 @@ class _ProgressScreenState extends State<ProgressScreen>
   }
 
   Widget _buildWeeklyActivity(BuildContext context) {
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final l10n = AppLocalizations.of(context);
+    final days = [l10n.monDay, l10n.tueDay, l10n.wedDay, l10n.thuDay, l10n.friDay, l10n.satDay, l10n.sunDay];
     final today = DateTime.now().weekday - 1;
 
+    return Consumer<ProgressProvider>(
+      builder: (context, progressProvider, child) {
+        final weeklyData = progressProvider.getWeeklyLessonsCount();
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -258,7 +266,7 @@ class _ProgressScreenState extends State<ProgressScreen>
           final index = entry.key;
           final day = entry.value;
           final isToday = index == today;
-          final isActive = index <= today; // Simulated activity
+          final isActive = weeklyData[index] > 0;
 
           return Column(
             children: [
@@ -276,7 +284,7 @@ class _ProgressScreenState extends State<ProgressScreen>
                 height: 36,
                 decoration: BoxDecoration(
                   color: isActive
-                      ? (isToday ? AppColors.primary : AppColors.success.withOpacity(0.2))
+                      ? (isToday ? AppColors.primary : AppColors.success.withValues(alpha: 0.2))
                       : context.bgElevated,
                   borderRadius: BorderRadius.circular(10),
                   border: isToday
@@ -298,6 +306,8 @@ class _ProgressScreenState extends State<ProgressScreen>
         }).toList(),
       ),
     ).animate().fadeIn(delay: 450.ms);
+      },
+    );
   }
 
   Widget _buildDetailedStats(BuildContext context, stats) {
@@ -309,15 +319,15 @@ class _ProgressScreenState extends State<ProgressScreen>
       ),
       child: Column(
         children: [
-          _buildStatRow(context, '⏱️', 'Total Learning Time', '${stats.totalTimeHours.toStringAsFixed(1)} hours'),
+          _buildStatRow(context, '⏱️', AppLocalizations.of(context).totalLearningTime, '${stats.totalTimeHours.toStringAsFixed(1)} ${AppLocalizations.of(context).hoursLabel}'),
           Divider(color: context.borderColor, height: 24),
-          _buildStatRow(context, '🎯', 'Quiz Accuracy', '${stats.averageAccuracy.toInt()}%'),
+          _buildStatRow(context, '🎯', AppLocalizations.of(context).quizAccuracy, '${stats.averageAccuracy.toInt()}%'),
           Divider(color: context.borderColor, height: 24),
-          _buildStatRow(context, '📝', 'Quizzes Completed', '${stats.quizzesCompleted}'),
+          _buildStatRow(context, '📝', AppLocalizations.of(context).quizzesCompleted, '${stats.quizzesCompleted}'),
           Divider(color: context.borderColor, height: 24),
-          _buildStatRow(context, '🏆', 'Perfect Quizzes', '${stats.perfectQuizzes}'),
+          _buildStatRow(context, '🏆', AppLocalizations.of(context).perfectQuizzes, '${stats.perfectQuizzes}'),
           Divider(color: context.borderColor, height: 24),
-          _buildStatRow(context, '🔥', 'Longest Streak', '${stats.longestStreak} days'),
+          _buildStatRow(context, '🔥', AppLocalizations.of(context).longestStreakLabel, '${stats.longestStreak} ${AppLocalizations.of(context).daysLabel}'),
         ],
       ),
     ).animate().fadeIn(delay: 550.ms);
@@ -359,7 +369,7 @@ class _ProgressScreenState extends State<ProgressScreen>
             ),
             child: Center(
               child: Text(
-                'No goals set for today',
+                AppLocalizations.of(context).noGoalsToday,
                 style: TextStyle(color: context.textMuted),
               ),
             ),
@@ -447,12 +457,12 @@ class _ProgressScreenState extends State<ProgressScreen>
             children: [
               // Earned Achievements
               Text(
-                'Earned (${earned.length})',
+                '${AppLocalizations.of(context).earnedLabel} (${earned.length})',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
               if (earned.isEmpty)
-                _buildEmptyAchievements(context, 'No achievements earned yet')
+                _buildEmptyAchievements(context, AppLocalizations.of(context).noAchievementsEarned)
               else
                 ...earned.asMap().entries.map((entry) =>
                     _buildAchievementCard(context, entry.value, true, entry.key)),
@@ -460,7 +470,7 @@ class _ProgressScreenState extends State<ProgressScreen>
 
               // Locked Achievements
               Text(
-                'Locked (${locked.length})',
+                '${AppLocalizations.of(context).lockedLabel} (${locked.length})',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
@@ -509,11 +519,11 @@ class _ProgressScreenState extends State<ProgressScreen>
       decoration: BoxDecoration(
         color: isEarned
             ? context.bgCard
-            : context.bgCard.withOpacity(0.5),
+            : context.bgCard.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
         border: isEarned
             ? Border.all(
-                color: Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withOpacity(0.5),
+                color: Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withValues(alpha: 0.5),
                 width: 2,
               )
             : null,
@@ -525,7 +535,7 @@ class _ProgressScreenState extends State<ProgressScreen>
             height: 56,
             decoration: BoxDecoration(
               color: isEarned
-                  ? Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withOpacity(0.15)
+                  ? Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withValues(alpha: 0.15)
                   : context.bgElevated,
               borderRadius: BorderRadius.circular(14),
             ),
@@ -565,7 +575,7 @@ class _ProgressScreenState extends State<ProgressScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withOpacity(0.15),
+                  color: Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -606,12 +616,12 @@ class _ProgressScreenState extends State<ProgressScreen>
                 const Text('📜', style: TextStyle(fontSize: 60)),
                 const SizedBox(height: 16),
                 Text(
-                  'No learning history yet',
+                  AppLocalizations.of(context).noLearningHistory,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Complete lessons to see your history here',
+                  AppLocalizations.of(context).completeLessonsHistory,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: context.textMuted,
                   ),
@@ -640,8 +650,8 @@ class _ProgressScreenState extends State<ProgressScreen>
                     height: 44,
                     decoration: BoxDecoration(
                       color: item.isCompleted
-                          ? AppColors.success.withOpacity(0.15)
-                          : AppColors.warning.withOpacity(0.15),
+                          ? AppColors.success.withValues(alpha: 0.15)
+                          : AppColors.warning.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -657,12 +667,12 @@ class _ProgressScreenState extends State<ProgressScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Lesson: ${item.lessonId}',
+                          '${AppLocalizations.of(context).lessonLabel}: ${item.lessonId}',
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          item.isCompleted ? 'Completed' : 'In Progress',
+                          item.isCompleted ? AppLocalizations.of(context).completedActivity : AppLocalizations.of(context).inProgressLabel,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: context.textMuted,
                           ),
@@ -671,7 +681,7 @@ class _ProgressScreenState extends State<ProgressScreen>
                     ),
                   ),
                   Text(
-                    _formatHistoryDate(item.lastAccessedAt),
+                    _formatHistoryDate(item.lastAccessedAt, context),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: context.textMuted,
                     ),
@@ -685,12 +695,13 @@ class _ProgressScreenState extends State<ProgressScreen>
     );
   }
 
-  String _formatHistoryDate(DateTime date) {
+  String _formatHistoryDate(DateTime date, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final diff = now.difference(date);
 
-    if (diff.inDays == 0) return 'Today';
-    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays == 0) return l10n.today;
+    if (diff.inDays == 1) return l10n.yesterday;
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${date.day}/${date.month}';
   }

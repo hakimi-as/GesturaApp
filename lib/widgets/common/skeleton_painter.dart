@@ -79,7 +79,7 @@ class SkeletonPainter extends CustomPainter {
     if (hasFace) {
       // --- A. REAL FACE EXPRESSION (From JSON) ---
       final facePaint = Paint()
-        ..color = Colors.yellowAccent.withOpacity(0.8)
+        ..color = Colors.yellowAccent.withValues(alpha: 0.8)
         ..strokeWidth = 1.5
         ..style = PaintingStyle.stroke;
 
@@ -117,7 +117,7 @@ class SkeletonPainter extends CustomPainter {
     } else if (hasBody) {
       // --- B. FALLBACK: ORIGINAL YELLOW CIRCLE HEAD ---
       final headPaint = Paint()
-        ..color = Colors.yellowAccent.withOpacity(0.9)
+        ..color = Colors.yellowAccent.withValues(alpha: 0.9)
         ..style = PaintingStyle.fill;
       
       Offset nose = getPos(pose, 0);
@@ -133,7 +133,7 @@ class SkeletonPainter extends CustomPainter {
       canvas.drawCircle(nose, headRadius, headPaint);
       
       // Draw Static Eyes
-      final eyePaint = Paint()..color = Colors.black.withOpacity(0.7);
+      final eyePaint = Paint()..color = Colors.black.withValues(alpha: 0.7);
       canvas.drawCircle(nose.translate(-headRadius/3, -headRadius/4), 3, eyePaint);
       canvas.drawCircle(nose.translate(headRadius/3, -headRadius/4), 3, eyePaint);
     }

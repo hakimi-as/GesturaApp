@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/badge_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/badge_provider.dart';
@@ -84,7 +85,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
           const Text('🏆', style: TextStyle(fontSize: 24)),
           const SizedBox(width: 8),
           Text(
-            'Badges',
+            AppLocalizations.of(context).badgesTitle,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -123,7 +124,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Your Collection',
+                        AppLocalizations.of(context).yourCollection,
                         style: TextStyle(
                           color: Colors.white.withAlpha(200),
                           fontSize: 14,
@@ -131,7 +132,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$unlocked / $total Badges',
+                        '$unlocked / $total ${AppLocalizations.of(context).badgesLabel}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -178,10 +179,10 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildTierCount('Bronze', stats['bronze'] ?? 0, const Color(0xFFCD7F32)),
-                  _buildTierCount('Silver', stats['silver'] ?? 0, const Color(0xFFC0C0C0)),
-                  _buildTierCount('Gold', stats['gold'] ?? 0, const Color(0xFFFFD700)),
-                  _buildTierCount('Platinum', stats['platinum'] ?? 0, const Color(0xFF00D9FF)),
+                  _buildTierCount(AppLocalizations.of(context).tierBronze, stats['bronze'] ?? 0, const Color(0xFFCD7F32)),
+                  _buildTierCount(AppLocalizations.of(context).tierSilver, stats['silver'] ?? 0, const Color(0xFFC0C0C0)),
+                  _buildTierCount(AppLocalizations.of(context).tierGold, stats['gold'] ?? 0, const Color(0xFFFFD700)),
+                  _buildTierCount(AppLocalizations.of(context).tierPlatinum, stats['platinum'] ?? 0, const Color(0xFF00D9FF)),
                 ],
               ),
             ],
@@ -220,6 +221,8 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             color: Colors.white.withAlpha(180),
             fontSize: 10,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ],
     );
@@ -244,9 +247,9 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
         unselectedLabelColor: context.textMuted,
         labelStyle: const TextStyle(fontWeight: FontWeight.w600),
         dividerColor: Colors.transparent,
-        tabs: const [
-          Tab(text: 'All Badges'),
-          Tab(text: 'Unlocked'),
+        tabs: [
+          Tab(text: AppLocalizations.of(context).allBadgesTab),
+          Tab(text: AppLocalizations.of(context).unlockedTab),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms);
@@ -289,7 +292,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          _buildFilterChip(null, 'All'),
+          _buildFilterChip(null, AppLocalizations.of(context).all),
           ...BadgeCategory.values.map((category) {
             return _buildFilterChip(category, _getCategoryName(category));
           }),
@@ -458,14 +461,14 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
           const Text('🔒', style: TextStyle(fontSize: 60)),
           const SizedBox(height: 16),
           Text(
-            'No badges yet',
+            AppLocalizations.of(context).noBadgesEmpty,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Complete lessons and quizzes to earn badges!',
+            AppLocalizations.of(context).earnBadgesPrompt,
             style: TextStyle(
               color: context.textMuted,
               fontSize: 14,
@@ -478,19 +481,20 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
   }
 
   String _getCategoryName(BadgeCategory category) {
+    final l10n = AppLocalizations.of(context);
     switch (category) {
       case BadgeCategory.learning:
-        return 'Learning';
+        return l10n.badgeLearning;
       case BadgeCategory.streak:
-        return 'Streaks';
+        return l10n.badgeStreaks;
       case BadgeCategory.quiz:
-        return 'Quizzes';
+        return l10n.badgeQuizzes;
       case BadgeCategory.social:
-        return 'Social';
+        return l10n.badgeSocial;
       case BadgeCategory.milestone:
-        return 'Milestones';
+        return l10n.badgeMilestones;
       case BadgeCategory.special:
-        return 'Special';
+        return l10n.badgeSpecial;
     }
   }
 

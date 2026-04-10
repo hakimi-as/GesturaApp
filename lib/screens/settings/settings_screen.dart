@@ -9,6 +9,8 @@ import 'notification_settings_screen.dart';
 import 'theme_settings_screen.dart';
 
 import '../../providers/theme_provider.dart';
+import '../../providers/locale_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/cloudinary_service.dart';
@@ -154,9 +156,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           HapticService.success();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(photoUrl != null 
-                ? '✓ Profile picture saved to cloud' 
-                : '✓ Profile picture saved locally'),
+              content: Text(photoUrl != null
+                ? AppLocalizations.of(context).profileSavedCloud
+                : AppLocalizations.of(context).profileSavedLocally),
               backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -190,6 +192,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: context.bgCard,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -208,9 +211,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               Text(
-                'Change Profile Picture',
+                AppLocalizations.of(context).changeProfilePicture,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -219,7 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               _buildImageOption(
                 icon: Icons.camera_alt,
-                label: 'Take Photo',
+                label: AppLocalizations.of(context).takePhoto,
                 color: const Color(0xFF6366F1),
                 onTap: () {
                   HapticService.buttonTap();
@@ -231,7 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               _buildImageOption(
                 icon: Icons.photo_library,
-                label: 'Choose from Gallery',
+                label: AppLocalizations.of(context).chooseFromGallery,
                 color: const Color(0xFF10B981),
                 onTap: () {
                   HapticService.buttonTap();
@@ -244,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
                 _buildImageOption(
                   icon: Icons.delete_outline,
-                  label: 'Remove Photo',
+                  label: AppLocalizations.of(context).removePhoto,
                   color: AppColors.error,
                   onTap: () async {
                     HapticService.buttonTap();
@@ -269,7 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       HapticService.success();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text('✓ Profile photo removed'),
+                          content: Text(AppLocalizations.of(context).profilePhotoRemoved),
                           backgroundColor: AppColors.success,
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -338,11 +341,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: context.bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Text('🧊', style: TextStyle(fontSize: 24)),
-            SizedBox(width: 10),
-            Text('Buy Streak Freeze?'),
+            const Text('🧊', style: TextStyle(fontSize: 24)),
+            const SizedBox(width: 10),
+            Text(AppLocalizations.of(ctx).buyStreakFreeze),
           ],
         ),
         content: Column(
@@ -350,14 +353,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Protect your streak for one day if you miss a lesson.',
+              AppLocalizations.of(ctx).streakFreezeDesc,
               style: TextStyle(color: context.textMuted),
             ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Cost:'),
+                Text(AppLocalizations.of(ctx).cost),
                 Text(
                   '$cost XP',
                   style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
@@ -368,7 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('You have:'),
+                Text(AppLocalizations.of(ctx).youHave),
                 Text(
                   '$userXp XP',
                   style: TextStyle(
@@ -386,10 +389,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               HapticService.buttonTap();
               Navigator.pop(ctx, false);
             },
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(ctx).cancel),
           ),
           ElevatedButton(
-            onPressed: userXp >= cost 
+            onPressed: userXp >= cost
               ? () {
                   HapticService.buttonTap();
                   Navigator.pop(ctx, true);
@@ -399,7 +402,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Buy Freeze'),
+            child: Text(AppLocalizations.of(ctx).buyFreeze),
           ),
         ],
       ),
@@ -458,7 +461,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(width: 16),
           Text(
-            'Settings',
+            AppLocalizations.of(context).settingsTitle,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -556,18 +559,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             color: Colors.black.withAlpha(128),
                             shape: BoxShape.circle,
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                CircularProgressIndicator(
+                                const CircularProgressIndicator(
                                   color: Colors.white,
                                   strokeWidth: 2,
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
-                                  'Uploading...',
-                                  style: TextStyle(
+                                  AppLocalizations.of(context).uploading,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
                                   ),
@@ -645,9 +648,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
-                          'Edit Profile',
-                          style: TextStyle(
+                        child: Text(
+                          AppLocalizations.of(context).editProfile,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
@@ -694,7 +697,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: _buildStatCard(
                   emoji: '🔥',
                   value: '${user?.currentStreak ?? 0}',
-                  label: 'Day Streak',
+                  label: AppLocalizations.of(context).dayStreakLabel,
                   color: const Color(0xFFEF4444),
                 ),
               ),
@@ -703,7 +706,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: _buildStatCard(
                   emoji: '⭐',
                   value: _formatNumber(user?.totalXP ?? 0),
-                  label: 'Total XP',
+                  label: AppLocalizations.of(context).totalXP,
                   color: const Color(0xFFF59E0B),
                 ),
               ),
@@ -712,7 +715,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: _buildStatCard(
                   emoji: '🏆',
                   value: '${user?.totalBadges ?? 0}',
-                  label: 'Badges',
+                  label: AppLocalizations.of(context).badgesLabel,
                   color: const Color(0xFF6366F1),
                 ),
               ),
@@ -789,7 +792,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     HapticService.achievement();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('✓ Streak freeze purchased!'),
+                        content: Text(AppLocalizations.of(context).streakFreezePurchased),
                         backgroundColor: AppColors.success,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -800,7 +803,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     HapticService.error();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(result['error'] ?? 'Purchase failed'),
+                        content: Text(result['error'] ?? AppLocalizations.of(context).purchaseFailed),
                         backgroundColor: AppColors.error,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -829,7 +832,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('GENERAL'),
+        _buildSectionTitle(AppLocalizations.of(context).general),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
@@ -842,7 +845,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingsTile(
                 icon: Icons.notifications_outlined,
                 iconColor: const Color(0xFF6366F1),
-                title: 'Notifications',
+                title: AppLocalizations.of(context).notifications,
                 trailing: Switch(
                   value: _notificationsEnabled,
                   onChanged: (value) {
@@ -858,7 +861,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingsTile(
                 icon: Icons.tune,
                 iconColor: const Color(0xFFF59E0B),
-                title: 'Notification Settings',
+                title: AppLocalizations.of(context).notificationSettings,
                 trailing: Icon(
                   Icons.chevron_right,
                   color: context.textMuted,
@@ -878,7 +881,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingsTile(
                 icon: Icons.volume_up_outlined,
                 iconColor: const Color(0xFF10B981),
-                title: 'Sound Effects',
+                title: AppLocalizations.of(context).soundEffects,
                 trailing: Switch(
                   value: _soundEnabled,
                   onChanged: (value) {
@@ -894,7 +897,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingsTile(
                 icon: Icons.vibration,
                 iconColor: const Color(0xFFEF4444),
-                title: 'Vibration',
+                title: AppLocalizations.of(context).vibration,
                 trailing: Switch(
                   value: _vibrationEnabled,
                   onChanged: (value) {
@@ -917,7 +920,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('PREFERENCES'),
+        _buildSectionTitle(AppLocalizations.of(context).preferences),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
@@ -927,35 +930,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: Column(
             children: [
-              _buildSettingsTile(
-                icon: Icons.language,
-                iconColor: const Color(0xFF3B82F6),
-                title: 'Language',
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _selectedLanguage,
-                      style: TextStyle(
-                        color: context.textMuted,
-                        fontSize: 14,
+              Consumer<LocaleProvider>(
+                builder: (context, localeProvider, _) => _buildSettingsTile(
+                  icon: Icons.language,
+                  iconColor: const Color(0xFF3B82F6),
+                  title: AppLocalizations.of(context).language,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        localeProvider.displayName,
+                        style: TextStyle(color: context.textMuted, fontSize: 14),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.chevron_right,
-                      color: context.textMuted,
-                      size: 20,
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Icon(Icons.chevron_right, color: context.textMuted, size: 20),
+                    ],
+                  ),
+                  onTap: () => _showLanguageSelector(),
                 ),
-                onTap: () => _showLanguageSelector(),
               ),
               _buildDivider(),
               _buildSettingsTile(
                 icon: Icons.sign_language,
                 iconColor: const Color(0xFFEC4899),
-                title: 'Sign Language',
+                title: AppLocalizations.of(context).signLanguage,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -985,7 +983,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   return _buildSettingsTile(
                     icon: Icons.ac_unit,
                     iconColor: const Color(0xFF0EA5E9),
-                    title: 'Auto-use Freeze',
+                    title: AppLocalizations.of(context).autoUseFreeze,
                     trailing: Switch(
                       value: user.autoUseFreeze,
                       onChanged: (value) async {
@@ -1003,18 +1001,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSettingsTile(
                 icon: Icons.dark_mode_outlined,
                 iconColor: const Color(0xFF8B5CF6),
-                title: 'Appearance',
+                title: AppLocalizations.of(context).appearance,
                 trailing: Consumer<ThemeProvider>(
                   builder: (context, themeProvider, child) {
+                    final l10n = AppLocalizations.of(context);
                     return Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           themeProvider.themeMode == AppThemeMode.dark
-                              ? 'Dark'
+                              ? l10n.dark
                               : themeProvider.themeMode == AppThemeMode.light
-                                  ? 'Light'
-                                  : 'System',
+                                  ? l10n.light
+                                  : l10n.system,
                           style: TextStyle(
                             color: context.textMuted,
                             fontSize: 14,
@@ -1055,7 +1054,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (isAdmin) ...[
-              _buildSectionTitle('ADMIN'),
+              _buildSectionTitle(AppLocalizations.of(context).adminSection),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 decoration: BoxDecoration(
@@ -1066,7 +1065,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: _buildSettingsTile(
                   icon: Icons.admin_panel_settings,
                   iconColor: const Color(0xFF6366F1),
-                  title: 'Admin Panel',
+                  title: AppLocalizations.of(context).adminPanel,
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -1106,7 +1105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ).animate().fadeIn(delay: 450.ms),
             ],
 
-            _buildSectionTitle('ACCOUNT'),
+            _buildSectionTitle(AppLocalizations.of(context).accountSection),
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
@@ -1119,7 +1118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSettingsTile(
                     icon: Icons.share_outlined,
                     iconColor: const Color(0xFF10B981),
-                    title: 'Share Progress',
+                    title: AppLocalizations.of(context).shareProgress,
                     trailing: Icon(
                       Icons.chevron_right,
                       color: context.textMuted,
@@ -1137,7 +1136,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSettingsTile(
                     icon: Icons.info_outline,
                     iconColor: const Color(0xFF6366F1),
-                    title: 'About',
+                    title: AppLocalizations.of(context).about,
                     trailing: Icon(
                       Icons.chevron_right,
                       color: context.textMuted,
@@ -1149,7 +1148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSettingsTile(
                     icon: Icons.logout,
                     iconColor: AppColors.error,
-                    title: 'Log Out',
+                    title: AppLocalizations.of(context).logOut,
                     trailing: const Icon(
                       Icons.chevron_right,
                       color: AppColors.error,
@@ -1234,24 +1233,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showLanguageSelector() {
     HapticService.buttonTap();
-    final languages = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese'];
+    final l10n = AppLocalizations.of(context);
+    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+    final languages = LocaleProvider.supportedLanguages;
 
     showModalBottomSheet(
       context: context,
       backgroundColor: context.bgCard,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _buildSelectorSheet(
-        title: 'Select Language',
-        options: languages,
-        selectedOption: _selectedLanguage,
-        onSelect: (value) {
-          HapticService.selectionClick();
-          setState(() => _selectedLanguage = value);
-          _saveSettings();
-          Navigator.pop(context);
-        },
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                l10n.selectLanguage,
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const Divider(height: 1),
+            ...languages.map((lang) {
+              final isSelected = localeProvider.languageCode == lang['code'];
+              return ListTile(
+                leading: Text(
+                  lang['code'] == 'ms' ? '🇲🇾' : '🇬🇧',
+                  style: const TextStyle(fontSize: 24),
+                ),
+                title: Text(lang['name']!),
+                trailing: isSelected
+                    ? const Icon(Icons.check_circle, color: AppColors.primary)
+                    : null,
+                onTap: () {
+                  HapticService.selectionClick();
+                  localeProvider.setLocaleByCode(lang['code']!);
+                  setState(() => _selectedLanguage = lang['name']!);
+                  _saveSettings();
+                  Navigator.pop(ctx);
+                },
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
@@ -1263,11 +1290,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: context.bgCard,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => _buildSelectorSheet(
-        title: 'Select Sign Language',
+        title: AppLocalizations.of(context).selectSignLanguage,
         options: languages,
         selectedOption: _selectedSignLanguage,
         onSelect: (value) {
@@ -1287,7 +1315,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required Function(String) onSelect,
   }) {
     return SafeArea(
-      child: Padding(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1321,6 +1354,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
+        ),
+      ),
     );
   }
 
@@ -1343,16 +1378,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Version 1.0.0',
+              AppLocalizations.of(context).aboutVersion,
               style: TextStyle(color: context.textMuted),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Gestura is a sign language learning app designed to help you communicate better through sign language.',
+            Text(
+              AppLocalizations.of(context).aboutDescription,
             ),
             const SizedBox(height: 16),
             Text(
-              '© 2025 Gestura Team',
+              AppLocalizations.of(context).aboutCopyright,
               style: TextStyle(color: context.textMuted, fontSize: 12),
             ),
           ],
@@ -1363,7 +1398,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               HapticService.buttonTap();
               Navigator.pop(context);
             },
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context).close),
           ),
         ],
       ),
@@ -1377,24 +1412,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: context.bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Log Out?'),
-        content: const Text('Are you sure you want to log out?'),
+        title: Text(AppLocalizations.of(context).logOutQuestion),
+        content: Text(AppLocalizations.of(context).logOutMessage),
         actions: [
           TextButton(
             onPressed: () {
               HapticService.buttonTap();
               Navigator.pop(dialogContext);
             },
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () async {
               HapticService.buttonTap();
               Navigator.pop(dialogContext);
-              
+
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
               await authProvider.signOut();
-              
+
               if (mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -1405,7 +1440,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
             ),
-            child: const Text('Log Out'),
+            child: Text(AppLocalizations.of(context).logOut),
           ),
         ],
       ),
