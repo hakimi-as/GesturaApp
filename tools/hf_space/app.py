@@ -9,12 +9,9 @@ Endpoints:
 
 import os
 import tempfile
-import urllib.request
 import subprocess
 import cv2
 import mediapipe as mp
-from mediapipe.tasks import python as mp_python
-from mediapipe.tasks.python import vision as mp_vision
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -22,110 +19,32 @@ from typing import Optional
 
 app = FastAPI(title="Gestura Sign Processor")
 
-# ── Download mediapipe models at startup ───────────────────────────────────
-MODEL_DIR = "/tmp/mediapipe_models"
-os.makedirs(MODEL_DIR, exist_ok=True)
+# mp.solutions.holistic is available in mediapipe==0.9.3.0
+# It runs as a single unified model with smooth_landmarks=True,
+# which is why it produces stable output — same as the local extract_holistic.py.
+mp_holistic = mp.solutions.holistic
 
-MODELS = {
-    "pose": (
-        "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",
-        os.path.join(MODEL_DIR, "pose.task"),
-    ),
-    "hand": (
-        "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
-        os.path.join(MODEL_DIR, "hand.task"),
-    ),
-    "face": (
-        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
-        os.path.join(MODEL_DIR, "face.task"),
-    ),
-}
-
-for name, (url, path) in MODELS.items():
-    if not os.path.exists(path):
-        print(f"Downloading {name} model...")
-        urllib.request.urlretrieve(url, path)
-        print(f"  {name} ready.")
-
-print("All models ready. Space is live.")
-
-
-# ── Landmarker factory — VIDEO mode enables temporal smoothing ─────────────
-# VIDEO mode is stateful: timestamps must increase monotonically within one
-# video, so we create a fresh set of landmarkers per request rather than
-# sharing global singletons (which would also break under concurrent requests).
-
-def _make_landmarkers():
-    """Return a fresh (pose, hands, face) triple in VIDEO mode."""
-    pose = mp_vision.PoseLandmarker.create_from_options(
-        mp_vision.PoseLandmarkerOptions(
-            base_options=mp_python.BaseOptions(model_asset_path=MODELS["pose"][1]),
-            running_mode=mp_vision.RunningMode.VIDEO,
-            num_poses=1,
-            min_pose_detection_confidence=0.5,
-            min_pose_presence_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
-    )
-    hands = mp_vision.HandLandmarker.create_from_options(
-        mp_vision.HandLandmarkerOptions(
-            base_options=mp_python.BaseOptions(model_asset_path=MODELS["hand"][1]),
-            running_mode=mp_vision.RunningMode.VIDEO,
-            num_hands=2,
-            min_hand_detection_confidence=0.5,
-            min_hand_presence_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
-    )
-    face = mp_vision.FaceLandmarker.create_from_options(
-        mp_vision.FaceLandmarkerOptions(
-            base_options=mp_python.BaseOptions(model_asset_path=MODELS["face"][1]),
-            running_mode=mp_vision.RunningMode.VIDEO,
-            num_faces=1,
-            min_face_detection_confidence=0.5,
-            min_face_presence_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
-    )
-    return pose, hands, face
+print("Gestura Space is live.")
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
-def _to_list(landmarks):
-    if not landmarks:
+def _get_landmarks(landmarks_obj):
+    """Convert a NormalizedLandmarkList to a list of {x, y, z} dicts."""
+    if not landmarks_obj:
         return []
-    return [{"x": round(lm.x, 3), "y": round(lm.y, 3), "z": round(lm.z, 3)}
-            for lm in landmarks]
-
-
-def _build_frame(pose_res, hand_res, face_res):
-    """Build a frame dict from landmarker results."""
-    pose_lm = pose_res.pose_landmarks[0] if pose_res.pose_landmarks else []
-
-    left_hand, right_hand = [], []
-    if hand_res.hand_landmarks and hand_res.handedness:
-        for lm, hd in zip(hand_res.hand_landmarks, hand_res.handedness):
-            if hd[0].category_name == "Left":
-                left_hand = lm
-            else:
-                right_hand = lm
-
-    face_lm = face_res.face_landmarks[0] if face_res.face_landmarks else []
-
-    return {
-        "pose":       _to_list(pose_lm),
-        "left_hand":  _to_list(left_hand),
-        "right_hand": _to_list(right_hand),
-        "face":       _to_list(face_lm),
-    }
+    return [
+        {"x": round(lm.x, 3), "y": round(lm.y, 3), "z": round(lm.z, 3)}
+        for lm in landmarks_obj.landmark
+    ]
 
 
 def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.0) -> list:
     """
     Sample ~150 frames from a video, optionally trimmed to [start_sec, end_sec].
-    Uses VIDEO mode landmarkers so temporal smoothing is applied — same effect
-    as smooth_landmarks=True in the legacy mp.solutions.holistic API.
+    Uses mp.solutions.holistic with smooth_landmarks=True for stable output.
+    A fresh holistic instance is created per video so state doesn't bleed
+    between requests.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -147,11 +66,16 @@ def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.
     if start_frame > 0:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-    pose, hands, face = _make_landmarkers()
     frames = []
-    idx = 0
+    idx    = 0
 
-    try:
+    with mp_holistic.Holistic(
+        static_image_mode=False,
+        model_complexity=1,
+        smooth_landmarks=True,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5,
+    ) as holistic:
         while cap.isOpened():
             frame_pos = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
             if frame_pos >= end_frame:
@@ -161,31 +85,25 @@ def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.
                 break
 
             if idx % step == 0:
-                # Timestamp in ms for temporal smoothing — must be monotonically increasing
-                timestamp_ms = int(frame_pos * 1000 / fps)
-                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+                rgb     = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = holistic.process(rgb)
 
-                pose_res = pose.detect_for_video(img, timestamp_ms)
-                hand_res = hands.detect_for_video(img, timestamp_ms)
-                face_res = face.detect_for_video(img, timestamp_ms)
-
-                frames.append(_build_frame(pose_res, hand_res, face_res))
+                frames.append({
+                    "pose":       _get_landmarks(results.pose_landmarks),
+                    "left_hand":  _get_landmarks(results.left_hand_landmarks),
+                    "right_hand": _get_landmarks(results.right_hand_landmarks),
+                    "face":       _get_landmarks(results.face_landmarks),
+                })
 
             idx += 1
-    finally:
-        cap.release()
-        pose.close()
-        hands.close()
-        face.close()
 
+    cap.release()
     return frames
 
 
 def _download_with_ytdlp(url: str, out_path: str, start_sec: float = 0.0, end_sec: float = 0.0):
     """Download from TikTok / Instagram / direct URL. YouTube is blocked on server IPs."""
-    is_youtube = any(x in url for x in ["youtube.com", "youtu.be"])
-    if is_youtube:
+    if any(x in url for x in ["youtube.com", "youtu.be"]):
         raise ValueError(
             "YouTube blocks automated downloads from server IPs.\n"
             "Please download the video manually and use 'Upload a File' instead.\n"
@@ -201,7 +119,6 @@ def _download_with_ytdlp(url: str, out_path: str, start_sec: float = 0.0, end_se
         "-o", out_path,
     ]
 
-    # Trim at download time if possible — much faster than downloading full video
     if start_sec > 0 or end_sec > 0:
         start_str = _sec_to_hms(start_sec)
         end_str   = _sec_to_hms(end_sec) if end_sec > 0 else ""
@@ -215,7 +132,6 @@ def _download_with_ytdlp(url: str, out_path: str, start_sec: float = 0.0, end_se
 
 
 def _sec_to_hms(seconds: float) -> str:
-    """Convert seconds to HH:MM:SS.mmm string for yt-dlp."""
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
     s = seconds % 60
@@ -235,7 +151,6 @@ async def process_file(
     start_sec: float = Form(0.0),
     end_sec: float   = Form(0.0),
 ):
-    """Accept a video file and return skeleton JSON. Optionally trim with start_sec / end_sec."""
     suffix = os.path.splitext(video.filename or "video.mp4")[1] or ".mp4"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(await video.read())
@@ -262,7 +177,6 @@ class UrlRequest(BaseModel):
 
 @app.post("/process-url")
 async def process_url(body: UrlRequest):
-    """Accept a TikTok / Instagram / direct MP4 URL and return skeleton JSON."""
     url = body.url.strip()
     if not url:
         raise HTTPException(status_code=400, detail="URL is required.")
