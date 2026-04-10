@@ -47,39 +47,47 @@ for name, (url, path) in MODELS.items():
         urllib.request.urlretrieve(url, path)
         print(f"  {name} ready.")
 
-# ── Initialise landmarkers ─────────────────────────────────────────────────
-_pose = mp_vision.PoseLandmarker.create_from_options(
-    mp_vision.PoseLandmarkerOptions(
-        base_options=mp_python.BaseOptions(model_asset_path=MODELS["pose"][1]),
-        running_mode=mp_vision.RunningMode.IMAGE,
-        num_poses=1,
-        min_pose_detection_confidence=0.5,
-        min_pose_presence_confidence=0.5,
-        min_tracking_confidence=0.5,
-    )
-)
-_hands = mp_vision.HandLandmarker.create_from_options(
-    mp_vision.HandLandmarkerOptions(
-        base_options=mp_python.BaseOptions(model_asset_path=MODELS["hand"][1]),
-        running_mode=mp_vision.RunningMode.IMAGE,
-        num_hands=2,
-        min_hand_detection_confidence=0.5,
-        min_hand_presence_confidence=0.5,
-        min_tracking_confidence=0.5,
-    )
-)
-_face = mp_vision.FaceLandmarker.create_from_options(
-    mp_vision.FaceLandmarkerOptions(
-        base_options=mp_python.BaseOptions(model_asset_path=MODELS["face"][1]),
-        running_mode=mp_vision.RunningMode.IMAGE,
-        num_faces=1,
-        min_face_detection_confidence=0.5,
-        min_face_presence_confidence=0.5,
-        min_tracking_confidence=0.5,
-    )
-)
-
 print("All models ready. Space is live.")
+
+
+# ── Landmarker factory — VIDEO mode enables temporal smoothing ─────────────
+# VIDEO mode is stateful: timestamps must increase monotonically within one
+# video, so we create a fresh set of landmarkers per request rather than
+# sharing global singletons (which would also break under concurrent requests).
+
+def _make_landmarkers():
+    """Return a fresh (pose, hands, face) triple in VIDEO mode."""
+    pose = mp_vision.PoseLandmarker.create_from_options(
+        mp_vision.PoseLandmarkerOptions(
+            base_options=mp_python.BaseOptions(model_asset_path=MODELS["pose"][1]),
+            running_mode=mp_vision.RunningMode.VIDEO,
+            num_poses=1,
+            min_pose_detection_confidence=0.5,
+            min_pose_presence_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+    )
+    hands = mp_vision.HandLandmarker.create_from_options(
+        mp_vision.HandLandmarkerOptions(
+            base_options=mp_python.BaseOptions(model_asset_path=MODELS["hand"][1]),
+            running_mode=mp_vision.RunningMode.VIDEO,
+            num_hands=2,
+            min_hand_detection_confidence=0.5,
+            min_hand_presence_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+    )
+    face = mp_vision.FaceLandmarker.create_from_options(
+        mp_vision.FaceLandmarkerOptions(
+            base_options=mp_python.BaseOptions(model_asset_path=MODELS["face"][1]),
+            running_mode=mp_vision.RunningMode.VIDEO,
+            num_faces=1,
+            min_face_detection_confidence=0.5,
+            min_face_presence_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+    )
+    return pose, hands, face
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -91,13 +99,8 @@ def _to_list(landmarks):
             for lm in landmarks]
 
 
-def _process_frame(rgb):
-    img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-
-    pose_res = _pose.detect(img)
-    hand_res  = _hands.detect(img)
-    face_res  = _face.detect(img)
-
+def _build_frame(pose_res, hand_res, face_res):
+    """Build a frame dict from landmarker results."""
     pose_lm = pose_res.pose_landmarks[0] if pose_res.pose_landmarks else []
 
     left_hand, right_hand = [], []
@@ -121,13 +124,14 @@ def _process_frame(rgb):
 def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.0) -> list:
     """
     Sample ~150 frames from a video, optionally trimmed to [start_sec, end_sec].
-    If end_sec is 0 (or not provided), processes until the end of the video.
+    Uses VIDEO mode landmarkers so temporal smoothing is applied — same effect
+    as smooth_landmarks=True in the legacy mp.solutions.holistic API.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise ValueError("Could not open video file.")
 
-    fps         = cap.get(cv2.CAP_PROP_FPS) or 30
+    fps          = cap.get(cv2.CAP_PROP_FPS) or 30
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     start_frame = int(start_sec * fps) if start_sec > 0 else 0
@@ -140,25 +144,41 @@ def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.
     clip_length = end_frame - start_frame
     step        = max(1, clip_length // 150)   # target ~150 frames
 
-    # Seek to start
     if start_frame > 0:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
+    pose, hands, face = _make_landmarkers()
     frames = []
     idx = 0
-    while cap.isOpened():
-        current = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
-        if current >= end_frame:
-            break
-        ret, frame = cap.read()
-        if not ret:
-            break
-        if idx % step == 0:
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frames.append(_process_frame(rgb))
-        idx += 1
 
-    cap.release()
+    try:
+        while cap.isOpened():
+            frame_pos = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+            if frame_pos >= end_frame:
+                break
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            if idx % step == 0:
+                # Timestamp in ms for temporal smoothing — must be monotonically increasing
+                timestamp_ms = int(frame_pos * 1000 / fps)
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+
+                pose_res = pose.detect_for_video(img, timestamp_ms)
+                hand_res = hands.detect_for_video(img, timestamp_ms)
+                face_res = face.detect_for_video(img, timestamp_ms)
+
+                frames.append(_build_frame(pose_res, hand_res, face_res))
+
+            idx += 1
+    finally:
+        cap.release()
+        pose.close()
+        hands.close()
+        face.close()
+
     return frames
 
 
@@ -263,7 +283,6 @@ async def process_url(body: UrlRequest):
             out_path = os.path.join(tmpdir, files[0])
 
         try:
-            # For URL downloads, trimming is already done by yt-dlp, so no need to trim again
             frames = _extract_frames(out_path)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
