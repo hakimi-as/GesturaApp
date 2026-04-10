@@ -4,3 +4,4 @@ mediapipe==0.10.9
 opencv-python-headless
 python-multipart
 yt-dlp
+curl_cffi

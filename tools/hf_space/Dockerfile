@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libgles2 \
     libegl1 \
     nodejs \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /code
