@@ -117,7 +117,7 @@ def _build_frame(pose_res, hand_res, face_res):
     }
 
 
-def _smooth_frames(frames: list, alpha: float = 0.5) -> list:
+def _smooth_frames(frames: list, alpha: float = 0.4) -> list:
     """
     Exponential moving average across frames — replicates smooth_landmarks=True.
     alpha=0.5: equal weight between current detection and previous smoothed position.
@@ -161,9 +161,12 @@ def _smooth_frames(frames: list, alpha: float = 0.5) -> list:
 
 def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.0) -> list:
     """
-    Sample ~150 frames from a video, optionally trimmed to [start_sec, end_sec].
-    VIDEO mode provides mediapipe-level temporal tracking; EMA smoothing is
-    applied on top to remove residual jitter.
+    Process EVERY frame through mediapipe (for continuous temporal tracking),
+    then subsample the results to ~150 frames for Firestore.
+
+    Skipping frames during detection breaks VIDEO mode's temporal smoother —
+    it sees timestamp jumps and can't interpolate properly. Processing all
+    frames first (like the local holistic.py does) gives stable output.
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -179,15 +182,11 @@ def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.
     if start_frame >= end_frame:
         raise ValueError(f"Invalid trim: start ({start_sec}s) must be before end ({end_sec}s).")
 
-    clip_length = end_frame - start_frame
-    step        = max(1, clip_length // 150)
-
     if start_frame > 0:
         cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
     pose, hands, face = _make_landmarkers()
-    raw_frames = []
-    idx = 0
+    all_frames = []
 
     try:
         while cap.isOpened():
@@ -198,25 +197,29 @@ def _extract_frames(video_path: str, start_sec: float = 0.0, end_sec: float = 0.
             if not ret:
                 break
 
-            if idx % step == 0:
-                timestamp_ms = int(frame_pos * 1000 / fps)
-                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+            # Process every frame — temporal smoother needs consecutive frames
+            timestamp_ms = int(frame_pos * 1000 / fps)
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
-                pose_res = pose.detect_for_video(img, timestamp_ms)
-                hand_res = hands.detect_for_video(img, timestamp_ms)
-                face_res = face.detect_for_video(img, timestamp_ms)
+            pose_res = pose.detect_for_video(img, timestamp_ms)
+            hand_res = hands.detect_for_video(img, timestamp_ms)
+            face_res = face.detect_for_video(img, timestamp_ms)
 
-                raw_frames.append(_build_frame(pose_res, hand_res, face_res))
+            all_frames.append(_build_frame(pose_res, hand_res, face_res))
 
-            idx += 1
     finally:
         cap.release()
         pose.close()
         hands.close()
         face.close()
 
-    return _smooth_frames(raw_frames)
+    # Subsample AFTER detection so temporal tracking had full frame continuity
+    if len(all_frames) > 150:
+        step = len(all_frames) / 150
+        all_frames = [all_frames[int(i * step)] for i in range(150)]
+
+    return _smooth_frames(all_frames)
 
 
 def _download_with_ytdlp(url: str, out_path: str, start_sec: float = 0.0, end_sec: float = 0.0):
