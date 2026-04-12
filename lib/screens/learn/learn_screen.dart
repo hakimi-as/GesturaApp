@@ -1,14 +1,19 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/badge_provider.dart';
 import '../../providers/challenge_provider.dart';
 import '../../models/category_model.dart';
+import '../../models/lesson_model.dart';
 import '../../models/badge_model.dart';
 import '../../models/challenge_model.dart';
+import '../../models/progress_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../widgets/common/shimmer_widgets.dart';
@@ -53,108 +58,256 @@ class _LearnScreenState extends State<LearnScreen> {
   double _averageQuizAccuracy = 0.0;
   Map<String, int> _bestScoresByType = {};
 
+  static const _cacheKeyCategories = 'learn_cats_v3';
+  static const _cacheKeyUser = 'learn_user_v3_';
+  static const _cacheTtlMs = 10 * 60 * 1000; // 10 minutes
+
   @override
   void initState() {
     super.initState();
     _selectedTabIndex = widget.initialTabIndex;
+    _initLoad();
+  }
+
+  Future<void> _initLoad() async {
+    // 1. Render from cache instantly (if available)
+    final cacheHit = await _tryLoadCache();
+    // 2. Always refresh from Firestore in background
+    //    If cache was hit, do it silently (no shimmer). Otherwise show shimmer.
+    if (!cacheHit) setState(() => _isLoading = true);
     _loadData();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+  // ── Cache helpers ──────────────────────────────────────────────────────
 
+  Future<bool> _tryLoadCache() async {
     try {
-      final categories = await _firestoreService.getCategories();
+      final prefs = await SharedPreferences.getInstance();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.userId;
 
-      Map<String, int> lessonCounts = {};
-      int totalLessons = 0;
+      final catJson = prefs.getString(_cacheKeyCategories);
+      if (catJson == null) return false;
 
-      for (var category in categories) {
-        final lessons = await _firestoreService.getLessons(category.id);
-        lessonCounts[category.id] = lessons.length;
-        totalLessons += lessons.length;
+      final catData = jsonDecode(catJson) as Map<String, dynamic>;
+      final cachedAt = catData['cachedAt'] as int? ?? 0;
+      if (DateTime.now().millisecondsSinceEpoch - cachedAt > _cacheTtlMs) {
+        return false; // stale
       }
 
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final badgeProvider = Provider.of<BadgeProvider>(context, listen: false);
+      final catList = (catData['categories'] as List)
+          .map((m) => _categoryFromMap(m as Map<String, dynamic>))
+          .toList();
+      final lessonCounts = Map<String, int>.from(catData['lessonCounts'] as Map);
+      final totalLessons = catData['totalLessons'] as int? ?? 0;
+
       Map<String, int> completedCounts = {};
       int totalCompleted = 0;
-      List<DateTime> activeDays = [];
-      double quizAccuracy = 0.0;
 
-      if (authProvider.userId != null) {
-        final completedIds =
-            await _firestoreService.getCompletedLessonIdsForUser(authProvider.userId!);
-        totalCompleted = completedIds.length;
-
-        for (var category in categories) {
-          final lessons = await _firestoreService.getLessons(category.id);
-          int completedInCategory = 0;
-
-          for (var lesson in lessons) {
-            if (completedIds.contains(lesson.id)) {
-              completedInCategory++;
-            }
-          }
-          completedCounts[category.id] = completedInCategory;
+      if (userId != null) {
+        final userJson = prefs.getString('$_cacheKeyUser$userId');
+        if (userJson != null) {
+          final userData = jsonDecode(userJson) as Map<String, dynamic>;
+          completedCounts = Map<String, int>.from(userData['completedCounts'] as Map);
+          totalCompleted = userData['totalCompleted'] as int? ?? 0;
         }
+      }
 
-        // Load badges
-        await badgeProvider.loadUserBadges(authProvider.userId!);
-
-        // Load progress for calendar
-        final progress = await _firestoreService.getUserProgress(authProvider.userId!);
-        activeDays = progress
-            .where((p) => p.isCompleted)
-            .map((p) => DateTime(
-                  p.completedAt?.year ?? DateTime.now().year,
-                  p.completedAt?.month ?? DateTime.now().month,
-                  p.completedAt?.day ?? DateTime.now().day,
-                ))
-            .toSet()
-            .toList();
-
-        // Load quiz accuracy
-        quizAccuracy = await _firestoreService.getAverageQuizAccuracy(authProvider.userId!);
-
-        // Load best scores per quiz type
-        final recentAttempts = await _firestoreService.getRecentQuizAttempts(authProvider.userId!, limit: 20);
-        final Map<String, int> bestScores = {};
-        for (final attempt in recentAttempts) {
-          final type = attempt['quizType'] as String? ?? '';
-          final total = attempt['totalQuestions'] as int? ?? 0;
-          final correct = attempt['correctAnswers'] as int? ?? 0;
-          final score = total > 0 ? (correct / total * 100).round() : 0;
-          if (!bestScores.containsKey(type) || bestScores[type]! < score) {
-            bestScores[type] = score;
-          }
-        }
-        setState(() => _bestScoresByType = bestScores);
-
-        // Load daily challenges
-        final user = authProvider.currentUser;
-        if (user != null && mounted) {
-          Provider.of<ChallengeProvider>(context, listen: false)
-              .loadChallenges(authProvider.userId!, user);
-        }
-
+      if (mounted) {
         setState(() {
-          _activeDays = activeDays;
-          _averageQuizAccuracy = quizAccuracy;
+          _categories = catList;
+          _actualLessonCounts = lessonCounts;
+          _completedLessonCounts = completedCounts;
+          _totalLessons = totalLessons;
+          _totalCompletedLessons = totalCompleted;
+          _isLoading = false;
+        });
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Cache read error (non-fatal): $e');
+      return false;
+    }
+  }
+
+  Future<void> _saveToCache({
+    required List<CategoryModel> categories,
+    required Map<String, int> lessonCounts,
+    required int totalLessons,
+    String? userId,
+    Map<String, int>? completedCounts,
+    int? totalCompleted,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      final catData = {
+        'categories': categories.map(_categoryToMap).toList(),
+        'lessonCounts': lessonCounts,
+        'totalLessons': totalLessons,
+        'cachedAt': now,
+      };
+      await prefs.setString(_cacheKeyCategories, jsonEncode(catData));
+
+      if (userId != null && completedCounts != null) {
+        final userData = {
+          'completedCounts': completedCounts,
+          'totalCompleted': totalCompleted ?? 0,
+          'cachedAt': now,
+        };
+        await prefs.setString('$_cacheKeyUser$userId', jsonEncode(userData));
+      }
+    } catch (e) {
+      debugPrint('Cache write error (non-fatal): $e');
+    }
+  }
+
+  Map<String, dynamic> _categoryToMap(CategoryModel c) => {
+        'id': c.id,
+        'name': c.name,
+        'description': c.description,
+        'icon': c.icon,
+        'imageUrl': c.imageUrl,
+        'lessonCount': c.lessonCount,
+        'order': c.order,
+        'isActive': c.isActive,
+        'difficulty': c.difficulty,
+        'signLanguage': c.signLanguage,
+      };
+
+  CategoryModel _categoryFromMap(Map<String, dynamic> m) => CategoryModel(
+        id: m['id'] as String,
+        name: m['name'] as String,
+        description: m['description'] as String,
+        icon: m['icon'] as String,
+        imageUrl: m['imageUrl'] as String?,
+        lessonCount: m['lessonCount'] as int? ?? 0,
+        order: m['order'] as int? ?? 0,
+        isActive: m['isActive'] as bool? ?? true,
+        difficulty: m['difficulty'] as String?,
+        signLanguage: m['signLanguage'] as String?,
+      );
+
+  // ── Data loading ────────────────────────────────────────────────────────
+
+  Future<void> _loadData() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.userId;
+
+      // ── 3 parallel queries (was N+2 sequential per-category calls) ─────────
+      final results = await Future.wait<dynamic>([
+        _firestoreService.getCategories(),
+        _firestoreService.getAllLessons(),
+        userId != null
+            ? _firestoreService.getCompletedLessonIdsForUser(userId)
+            : Future.value(<String>{}),
+      ]);
+
+      final categories = results[0] as List<CategoryModel>;
+      final allLessons = results[1] as List<LessonModel>;
+      final completedIds = results[2] as Set<String>;
+
+      // Group lessons by categoryId client-side — no per-category queries needed
+      final Map<String, int> lessonCounts = {};
+      final Map<String, int> completedCounts = {};
+      int totalLessons = 0;
+      int totalCompleted = 0;
+
+      for (final lesson in allLessons) {
+        lessonCounts[lesson.categoryId] =
+            (lessonCounts[lesson.categoryId] ?? 0) + 1;
+        totalLessons++;
+        if (completedIds.contains(lesson.id)) {
+          completedCounts[lesson.categoryId] =
+              (completedCounts[lesson.categoryId] ?? 0) + 1;
+          totalCompleted++;
+        }
+      }
+
+      // ── Show categories immediately — don't block on stats ───────────────
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _actualLessonCounts = lessonCounts;
+          _completedLessonCounts = completedCounts;
+          _totalLessons = totalLessons;
+          _totalCompletedLessons = totalCompleted;
+          _isLoading = false;
         });
       }
 
-      setState(() {
-        _categories = categories;
-        _actualLessonCounts = lessonCounts;
-        _completedLessonCounts = completedCounts;
-        _totalLessons = totalLessons;
-        _totalCompletedLessons = totalCompleted;
-        _isLoading = false;
-      });
+      // Save fresh data to cache for next launch
+      _saveToCache(
+        categories: categories,
+        lessonCounts: lessonCounts,
+        totalLessons: totalLessons,
+        userId: userId,
+        completedCounts: completedCounts,
+        totalCompleted: totalCompleted,
+      );
+
+      // ── Phase 3: user stats — isolated, won't crash categories if it fails ─
+      if (userId != null) {
+        final user = authProvider.currentUser;
+        if (user != null && mounted) {
+          Provider.of<ChallengeProvider>(context, listen: false)
+              .loadChallenges(userId, user);
+        }
+        _loadUserStats(userId); // fire and forget — has its own error handling
+      }
     } catch (e) {
-      debugPrint('Error loading data: $e');
-      setState(() => _isLoading = false);
+      debugPrint('Error loading learn data: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadUserStats(String userId) async {
+    try {
+      final badgeProvider = Provider.of<BadgeProvider>(context, listen: false);
+
+      final results = await Future.wait<dynamic>([
+        badgeProvider.loadUserBadges(userId),
+        _firestoreService.getUserProgress(userId),
+        _firestoreService.getAverageQuizAccuracy(userId),
+        _firestoreService.getRecentQuizAttempts(userId, limit: 20),
+      ]);
+
+      final progress = results[1] as List<LearningProgressModel>;
+      final quizAccuracy = (results[2] as num).toDouble();
+      final recentAttempts = results[3] as List<Map<String, dynamic>>;
+
+      final activeDays = progress
+          .where((p) => p.isCompleted)
+          .map((p) {
+            final dt = p.completedAt ?? DateTime.now();
+            return DateTime(dt.year, dt.month, dt.day);
+          })
+          .toSet()
+          .toList();
+
+      final Map<String, int> bestScores = {};
+      for (final attempt in recentAttempts) {
+        final type = attempt['quizType'] as String? ?? '';
+        final total = attempt['totalQuestions'] as int? ?? 0;
+        final correct = attempt['correctAnswers'] as int? ?? 0;
+        final score = total > 0 ? (correct / total * 100).round() : 0;
+        if (!bestScores.containsKey(type) || bestScores[type]! < score) {
+          bestScores[type] = score;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _activeDays = activeDays;
+          _averageQuizAccuracy = quizAccuracy;
+          _bestScoresByType = bestScores;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user stats (non-fatal): $e');
+      // Categories are already visible — this is non-fatal
     }
   }
 
@@ -163,7 +316,7 @@ class _LearnScreenState extends State<LearnScreen> {
     final canPop = widget.showBackButton || Navigator.canPop(context);
 
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       appBar: canPop
           ? AppBar(
               backgroundColor: Colors.transparent,

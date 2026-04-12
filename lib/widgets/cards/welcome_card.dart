@@ -18,14 +18,17 @@ class WelcomeCard extends StatelessWidget {
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(20),
+          decoration: AppColors.glassCard().copyWith(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: Color(0xFF14B8A6),
+                blurRadius: 28,
+                offset: Offset(0, 10),
               ),
             ],
           ),
@@ -61,7 +64,7 @@ class WelcomeCard extends StatelessWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Center(
@@ -81,7 +84,7 @@ class WelcomeCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 10,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
@@ -98,7 +101,7 @@ class WelcomeCard extends StatelessWidget {
                           : Icons.radio_button_unchecked,
                       color: goal.isCompleted
                           ? Colors.white
-                          : Colors.white.withOpacity(0.5),
+                          : Colors.white.withValues(alpha: 0.5),
                       size: 18,
                     ),
                     const SizedBox(width: 10),
@@ -108,7 +111,7 @@ class WelcomeCard extends StatelessWidget {
                         style: TextStyle(
                           color: goal.isCompleted
                               ? Colors.white
-                              : Colors.white.withOpacity(0.7),
+                              : Colors.white.withValues(alpha: 0.7),
                           fontSize: 13,
                           decoration: goal.isCompleted
                               ? TextDecoration.lineThrough
@@ -119,7 +122,7 @@ class WelcomeCard extends StatelessWidget {
                     Text(
                       '+${goal.xpReward} XP',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),

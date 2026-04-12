@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../providers/challenge_provider.dart';
@@ -111,21 +112,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  String _getGreeting() {
+  String _getGreeting(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'Good Morning,';
+      return l10n.goodMorning;
     } else if (hour < 17) {
-      return 'Good Afternoon,';
+      return l10n.goodAfternoon;
     } else {
-      return 'Good Evening,';
+      return l10n.goodEvening;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -206,7 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const Text('🤟', style: TextStyle(fontSize: 28)),
                 const SizedBox(width: 8),
                 Text(
-                  'Gestura',
+                  AppLocalizations.of(context).appTitle,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: context.textPrimary,
@@ -424,24 +426,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getGreeting(),
+                    _getGreeting(context),
                     style: TextStyle(
                       color: Colors.white.withAlpha(200),
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Row(
+                  Row(
                     children: [
                       Text(
-                        'Welcome back! ',
-                        style: TextStyle(
+                        AppLocalizations.of(context).welcomeBackExclaim,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text('👋', style: TextStyle(fontSize: 24)),
+                      const Text('👋', style: TextStyle(fontSize: 24)),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -450,19 +452,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _buildWelcomeStatChip(
                         '🔥',
                         '${user?.currentStreak ?? 0}',
-                        'Day Streak',
+                        AppLocalizations.of(context).dayStreakLabel,
                       ),
                       const SizedBox(width: 12),
                       _buildWelcomeStatChip(
                         '⭐',
                         _formatNumber(user?.totalXP ?? 0),
-                        'Total XP',
+                        AppLocalizations.of(context).totalXP,
                       ),
                       const SizedBox(width: 12),
                       _buildWelcomeStatChip(
                         '🤟',
                         '${user?.signsLearned ?? 0}',
-                        'Signs',
+                        AppLocalizations.of(context).signsLabel,
                       ),
                     ],
                   ),
@@ -545,7 +547,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const Text('⚡', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Quick Actions',
+              AppLocalizations.of(context).quickActions,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -560,8 +562,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 context,
                 icon: Icons.translate,
                 iconBgColor: const Color(0xFF3B82F6),
-                title: 'Translate',
-                subtitle: 'Real-time sign translation',
+                title: AppLocalizations.of(context).navTranslate,
+                subtitle: AppLocalizations.of(context).realTimeTranslation,
                 onTap: () {
                   HapticService.buttonTap();
                   Navigator.push(
@@ -579,8 +581,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 context,
                 icon: Icons.menu_book,
                 iconBgColor: const Color(0xFF8B5CF6),
-                title: 'Learn',
-                subtitle: 'Interactive lessons',
+                title: AppLocalizations.of(context).navLearn,
+                subtitle: AppLocalizations.of(context).interactiveLessons,
                 onTap: () {
                   HapticService.buttonTap();
                   Navigator.push(
@@ -602,8 +604,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 context,
                 icon: Icons.quiz,
                 iconBgColor: const Color(0xFFF43F5E),
-                title: 'Quiz',
-                subtitle: 'Test your knowledge',
+                title: AppLocalizations.of(context).quizTitle,
+                subtitle: AppLocalizations.of(context).testKnowledge,
                 onTap: () {
                   HapticService.buttonTap();
                   Navigator.push(
@@ -624,8 +626,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 context,
                 icon: Icons.bar_chart,
                 iconBgColor: const Color(0xFFF59E0B),
-                title: 'Progress',
-                subtitle: 'Track your stats',
+                title: AppLocalizations.of(context).progressTitle,
+                subtitle: AppLocalizations.of(context).trackStats,
                 onTap: () {
                   HapticService.buttonTap();
                   Navigator.push(
@@ -704,7 +706,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const Text('🏅', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Compete & Connect',
+              AppLocalizations.of(context).competeConnect,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -739,9 +741,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       const Text('🏆', style: TextStyle(fontSize: 28)),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Leaderboard',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context).leaderboard,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -749,7 +751,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Compete globally',
+                        AppLocalizations.of(context).competeGlobally,
                         style: TextStyle(
                           color: Colors.white.withAlpha(180),
                           fontSize: 12,
@@ -816,9 +818,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Friends',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context).friends,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -826,7 +828,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Connect & compare',
+                        AppLocalizations.of(context).connectCompare,
                         style: TextStyle(
                           color: Colors.white.withAlpha(180),
                           fontSize: 12,
@@ -868,16 +870,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Daily Challenges',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context).dailyChallenges,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
                       Text(
-                        'Complete challenges for bonus XP',
+                        AppLocalizations.of(context).challengesBonusXP,
                         style: TextStyle(
                           color: Colors.white.withAlpha(180),
                           fontSize: 12,
@@ -898,7 +900,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        '$activeChallenges Active',
+                        '$activeChallenges ${AppLocalizations.of(context).activeLabel}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -928,7 +930,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const Text('📋', style: TextStyle(fontSize: 20)),
                 const SizedBox(width: 8),
                 Text(
-                  'Recent Activity',
+                  AppLocalizations.of(context).recentActivity,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -943,9 +945,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   MaterialPageRoute(builder: (_) => const ProgressScreen()),
                 );
               },
-              child: const Text(
-                'View All',
-                style: TextStyle(color: AppColors.primary),
+              child: Text(
+                AppLocalizations.of(context).viewAll,
+                style: const TextStyle(color: AppColors.primary),
               ),
             ),
           ],
@@ -973,7 +975,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: progress.take(3).map((item) {
                 final title = item.displayTitle.isNotEmpty
                     ? item.displayTitle
-                    : 'Lesson';
+                    : AppLocalizations.of(context).lessonActivity;
                 final xpEarned = item.xpEarned > 0 ? item.xpEarned : 10;
 
                 final isQuiz = item.lessonId.startsWith('quiz_') || 
@@ -988,11 +990,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ? const Color(0xFF10B981)
                           : const Color(0xFF6366F1)),
                   title: isQuiz
-                      ? 'Completed "$title"'
+                      ? '${AppLocalizations.of(context).completedActivity} "$title"'
                       : (item.isCompleted
-                          ? 'Completed "$title" Lesson'
-                          : 'Started "$title" Lesson'),
-                  subtitle: _formatTimeAgo(item.lastAccessedAt),
+                          ? '${AppLocalizations.of(context).completedActivity} "$title" ${AppLocalizations.of(context).lessonActivity}'
+                          : '${AppLocalizations.of(context).startedActivity} "$title" ${AppLocalizations.of(context).lessonActivity}'),
+                  subtitle: _formatTimeAgo(item.lastAccessedAt, context),
                   xpText: '+$xpEarned XP',
                   xpColor: const Color(0xFF10B981),
                 );
@@ -1016,12 +1018,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const Text('📭', style: TextStyle(fontSize: 40)),
           const SizedBox(height: 12),
           Text(
-            'No activity yet',
+            AppLocalizations.of(context).noActivityYet,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 4),
           Text(
-            'Start learning to see your progress!',
+            AppLocalizations.of(context).startLearningProgress,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: context.textMuted,
                 ),
@@ -1123,7 +1125,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const Text('🎯', style: TextStyle(fontSize: 20)),
                   const SizedBox(width: 8),
                   Text(
-                    'Daily Challenges',
+                    AppLocalizations.of(context).dailyChallenges,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -1155,7 +1157,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const Text('🎯', style: TextStyle(fontSize: 20)),
                     const SizedBox(width: 8),
                     Text(
-                      'Daily Challenges',
+                      AppLocalizations.of(context).dailyChallenges,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -1173,8 +1175,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                   },
                   child: Text(
-                    'View All',
-                    style: TextStyle(
+                    AppLocalizations.of(context).viewAll,
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -1197,7 +1199,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Today's Progress",
+                        AppLocalizations.of(context).todaysProgress,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               color: context.textSecondary,
                             ),
@@ -1214,7 +1216,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          '$completedChallenges/$totalChallenges completed',
+                          '$completedChallenges/$totalChallenges ${AppLocalizations.of(context).completed}',
                           style: TextStyle(
                             color: completedChallenges == totalChallenges && totalChallenges > 0
                                 ? context.success
@@ -1245,7 +1247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       child: Text(
-                        'No daily challenges available',
+                        AppLocalizations.of(context).noDailyChallenges,
                         style: TextStyle(color: context.textMuted),
                       ),
                     )
@@ -1304,6 +1306,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                 ),
+                if (challenge.isPersonalized || challenge.difficultyMultiplier != 1.0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2, bottom: 2),
+                    child: Row(
+                      children: [
+                        if (challenge.isPersonalized) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6366F1).withAlpha(25),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text('✨ For You',
+                                style: TextStyle(
+                                    color: Color(0xFF6366F1),
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        if (challenge.difficultyMultiplier != 1.0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color:
+                                  challenge.difficultyTierColor.withAlpha(25),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(challenge.difficultyTierLabel,
+                                style: TextStyle(
+                                    color: challenge.difficultyTierColor,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 2),
                 Row(
                   children: [
@@ -1356,20 +1397,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  String _formatTimeAgo(DateTime date) {
+  String _formatTimeAgo(DateTime date, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inMinutes < 1) {
-      return 'Just now';
+      return l10n.justNow;
     } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} min ago';
+      return '${difference.inMinutes} ${l10n.minAgo}';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours} hours ago';
+      return '${difference.inHours} ${l10n.hoursAgo}';
     } else if (difference.inDays == 1) {
-      return 'Yesterday';
+      return l10n.yesterday;
     } else {
-      return '${difference.inDays} days ago';
+      return '${difference.inDays} ${l10n.daysAgoLabel}';
     }
   }
 }

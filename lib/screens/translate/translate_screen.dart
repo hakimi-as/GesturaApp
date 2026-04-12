@@ -1,12 +1,20 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt; // NEW
-import 'package:flutter_tts/flutter_tts.dart'; // NEW
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../config/theme.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/dtw_service.dart';
 import '../../widgets/video/sign_player.dart';
+
+enum _RecognitionState { idle, signing, processing }
+
 
 class TranslateScreen extends StatefulWidget {
   final bool showBackButton;
@@ -30,9 +38,37 @@ class _TranslateScreenState extends State<TranslateScreen>
   final FlutterTts _flutterTts = FlutterTts();
   bool _isListening = false;
   
+  // ── WebView / MediaPipe live recognition ─────────────────────────────────
+  InAppWebViewController? _webViewController;
+  InAppLocalhostServer? _localhostServer;
   bool _isCameraActive = false;
-  bool _isTranslating = false;
+  bool _mediaPipeReady = false;
+
+  // Sign-boundary state machine
+  _RecognitionState _recognitionState = _RecognitionState.idle;
+  // Frames are Map<String,dynamic> matching DtwService format exactly
+  final List<Map<String, dynamic>> _frameBuffer = [];
+  List<double>? _prevWristPos; // [lw_x, lw_y, rw_x, rw_y]
+
+  // Timer-based sign boundaries — framerate-independent
+  Timer? _signEndTimer;
+  Timer? _maxSignTimer;
+  static const _kSignEndDelay    = Duration(milliseconds: 600);
+  static const _kMaxSignDuration = Duration(seconds: 4);
+  static const int    _kMinSignFrames  = 5;
+  static const double _kMotionThreshold = 0.02;
+
+  // Library loading
+  bool _libraryLoaded = false;
+  bool _libraryLoading = false;
+
+  // Sign→Text results
   String _translationOutput = '';
+  final List<String> _recognizedWords = [];
+  List<SignMatch> _lastMatches = [];
+
+  // Text→Sign state
+  bool _isTranslating = false;
   List<String> _currentSentence = [];
   List<SignSegment> _signSegments = [];
   final int _maxCharacters = 200;
@@ -44,10 +80,17 @@ class _TranslateScreenState extends State<TranslateScreen>
     _tabController.addListener(() {
       setState(() {});
     });
+    // NOTE: Do NOT preload the sign library here.
+    // TranslateScreen lives inside an IndexedStack and is created at app startup.
+    // Loading all sign_animations on startup would block Firestore for every other page.
+    // Library is loaded lazily inside _startCamera() instead.
   }
 
   @override
   void dispose() {
+    _signEndTimer?.cancel();
+    _maxSignTimer?.cancel();
+    _localhostServer?.close();
     _tabController.dispose();
     _textController.dispose();
     _flutterTts.stop();
@@ -55,12 +98,31 @@ class _TranslateScreenState extends State<TranslateScreen>
     super.dispose();
   }
 
+  Future<void> _preloadLibrary() async {
+    if (DtwService.instance.isLoaded) {
+      setState(() { _libraryLoaded = true; });
+      return;
+    }
+    setState(() { _libraryLoading = true; });
+    try {
+      await DtwService.instance.loadLibrary();
+      if (mounted) {
+        setState(() {
+          _libraryLoaded = true;
+          _libraryLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _libraryLoading = false; });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final canPop = widget.showBackButton || Navigator.canPop(context);
 
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       appBar: canPop
           ? AppBar(
               backgroundColor: Colors.transparent,
@@ -187,24 +249,217 @@ class _TranslateScreenState extends State<TranslateScreen>
       child: Column(
         children: [
           _buildCameraPreview(),
-          const SizedBox(height: 20),
-          _buildTranslationOutput(),
+          const SizedBox(height: 16),
+          _buildLiveSentence(),
+          const SizedBox(height: 12),
+          if (_lastMatches.isNotEmpty) _buildAlternativeMatches(),
           const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _buildCameraPreview() {
+  /// The live sentence — words pop in one by one as each sign is recognized.
+  Widget _buildLiveSentence() {
     return Container(
-      height: 380,
       width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1B4B),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 1),
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.borderColor),
       ),
-      child: _isCameraActive ? _buildActiveCameraView() : _buildCameraPlaceholder(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                AppLocalizations.of(context).translationOutput,
+                style: TextStyle(
+                  color: context.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  AppLocalizations.of(context).aslToEnglish,
+                  style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Word chips that build up live
+          _recognizedWords.isEmpty
+              ? Text(
+                  _isCameraActive
+                      ? 'Sign a word — it will appear here...'
+                      : AppLocalizations.of(context).waitingForGestures,
+                  style: TextStyle(color: context.textMuted, fontSize: 15, height: 1.5),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _recognizedWords.asMap().entries.map((entry) {
+                    final isLatest = entry.key == _recognizedWords.length - 1;
+                    return GestureDetector(
+                      onLongPress: () {
+                        // Long-press a word to remove it
+                        setState(() {
+                          _recognizedWords.removeAt(entry.key);
+                          _translationOutput = _recognizedWords.join(' ');
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isLatest
+                              ? const Color(0xFF3B82F6).withValues(alpha: 0.15)
+                              : context.bgElevated,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isLatest
+                                ? const Color(0xFF3B82F6)
+                                : context.borderColor,
+                            width: isLatest ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          entry.value,
+                          style: TextStyle(
+                            color: isLatest
+                                ? const Color(0xFF3B82F6)
+                                : context.textPrimary,
+                            fontWeight: isLatest ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ).animate(key: ValueKey('word_${entry.key}')).fadeIn(duration: 300.ms).slideX(begin: 0.2),
+                    );
+                  }).toList(),
+                ),
+
+          const SizedBox(height: 16),
+
+          // Action buttons
+          Row(
+            children: [
+              _buildOutputActionButton(
+                icon: Icons.volume_up,
+                label: AppLocalizations.of(context).speak,
+                onTap: _speakOutput,
+              ),
+              const SizedBox(width: 10),
+              _buildOutputActionButton(
+                icon: Icons.copy,
+                label: AppLocalizations.of(context).copy,
+                onTap: _copyOutput,
+              ),
+              const SizedBox(width: 10),
+              _buildOutputActionButton(
+                icon: Icons.delete_outline,
+                label: AppLocalizations.of(context).clear,
+                onTap: _clearOutput,
+              ),
+            ],
+          ),
+          if (_recognizedWords.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'Long-press a word to remove it',
+                style: TextStyle(color: context.textMuted, fontSize: 11),
+              ),
+            ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 300.ms);
+  }
+
+  /// Small "did the wrong word pop?" — alternatives from the last DTW match.
+  Widget _buildAlternativeMatches() {
+    final alts = _lastMatches.skip(1).toList(); // skip the best (already added)
+    if (alts.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'NOT THE RIGHT WORD? TAP TO REPLACE',
+            style: TextStyle(
+              color: context.textMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: alts.map((match) {
+              final pct = (match.confidence * 100).toStringAsFixed(0);
+              return GestureDetector(
+                onTap: () {
+                  // Replace the last recognized word with this alternative
+                  if (_recognizedWords.isEmpty) return;
+                  setState(() {
+                    _recognizedWords[_recognizedWords.length - 1] = match.word;
+                    _translationOutput = _recognizedWords.join(' ');
+                    _lastMatches.clear();
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: context.bgElevated,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: context.borderColor),
+                  ),
+                  child: Text(
+                    '${match.word}  $pct%',
+                    style: TextStyle(color: context.textSecondary, fontSize: 13),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 250.ms);
+  }
+
+  Widget _buildCameraPreview() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        height: 380,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1B4B),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 1),
+        ),
+        child: _isCameraActive ? _buildActiveCameraView() : _buildCameraPlaceholder(),
+      ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
   }
 
@@ -262,39 +517,121 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   Widget _buildActiveCameraView() {
     return Stack(
+      fit: StackFit.expand,
       children: [
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.videocam, color: AppColors.primary, size: 60),
-              const SizedBox(height: 16),
-              Text(AppLocalizations.of(context).cameraActive, style: TextStyle(color: context.textSecondary, fontSize: 16)),
-              const SizedBox(height: 8),
-              Text(AppLocalizations.of(context).showSignToTranslate, style: TextStyle(color: context.textMuted, fontSize: 14)),
-            ],
+        // ── MediaPipe Holistic via WebView ────────────────────────────
+        // Loaded from localhost so getUserMedia() has a secure context.
+        InAppWebView(
+          initialUrlRequest: URLRequest(
+            url: WebUri('http://localhost:8765/holistic_camera.html'),
+          ),
+          onWebViewCreated: (controller) {
+            _webViewController = controller;
+            controller.addJavaScriptHandler(
+              handlerName: 'onLandmarks',
+              callback: (args) {
+                if (args.isNotEmpty && args[0] is Map) {
+                  _onLandmarksReceived(Map<String, dynamic>.from(args[0] as Map));
+                }
+              },
+            );
+            controller.addJavaScriptHandler(
+              handlerName: 'onReady',
+              callback: (_) {
+                if (mounted) setState(() => _mediaPipeReady = true);
+              },
+            );
+          },
+          onPermissionRequest: (controller, request) async {
+            return PermissionResponse(
+              resources: request.resources,
+              action: PermissionResponseAction.GRANT,
+            );
+          },
+          initialSettings: InAppWebViewSettings(
+            mediaPlaybackRequiresUserGesture: false,
+            allowsInlineMediaPlayback: true,
+            useHybridComposition: true,
+            javaScriptEnabled: true,
           ),
         ),
+
+        // ── State overlay (top center) ────────────────────────────────
         Positioned(
-          bottom: 20,
+          top: 14,
           left: 0,
           right: 0,
-          child: Center(
-            child: GestureDetector(
-              onTap: _stopCamera,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.error,
-                  borderRadius: BorderRadius.circular(30),
+          child: Center(child: _buildStateChip()),
+        ),
+
+        // ── Library status (top-left) ─────────────────────────────────
+        Positioned(
+          top: 14,
+          left: 14,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _libraryLoaded ? Icons.check_circle : Icons.hourglass_bottom,
+                  color: _libraryLoaded ? Colors.greenAccent : Colors.orange,
+                  size: 11,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.stop, color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
-                    Text(AppLocalizations.of(context).stopCamera, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                  ],
+                const SizedBox(width: 4),
+                Text(
+                  _libraryLoaded
+                      ? '${DtwService.instance.librarySize} signs'
+                      : (_libraryLoading ? 'Loading...' : 'No library'),
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // ── Bottom bar: just the Close button ─────────────────────────
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.7),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: Center(
+              child: GestureDetector(
+                onTap: _stopCamera,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white30),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.stop_circle_outlined, color: Colors.white, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Stop Camera',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -304,57 +641,54 @@ class _TranslateScreenState extends State<TranslateScreen>
     );
   }
 
-  Widget _buildTranslationOutput() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+  Widget _buildStateChip() {
+    switch (_recognitionState) {
+      case _RecognitionState.idle:
+        return _stateChip(
+          color: Colors.green,
+          icon: Icons.circle,
+          label: 'Listening — sign a word',
+          pulse: true,
+        );
+      case _RecognitionState.signing:
+        return _stateChip(
+          color: Colors.orange,
+          icon: Icons.fiber_manual_record,
+          label: 'Signing… (${_frameBuffer.length} frames)',
+          pulse: true,
+        );
+      case _RecognitionState.processing:
+        return _stateChip(
+          color: Colors.blue,
+          icon: Icons.hourglass_bottom,
+          label: 'Matching…',
+        );
+    }
+  }
+
+  Widget _stateChip({
+    required Color color,
+    required IconData icon,
+    required String label,
+    bool pulse = false,
+  }) {
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: context.bgCard,
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.borderColor),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(context).translationOutput,
-                style: TextStyle(color: context.textMuted, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(AppLocalizations.of(context).aslToEnglish, style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _translationOutput.isEmpty ? AppLocalizations.of(context).waitingForGestures : _translationOutput,
-            style: TextStyle(
-              color: _translationOutput.isEmpty ? context.textMuted : context.textPrimary,
-              fontSize: 16,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              _buildOutputActionButton(icon: Icons.volume_up, label: AppLocalizations.of(context).speak, onTap: _speakOutput),
-              const SizedBox(width: 10),
-              _buildOutputActionButton(icon: Icons.copy, label: AppLocalizations.of(context).copy, onTap: _copyOutput),
-              const SizedBox(width: 10),
-              _buildOutputActionButton(icon: Icons.delete_outline, label: AppLocalizations.of(context).clear, onTap: _clearOutput),
-            ],
-          ),
+          Icon(icon, color: color, size: 10),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
         ],
       ),
-    ).animate().fadeIn(delay: 300.ms);
+    );
+    return pulse ? chip.animate(onPlay: (c) => c.repeat()).fadeIn(duration: 600.ms).then().fadeOut(duration: 600.ms) : chip;
   }
 
   // ==================== TEXT TO SIGN TAB ====================
@@ -597,12 +931,154 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   // ==================== ACTIONS ====================
 
-  void _startCamera() {
-    setState(() => _isCameraActive = true);
+  Future<void> _startCamera() async {
+    // Serve holistic_camera.html from localhost so getUserMedia works.
+    // Android WebView blocks camera access from file:// origins (not a secure context).
+    // http://localhost is treated as secure, so camera permission dialogs work.
+    if (_localhostServer == null) {
+      _localhostServer = InAppLocalhostServer(documentRoot: 'assets', port: 8765);
+      await _localhostServer!.start();
+    }
+    setState(() {
+      _isCameraActive = true;
+      _mediaPipeReady = false;
+      _recognitionState = _RecognitionState.idle;
+    });
+    // Load sign library in the background while WebView starts
+    if (!DtwService.instance.isLoaded) _preloadLibrary();
+  }
+
+  /// Receives MediaPipe Holistic landmarks from the WebView JS bridge.
+  /// Runs the sign-boundary state machine and buffers frames.
+  void _onLandmarksReceived(Map<String, dynamic> data) {
+    if (_recognitionState == _RecognitionState.processing) return;
+
+    final pose = data['pose'] as List?;
+    if (pose == null || pose.length < 17) return;
+
+    // Build frame in DtwService format (snake_case keys)
+    final frame = <String, dynamic>{
+      'pose': pose,
+      'left_hand': data['leftHand'],
+      'right_hand': data['rightHand'],
+    };
+
+    // Wrist motion detection
+    // MediaPipe pose indices: 11=leftShoulder, 12=rightShoulder, 15=leftWrist, 16=rightWrist
+    final lw = pose[15] as Map?;
+    final rw = pose[16] as Map?;
+    final ls = pose[11] as Map?;
+    final rs = pose[12] as Map?;
+
+    if (lw == null && rw == null) return;
+
+    final lwX = lw != null ? (lw['x'] as num).toDouble() : 0.0;
+    final lwY = lw != null ? (lw['y'] as num).toDouble() : 0.0;
+    final rwX = rw != null ? (rw['x'] as num).toDouble() : 0.0;
+    final rwY = rw != null ? (rw['y'] as num).toDouble() : 0.0;
+
+    // Scale by shoulder width; fallback to 0.3 if shoulders not visible
+    double sc = 0.3;
+    if (ls != null && rs != null) {
+      final lsX = (ls['x'] as num).toDouble();
+      final lsY = (ls['y'] as num).toDouble();
+      final rsX = (rs['x'] as num).toDouble();
+      final rsY = (rs['y'] as num).toDouble();
+      final sw = sqrt(pow(rsX - lsX, 2) + pow(rsY - lsY, 2));
+      if (sw > 0.05) sc = sw;
+    }
+
+    double wristMovement = 0;
+    if (_prevWristPos != null) {
+      final lwDx = (lwX - _prevWristPos![0]) / sc;
+      final lwDy = (lwY - _prevWristPos![1]) / sc;
+      final rwDx = (rwX - _prevWristPos![2]) / sc;
+      final rwDy = (rwY - _prevWristPos![3]) / sc;
+      wristMovement = max(
+        sqrt(lwDx * lwDx + lwDy * lwDy),
+        sqrt(rwDx * rwDx + rwDy * rwDy),
+      );
+    }
+    _prevWristPos = [lwX, lwY, rwX, rwY];
+
+    final isMoving = wristMovement > _kMotionThreshold;
+
+    if (isMoving) {
+      _frameBuffer.add(frame);
+      _signEndTimer?.cancel();
+      _signEndTimer = null;
+
+      if (_recognitionState == _RecognitionState.idle && mounted) {
+        setState(() => _recognitionState = _RecognitionState.signing);
+        _maxSignTimer?.cancel();
+        _maxSignTimer = Timer(_kMaxSignDuration, _runDtw);
+      } else if (_recognitionState == _RecognitionState.signing && mounted) {
+        setState(() {}); // update frame counter in chip
+      }
+    } else if (_recognitionState == _RecognitionState.signing) {
+      _frameBuffer.add(frame); // trailing still frames
+      _signEndTimer ??= Timer(_kSignEndDelay, _runDtw);
+    }
+  }
+
+  void _runDtw() {
+    _signEndTimer?.cancel();
+    _signEndTimer = null;
+    _maxSignTimer?.cancel();
+    _maxSignTimer = null;
+
+    if (_recognitionState == _RecognitionState.processing) return;
+    if (mounted) setState(() => _recognitionState = _RecognitionState.processing);
+
+    final buffer = List<Map<String, dynamic>>.from(_frameBuffer);
+    _frameBuffer.clear();
+
+    if (buffer.length < _kMinSignFrames || !DtwService.instance.isLoaded) {
+      _resetCapture();
+      return;
+    }
+
+    // DtwService.match() normalises + runs DTW synchronously
+    final matches = DtwService.instance.match(buffer);
+
+    if (!mounted) return;
+    setState(() {
+      if (matches.isNotEmpty && matches.first.confidence > 0.25) {
+        _recognizedWords.add(matches.first.word);
+        _translationOutput = _recognizedWords.join(' ');
+        _lastMatches = matches;
+      }
+    });
+    _resetCapture();
+  }
+
+  void _resetCapture() {
+    if (mounted) {
+      setState(() {
+        _recognitionState = _RecognitionState.idle;
+        _prevWristPos = null;
+      });
+    }
   }
 
   void _stopCamera() {
-    setState(() => _isCameraActive = false);
+    _signEndTimer?.cancel();
+    _signEndTimer = null;
+    _maxSignTimer?.cancel();
+    _maxSignTimer = null;
+    _webViewController = null;
+    _localhostServer?.close();
+    _localhostServer = null;
+
+    if (mounted) {
+      setState(() {
+        _isCameraActive = false;
+        _mediaPipeReady = false;
+        _recognitionState = _RecognitionState.idle;
+        _frameBuffer.clear();
+        _prevWristPos = null;
+      });
+    }
   }
 
   // Output TTS (Sign -> Text tab)
@@ -629,7 +1105,11 @@ class _TranslateScreenState extends State<TranslateScreen>
   }
 
   void _clearOutput() {
-    setState(() => _translationOutput = '');
+    setState(() {
+      _translationOutput = '';
+      _recognizedWords.clear();
+      _lastMatches.clear();
+    });
   }
 
   // UPDATED: Real Voice Input Logic

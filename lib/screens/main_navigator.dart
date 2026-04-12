@@ -6,6 +6,7 @@ import 'translate/translate_screen.dart';
 import 'learn/learn_screen.dart';
 import 'settings/settings_screen.dart';
 import '../widgets/common/bottom_nav_bar.dart';
+import '../widgets/common/aurora_scaffold.dart';
 import '../providers/auth_provider.dart';
 import '../services/time_tracking_service.dart';
 
@@ -65,14 +66,16 @@ class _MainNavigatorState extends State<MainNavigator> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          DashboardScreen(),
-          TranslateScreen(),
-          LearnScreen(),
-          SettingsScreen(),
-        ],
+      body: AuroraScaffold(
+        child: IndexedStack(
+          index: _currentIndex,
+          children: const [
+            DashboardScreen(),
+            TranslateScreen(),
+            LearnScreen(),
+            SettingsScreen(),
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
