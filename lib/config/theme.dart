@@ -130,7 +130,7 @@ class AppColors {
 
   // Glass decoration helper
   static BoxDecoration glassCard({bool alternate = false}) => BoxDecoration(
-    color: Colors.white.withOpacity(0.05),
+    color: Colors.white.withValues(alpha:0.05),
     borderRadius: alternate
         ? const BorderRadius.only(
             topLeft:     Radius.circular(4),
@@ -144,10 +144,10 @@ class AppColors {
             bottomLeft:  Radius.circular(6),
             bottomRight: Radius.circular(20),
           ),
-    border: Border.all(color: Colors.white.withOpacity(0.10)),
+    border: Border.all(color: Colors.white.withValues(alpha:0.10)),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF14B8A6).withOpacity(0.08),
+        color: const Color(0xFF14B8A6).withValues(alpha:0.08),
         blurRadius: 24,
       ),
     ],

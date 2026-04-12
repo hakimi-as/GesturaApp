@@ -24,15 +24,15 @@ class BottomNavBar extends StatelessWidget {
           height: 68,
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF060D0D).withOpacity(0.90)
-                : Colors.white.withOpacity(0.92),
+                ? const Color(0xFF060D0D).withValues(alpha:0.90)
+                : Colors.white.withValues(alpha:0.92),
             borderRadius: BorderRadius.circular(100),
             border: Border.all(
-              color: Colors.white.withOpacity(isDark ? 0.08 : 0.60),
+              color: Colors.white.withValues(alpha:isDark ? 0.08 : 0.60),
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF14B8A6).withOpacity(0.15),
+                color: const Color(0xFF14B8A6).withValues(alpha:0.15),
                 blurRadius: 32,
                 offset: const Offset(0, 8),
               ),
@@ -171,9 +171,9 @@ class _GradientIconPainter extends CustomPainter {
         : LinearGradient(
             colors: [
               (isDark ? Colors.white : const Color(0xFF0D9488))
-                  .withOpacity(0.38),
+                  .withValues(alpha:0.38),
               (isDark ? Colors.white : const Color(0xFF0D9488))
-                  .withOpacity(0.38),
+                  .withValues(alpha:0.38),
             ],
           );
 
@@ -290,7 +290,7 @@ class _LearnIconPainter extends CustomPainter {
     // Top-right + bottom-left — dim 45% (paint with reduced alpha directly)
     final dim = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.white.withOpacity(0.45);
+      ..color = Colors.white.withValues(alpha:0.45);
     canvas.drawRRect(
         RRect.fromRectAndRadius(Rect.fromLTWH(22*s, 4*s, 14*s, 14*s), r), dim);
     canvas.drawRRect(
@@ -320,7 +320,7 @@ class _MeIconPainter extends CustomPainter {
       shoulders,
       Paint()
         ..style = PaintingStyle.fill
-        ..color = Colors.white.withOpacity(0.60),
+        ..color = Colors.white.withValues(alpha:0.60),
     );
   }
 

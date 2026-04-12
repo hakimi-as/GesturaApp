@@ -34,7 +34,7 @@ class AuroraScaffold extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF14B8A6).withOpacity(isDark ? 0.18 : 0.10),
+                    const Color(0xFF14B8A6).withValues(alpha:isDark ? 0.18 : 0.10),
                     Colors.transparent,
                   ],
                 ),
@@ -55,7 +55,7 @@ class AuroraScaffold extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF06B6D4).withOpacity(isDark ? 0.12 : 0.07),
+                    const Color(0xFF06B6D4).withValues(alpha:isDark ? 0.12 : 0.07),
                     Colors.transparent,
                   ],
                 ),
