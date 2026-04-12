@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../config/theme.dart';
 import '../../l10n/app_localizations.dart';
 
 class BottomNavBar extends StatelessWidget {
@@ -103,6 +102,8 @@ class _NavItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
+        // 44dp minimum touch target (polish skill: touch targets ≥ 44×44px)
+        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           gradient: isActive

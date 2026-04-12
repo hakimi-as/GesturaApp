@@ -24,18 +24,11 @@ class StatCard extends StatelessWidget {
         children: [
           Text(icon, style: const TextStyle(fontSize: 24)),
           const SizedBox(height: 8),
-          ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [Color(0xFF67E8F9), Color(0xFF14B8A6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ).createShader(bounds),
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: const Color(0xFF2DD4BF),
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 2),

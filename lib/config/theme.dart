@@ -257,7 +257,7 @@ class AppTheme {
         thickness: 1,
       ),
 
-      textTheme: GoogleFonts.spaceGroteskTextTheme(
+      textTheme: GoogleFonts.exo2TextTheme(
         const TextTheme(
           headlineLarge:  TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary),
           headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary),
@@ -374,7 +374,7 @@ class AppTheme {
         thickness: 1,
       ),
 
-      textTheme: GoogleFonts.spaceGroteskTextTheme(
+      textTheme: GoogleFonts.exo2TextTheme(
         const TextTheme(
           headlineLarge:  TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary),
           headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary),
