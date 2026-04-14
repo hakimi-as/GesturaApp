@@ -5,10 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math' as math;
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/learning_path_service.dart';
+import '../../services/certificate_service.dart';
 import '../../models/learning_path_model.dart';
 import '../../models/category_model.dart';
 import 'lesson_detail_screen.dart';
@@ -29,11 +31,11 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
   String? _error;
   int _selectedFilter = 0;
 
-  final List<Map<String, dynamic>> _filters = [
-    {'label': 'All', 'icon': Icons.apps_rounded},
-    {'label': 'Beginner', 'icon': Icons.eco_rounded, 'color': 0xFF10B981},
-    {'label': 'Intermediate', 'icon': Icons.trending_up_rounded, 'color': 0xFFF59E0B},
-    {'label': 'Advanced', 'icon': Icons.rocket_launch_rounded, 'color': 0xFFEF4444},
+  final List<Map<String, dynamic>> _filterKeys = [
+    {'key': 'all', 'icon': Icons.apps_rounded},
+    {'key': 'beginner', 'icon': Icons.eco_rounded, 'color': 0xFF10B981},
+    {'key': 'intermediate', 'icon': Icons.trending_up_rounded, 'color': 0xFFF59E0B},
+    {'key': 'advanced', 'icon': Icons.rocket_launch_rounded, 'color': 0xFFEF4444},
   ];
 
   @override
@@ -75,7 +77,7 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
 
   List<LearningPath> _getFilteredPaths() {
     if (_selectedFilter == 0) return _allPaths;
-    final difficulty = _filters[_selectedFilter]['label'].toString().toLowerCase();
+    final difficulty = _filterKeys[_selectedFilter]['key'].toString();
     return _allPaths.where((p) => p.difficulty == difficulty).toList();
   }
 
@@ -108,6 +110,69 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
     }
   }
 
+  Future<void> _generatePathCertificate(LearningPath path) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.currentUser;
+    if (user == null) return;
+
+    final progress = _userProgress[path.id];
+    final completedSteps = progress?.completedStepIds.length ?? 0;
+    final earnedXP = progress?.xpEarned ?? (completedSteps * 10);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: context.bgCard,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: AppColors.primary),
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context).generatingCertificate,
+                style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final pdfBytes = await CertificateService.generateLearningPathCertificate(
+        userName: user.fullName,
+        pathName: path.name,
+        stepsCompleted: completedSteps,
+        totalXP: earnedXP,
+        completionDate: DateTime.now(),
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      await CertificateService.shareCertificate(
+        pdfBytes,
+        'Gestura_${path.name.replaceAll(' ', '_')}_Certificate.pdf',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${AppLocalizations.of(context).errorGeneratingCertificate}: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   void _openPathDetail(LearningPath path) {
     Navigator.push(
       context,
@@ -123,7 +188,7 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: CustomScrollView(
         slivers: [
           // Custom App Bar with Hero Header
@@ -220,16 +285,16 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Learning Paths',
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.of(context).learningPaths,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              'Master sign language step by step',
+                              AppLocalizations.of(context).masterSignLanguage,
                               style: TextStyle(
                                 color: Colors.white.withAlpha(200),
                                 fontSize: 14,
@@ -248,19 +313,19 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
                       _buildHeroStat(
                         icon: Icons.check_circle_outline,
                         value: '$_totalCompletedPaths',
-                        label: 'Completed',
+                        label: AppLocalizations.of(context).completedActivity,
                       ),
                       const SizedBox(width: 16),
                       _buildHeroStat(
                         icon: Icons.play_circle_outline,
                         value: '$_pathsInProgress',
-                        label: 'In Progress',
+                        label: AppLocalizations.of(context).inProgressLabel,
                       ),
                       const SizedBox(width: 16),
                       _buildHeroStat(
                         icon: Icons.star_outline,
                         value: _formatXP(_totalXPEarned),
-                        label: 'XP Earned',
+                        label: AppLocalizations.of(context).xpEarned,
                       ),
                     ],
                   ),
@@ -329,15 +394,17 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: List.generate(_filters.length, (index) {
-            final filter = _filters[index];
+          children: List.generate(_filterKeys.length, (index) {
+            final filter = _filterKeys[index];
             final isSelected = _selectedFilter == index;
             final color = filter['color'] != null
                 ? Color(filter['color'] as int)
                 : AppColors.primary;
+            final l10n = AppLocalizations.of(context);
+            final filterLabels = [l10n.all, l10n.beginner, l10n.intermediate, l10n.advanced];
 
             return Padding(
-              padding: EdgeInsets.only(right: index < _filters.length - 1 ? 10 : 0),
+              padding: EdgeInsets.only(right: index < _filterKeys.length - 1 ? 10 : 0),
               child: GestureDetector(
                 onTap: () {
                   HapticService.lightTap();
@@ -377,7 +444,7 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        filter['label'] as String,
+                        filterLabels[index],
                         style: TextStyle(
                           color: isSelected ? Colors.white : context.textSecondary,
                           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -416,6 +483,7 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
               progress: progress,
               onTap: () => _openPathDetail(path),
               onStart: () => _startPath(path),
+              onCertificate: () => _generatePathCertificate(path),
               index: index,
             );
           },
@@ -443,14 +511,14 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'No paths available',
+            AppLocalizations.of(context).noPathsAvailable,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Check back later for new learning paths!',
+            AppLocalizations.of(context).checkBackLater,
             style: TextStyle(color: context.textMuted),
           ),
         ],
@@ -465,12 +533,12 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
         children: [
           const Text('😕', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 16),
-          Text(_error!, style: TextStyle(color: context.textMuted)),
+          Text(AppLocalizations.of(context).failedLoadPaths, style: TextStyle(color: context.textMuted)),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: _loadPaths,
             icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
+            label: Text(AppLocalizations.of(context).retryLabel),
           ),
         ],
       ),
@@ -492,6 +560,7 @@ class _LearningPathCard extends StatelessWidget {
   final UserLearningPathProgress? progress;
   final VoidCallback? onTap;
   final VoidCallback? onStart;
+  final VoidCallback? onCertificate;
   final int index;
 
   const _LearningPathCard({
@@ -499,6 +568,7 @@ class _LearningPathCard extends StatelessWidget {
     this.progress,
     this.onTap,
     this.onStart,
+    this.onCertificate,
     required this.index,
   });
 
@@ -624,13 +694,13 @@ class _LearningPathCard extends StatelessWidget {
                                   color: const Color(0xFF10B981).withAlpha(30),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   children: [
-                                    Icon(Icons.verified, color: Color(0xFF10B981), size: 12),
-                                    SizedBox(width: 4),
+                                    const Icon(Icons.verified, color: Color(0xFF10B981), size: 12),
+                                    const SizedBox(width: 4),
                                     Text(
-                                      'Done',
-                                      style: TextStyle(
+                                      AppLocalizations.of(context).done,
+                                      style: const TextStyle(
                                         color: Color(0xFF10B981),
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
@@ -704,7 +774,7 @@ class _LearningPathCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Progress',
+                                  AppLocalizations.of(context).progressLabel,
                                   style: TextStyle(
                                     color: context.textMuted,
                                     fontSize: 12,
@@ -791,10 +861,10 @@ class _LearningPathCard extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   isCompleted
-                                      ? 'Review Path'
+                                      ? AppLocalizations.of(context).reviewPath
                                       : isStarted
-                                          ? 'Continue Learning'
-                                          : 'Start Journey',
+                                          ? AppLocalizations.of(context).continueLearning
+                                          : AppLocalizations.of(context).startJourney,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
@@ -808,6 +878,30 @@ class _LearningPathCard extends StatelessWidget {
                       ),
                     ),
                   ),
+
+                  // Certificate Button (only when completed)
+                  if (isCompleted && onCertificate != null) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          HapticService.buttonTap();
+                          onCertificate!();
+                        },
+                        icon: const Icon(Icons.workspace_premium_rounded, size: 18),
+                        label: Text(AppLocalizations.of(context).getCompletionCertificate),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF10B981),
+                          side: const BorderSide(color: Color(0xFF10B981), width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -855,8 +949,7 @@ class _LearningPathCard extends StatelessWidget {
         math.min(total, 8), // Max 8 dots
         (index) {
           final isComplete = index < completed;
-          final isCompact = total > 8;
-          
+
           return Expanded(
             child: Container(
               height: 6,
@@ -1036,6 +1129,7 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
 
   Future<void> _openLesson(LearningPathStep step, int stepIndex) async {
     if (step.targetId == null) return;
+    final l10n = AppLocalizations.of(context);
 
     showDialog(
       context: context,
@@ -1060,7 +1154,7 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
       
       category ??= CategoryModel(
         id: step.categoryId ?? 'unknown',
-        name: 'Learning Path',
+        name: l10n.defaultLearningPath,
         description: widget.path.name,
         icon: '📚',
         order: 0,
@@ -1104,21 +1198,22 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
   }
 
   Future<void> _openQuiz(LearningPathStep step, int stepIndex) async {
+    final l10n = AppLocalizations.of(context);
     String quizType = step.targetId ?? 'sign_to_text';
     String title;
-    
+
     switch (quizType) {
       case 'sign_to_text':
-        title = 'Sign to Text';
+        title = l10n.signToTextQuiz;
         break;
       case 'text_to_sign':
-        title = 'Text to Sign';
+        title = l10n.textToSignQuiz;
         break;
       case 'timed':
-        title = 'Timed Challenge';
+        title = l10n.timedChallenge;
         break;
       default:
-        title = 'Quiz';
+        title = l10n.quizLabel;
         quizType = 'sign_to_text';
     }
 
@@ -1180,7 +1275,7 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
     final isCompleted = _progress?.isCompleted ?? false;
 
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: CustomScrollView(
         slivers: [
           // Immersive Header
@@ -1295,7 +1390,7 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    isCompleted ? 'Completed! 🎉' : 'Your Progress',
+                                    isCompleted ? AppLocalizations.of(context).completedExclamation : AppLocalizations.of(context).yourProgress,
                                     style: TextStyle(
                                       color: Colors.white.withAlpha(200),
                                       fontSize: 13,
@@ -1416,7 +1511,7 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Learning Journey',
+                        AppLocalizations.of(context).learningJourney,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),

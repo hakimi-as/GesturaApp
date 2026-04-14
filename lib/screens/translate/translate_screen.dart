@@ -11,6 +11,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../../config/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/dtw_service.dart';
+import '../../widgets/common/glass_ui.dart';
 import '../../widgets/video/sign_player.dart';
 
 enum _RecognitionState { idle, signing, processing }
@@ -124,28 +125,9 @@ class _TranslateScreenState extends State<TranslateScreen>
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: canPop
-          ? AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B35),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.translate, color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(AppLocalizations.of(context).navTranslate),
-                ],
-              ),
+          ? GlassAppBar(
+              title: AppLocalizations.of(context).navTranslate,
+              showBack: true,
             )
           : null,
       body: SafeArea(
@@ -173,19 +155,11 @@ class _TranslateScreenState extends State<TranslateScreen>
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.translate, color: Colors.white, size: 22),
-          ),
+          const TealGradientIcon(icon: Icons.translate, size: 40),
           const SizedBox(width: 12),
           Text(
             AppLocalizations.of(context).navTranslate,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -197,39 +171,46 @@ class _TranslateScreenState extends State<TranslateScreen>
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.borderColor),
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
-          _buildTabBtn(0, '👋', AppLocalizations.of(context).signToTextTab),
-          _buildTabBtn(1, '📝', AppLocalizations.of(context).textToSignTab),
+          _buildTabBtn(0, Icons.sign_language_outlined, AppLocalizations.of(context).signToTextTab),
+          _buildTabBtn(1, Icons.edit_note_rounded, AppLocalizations.of(context).textToSignTab),
         ],
       ),
     ).animate().fadeIn(delay: 100.ms);
   }
 
-  Widget _buildTabBtn(int index, String icon, String label) {
-    bool isSelected = _tabController.index == index;
+  Widget _buildTabBtn(int index, IconData icon, String label) {
+    final isSelected = _tabController.index == index;
     return Expanded(
       child: GestureDetector(
         onTap: () => _tabController.animateTo(index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 11),
           decoration: BoxDecoration(
-            color: isSelected ? (index == 0 ? const Color(0xFF3B82F6) : AppColors.primary) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.20)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : Colors.transparent,
+              width: 1.5,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(icon, style: const TextStyle(fontSize: 14)),
+              Icon(icon, size: 16, color: isSelected ? AppColors.primary : context.textMuted),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : context.textMuted,
+                  color: isSelected ? AppColors.primary : context.textMuted,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -261,14 +242,8 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   /// The live sentence — words pop in one by one as each sign is recognized.
   Widget _buildLiveSentence() {
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -324,12 +299,12 @@ class _TranslateScreenState extends State<TranslateScreen>
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           color: isLatest
-                              ? const Color(0xFF3B82F6).withValues(alpha: 0.15)
+                              ? AppColors.primary.withValues(alpha: 0.15)
                               : context.bgElevated,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isLatest
-                                ? const Color(0xFF3B82F6)
+                                ? AppColors.primary
                                 : context.borderColor,
                             width: isLatest ? 1.5 : 1,
                           ),
@@ -338,7 +313,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                           entry.value,
                           style: TextStyle(
                             color: isLatest
-                                ? const Color(0xFF3B82F6)
+                                ? AppColors.primary
                                 : context.textPrimary,
                             fontWeight: isLatest ? FontWeight.bold : FontWeight.w500,
                             fontSize: 15,
@@ -391,14 +366,8 @@ class _TranslateScreenState extends State<TranslateScreen>
     final alts = _lastMatches.skip(1).toList(); // skip the best (already added)
     if (alts.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -491,11 +460,15 @@ class _TranslateScreenState extends State<TranslateScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6),
-              borderRadius: BorderRadius.circular(30),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(100),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                  color: AppColors.primary.withValues(alpha: 0.35),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -504,9 +477,9 @@ class _TranslateScreenState extends State<TranslateScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('📷', style: TextStyle(fontSize: 18)),
+                const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
                 const SizedBox(width: 10),
-                Text(AppLocalizations.of(context).startCamera, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+                Text(AppLocalizations.of(context).startCamera, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
               ],
             ),
           ),
@@ -617,9 +590,9 @@ class _TranslateScreenState extends State<TranslateScreen>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white30),
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: AppColors.primary, width: 1.5),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -714,14 +687,8 @@ class _TranslateScreenState extends State<TranslateScreen>
   }
 
   Widget _buildTextInputSection() {
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -770,18 +737,22 @@ class _TranslateScreenState extends State<TranslateScreen>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(100),
                     boxShadow: [
-                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 5)),
+                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 15, offset: const Offset(0, 5)),
                     ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('🤟', style: TextStyle(fontSize: 16)),
+                      const Icon(Icons.sign_language_rounded, color: Colors.white, size: 16),
                       const SizedBox(width: 8),
-                      Text(AppLocalizations.of(context).translateBtn, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                      Text(AppLocalizations.of(context).translateBtn, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
                     ],
                   ),
                 ),
@@ -794,8 +765,8 @@ class _TranslateScreenState extends State<TranslateScreen>
   }
 
   Widget _buildInputActionButton({
-    required IconData icon, 
-    required String label, 
+    required IconData icon,
+    required String label,
     required VoidCallback onTap,
     bool isActive = false,
   }) {
@@ -804,14 +775,17 @@ class _TranslateScreenState extends State<TranslateScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? Colors.red.withValues(alpha: 0.2) : context.bgElevated,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isActive ? Colors.red : context.borderColor),
+          color: isActive ? Colors.red.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(
+            color: isActive ? Colors.red.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.10),
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: isActive ? Colors.red : context.textSecondary, size: 18),
+            Icon(icon, color: isActive ? Colors.red : context.textSecondary, size: 16),
             const SizedBox(width: 6),
             Text(label, style: TextStyle(color: isActive ? Colors.red : context.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
           ],
@@ -861,8 +835,8 @@ class _TranslateScreenState extends State<TranslateScreen>
             ),
             shape: BoxShape.circle,
           ),
-          child: Center(
-            child: Text(_isTranslating ? '🤟' : '🤟', style: const TextStyle(fontSize: 50)),
+          child: const Center(
+            child: Icon(Icons.sign_language_rounded, color: Colors.white, size: 50),
           ),
         ),
         const SizedBox(height: 20),
@@ -876,14 +850,8 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   // UPDATED: Now includes Speaker Button
   Widget _buildCurrentSignSection() {
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -919,7 +887,7 @@ class _TranslateScreenState extends State<TranslateScreen>
               if (_currentSentence.isNotEmpty)
                 IconButton(
                   onPressed: _speakCurrentSign,
-                  icon: const Icon(Icons.volume_up, color: Colors.blueAccent),
+                  icon: const Icon(Icons.volume_up, color: AppColors.primary),
                   tooltip: AppLocalizations.of(context).speakSign,
                 ),
             ],
@@ -1158,14 +1126,8 @@ class _TranslateScreenState extends State<TranslateScreen>
     final bimCount = _signSegments.where((s) => s.type == 'bim').length;
     final fsCount = _signSegments.where((s) => s.type == 'fingerspell').length;
 
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1200,9 +1162,10 @@ class _TranslateScreenState extends State<TranslateScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      isBim ? '🤟' : '✍️',
-                      style: const TextStyle(fontSize: 12),
+                    Icon(
+                      isBim ? Icons.sign_language_rounded : Icons.gesture_rounded,
+                      color: color,
+                      size: 13,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -1241,14 +1204,14 @@ class _TranslateScreenState extends State<TranslateScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: context.bgElevated,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: context.borderColor),
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: context.textSecondary, size: 18),
+            Icon(icon, color: AppColors.primary, size: 16),
             const SizedBox(width: 6),
             Text(label, style: TextStyle(color: context.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
           ],

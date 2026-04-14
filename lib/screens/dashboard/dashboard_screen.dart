@@ -18,6 +18,7 @@ import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart'; // NEW: Friend Service
 import '../../models/challenge_model.dart';
 import '../../widgets/common/shimmer_widgets.dart';
+import '../../widgets/common/glass_ui.dart';
 import '../../widgets/gamification/streak_freeze_widgets.dart';
 
 import '../translate/translate_screen.dart';
@@ -205,7 +206,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Row(
               children: [
-                const Text('🤟', style: TextStyle(fontSize: 28)),
+                Icon(Icons.sign_language, color: AppColors.primary, size: 28),
                 const SizedBox(width: 8),
                 Text(
                   AppLocalizations.of(context).appTitle,
@@ -224,8 +225,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onTap: () => _showFreezeInfo(),
                 ),
                 const SizedBox(width: 10),
-                
-                GestureDetector(
+
+                GlassIconButton(
+                  icon: Icons.search,
                   onTap: () {
                     HapticService.buttonTap();
                     Navigator.push(
@@ -233,21 +235,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       MaterialPageRoute(builder: (_) => const SearchScreen()),
                     );
                   },
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: context.bgCard,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      Icons.search,
-                      color: context.textPrimary,
-                      size: 24,
-                    ),
-                  ),
                 ),
                 const SizedBox(width: 10),
+                // Notification button with badge overlay
                 GestureDetector(
                   onTap: () {
                     HapticService.buttonTap();
@@ -256,62 +246,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       MaterialPageRoute(builder: (_) => const NotificationsScreen()),
                     );
                   },
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: context.bgCard,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Stack(
-                      children: [
-                        const Center(
-                          child: Icon(
-                            Icons.notifications_outlined,
-                            size: 24,
-                          ),
-                        ),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('notifications')
-                              .where('userId', isEqualTo: Provider.of<AuthProvider>(context, listen: false).userId)
-                              .where('isRead', isEqualTo: false)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            final unreadCount = snapshot.data?.docs.length ?? 0;
-                            if (unreadCount == 0) return const SizedBox();
-                            
-                            return Positioned(
-                              right: 8,
-                              top: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
-                                ),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.error,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  unreadCount > 9 ? '9+' : '$unreadCount',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      GlassIconButton(
+                        icon: Icons.notifications_outlined,
+                        onTap: null,
+                      ),
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('notifications')
+                            .where('userId', isEqualTo: Provider.of<AuthProvider>(context, listen: false).userId)
+                            .where('isRead', isEqualTo: false)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          final unreadCount = snapshot.data?.docs.length ?? 0;
+                          if (unreadCount == 0) return const SizedBox.shrink();
+
+                          return Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
                               ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                              decoration: const BoxDecoration(
+                                color: AppColors.error,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                unreadCount > 9 ? '9+' : '$unreadCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 10),
+                // Profile avatar with teal border
                 GestureDetector(
                   onTap: () async {
                     HapticService.buttonTap();
@@ -332,10 +314,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               end: Alignment.bottomRight,
                             )
                           : null,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: kGlassRadius,
+                      border: Border.all(color: AppColors.primary, width: 2),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: kGlassRadius,
                       child: user?.photoUrl != null
                           ? CachedNetworkImage(
                               imageUrl: CloudinaryService.getOptimizedImage(user!.photoUrl!, width: 88, height: 88),
@@ -414,11 +397,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              colors: [Color(0xFF0D2D2D), Color(0xFF14B8A6)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: kGlassRadius,
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.30),
+              width: 1,
+            ),
           ),
           child: Stack(
             children: [
@@ -443,42 +430,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const Text('👋', style: TextStyle(fontSize: 24)),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.waving_hand_rounded,
+                          color: Colors.white, size: 24),
                     ],
                   ),
                   const SizedBox(height: 20),
                   Row(
                     children: [
                       _buildWelcomeStatChip(
-                        '🔥',
+                        Icons.local_fire_department_rounded,
                         '${user?.currentStreak ?? 0}',
                         AppLocalizations.of(context).dayStreakLabel,
+                        AppColors.accent,
                       ),
                       const SizedBox(width: 12),
                       _buildWelcomeStatChip(
-                        '⭐',
+                        Icons.star_rounded,
                         _formatNumber(user?.totalXP ?? 0),
                         AppLocalizations.of(context).totalXP,
+                        const Color(0xFFFBBF24),
                       ),
                       const SizedBox(width: 12),
                       _buildWelcomeStatChip(
-                        '🤟',
+                        Icons.sign_language,
                         '${user?.signsLearned ?? 0}',
                         AppLocalizations.of(context).signsLabel,
+                        AppColors.primary,
                       ),
                     ],
                   ),
                 ],
               ),
-              const Positioned(
-                right: -20,
-                top: -20,
+              Positioned(
+                right: -16,
+                top: -16,
                 child: Opacity(
-                  opacity: 0.15,
-                  child: Text(
-                    '🤟',
-                    style: TextStyle(fontSize: 100),
-                  ),
+                  opacity: 0.10,
+                  child: Icon(Icons.sign_language,
+                      color: Colors.white, size: 100),
                 ),
               ),
             ],
@@ -488,18 +478,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWelcomeStatChip(String emoji, String value, String label) {
+  Widget _buildWelcomeStatChip(
+      IconData iconData, String value, String label, Color iconColor) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(38),
-          borderRadius: BorderRadius.circular(14),
+          color: Colors.white.withAlpha(25),
+          borderRadius: kGlassRadius,
+          border: Border.all(
+            color: Colors.white.withAlpha(40),
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 18)),
+            Icon(iconData, color: iconColor, size: 18),
             const SizedBox(width: 8),
             Flexible(
               child: Column(
@@ -542,18 +537,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text('⚡', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              AppLocalizations.of(context).quickActions,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
+        GlassSectionHeader(title: AppLocalizations.of(context).quickActions),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -653,42 +637,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: context.borderColor),
-        ),
+      child: GlassCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconBgColor.withAlpha(30),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                icon,
-                color: iconBgColor,
-                size: 24,
-              ),
-            ),
+            TealGradientIcon(icon: icon, size: 44),
             const SizedBox(height: 14),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: TextStyle(
+                color: context.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textMuted,
-                  ),
+              style: TextStyle(
+                color: context.textMuted,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -701,18 +670,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text('🏅', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              AppLocalizations.of(context).competeConnect,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
+        GlassSectionHeader(title: AppLocalizations.of(context).competeConnect),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -726,34 +684,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
                   );
                 },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+                child: GlassCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('🏆', style: TextStyle(fontSize: 28)),
+                      TealGradientIcon(icon: Icons.emoji_events_rounded, size: 40),
                       const SizedBox(height: 12),
                       Text(
                         AppLocalizations.of(context).leaderboard,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.textPrimary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 15,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         AppLocalizations.of(context).competeGlobally,
                         style: TextStyle(
-                          color: Colors.white.withAlpha(180),
+                          color: context.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -763,7 +712,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            // NEW: Friends Card
+            // Friends Card
             Expanded(
               child: GestureDetector(
                 onTap: () {
@@ -773,22 +722,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     MaterialPageRoute(builder: (_) => const FriendsScreen()),
                   );
                 },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFEC4899), Color(0xFF8B5CF6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+                child: GlassCard(
+                  alternate: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Text('👥', style: TextStyle(fontSize: 28)),
+                          TealGradientIcon(icon: Icons.group_rounded, size: 40),
                           const Spacer(),
                           // Pending requests badge
                           FutureBuilder<int>(
@@ -797,17 +738,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             builder: (context, snapshot) {
                               final count = snapshot.data ?? 0;
-                              if (count == 0) return const SizedBox();
+                              if (count == 0) return const SizedBox.shrink();
                               return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(50),
+                                  color: AppColors.primary.withValues(alpha: 0.20),
                                   borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppColors.primary.withValues(alpha: 0.40),
+                                  ),
                                 ),
                                 child: Text(
                                   '$count NEW',
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.primary,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -820,17 +765,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 12),
                       Text(
                         AppLocalizations.of(context).friends,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.textPrimary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 15,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         AppLocalizations.of(context).connectCompare,
                         style: TextStyle(
-                          color: Colors.white.withAlpha(180),
+                          color: context.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -842,7 +787,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.1),
         const SizedBox(height: 12),
-        // Challenges Card (full width)
+        // Challenges Card (full width) — amber accent
         GestureDetector(
           onTap: () {
             HapticService.buttonTap();
@@ -854,17 +799,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+            decoration: context.glassCardDecoration().copyWith(
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.35),
+                width: 1,
               ),
-              borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
-                const Text('🎯', style: TextStyle(fontSize: 28)),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.15),
+                    borderRadius: kGlassRadius,
+                    border: Border.all(
+                      color: AppColors.accent.withValues(alpha: 0.30),
+                    ),
+                  ),
+                  child: const Icon(Icons.track_changes_rounded,
+                      color: AppColors.accent, size: 22),
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -872,16 +827,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Text(
                         AppLocalizations.of(context).dailyChallenges,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.textPrimary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 15,
                         ),
                       ),
                       Text(
                         AppLocalizations.of(context).challengesBonusXP,
                         style: TextStyle(
-                          color: Colors.white.withAlpha(180),
+                          color: context.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -894,15 +849,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         .where((c) => !c.isCompleted)
                         .length;
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(50),
+                        color: AppColors.accent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.30),
+                        ),
                       ),
                       child: Text(
                         '$activeChallenges ${AppLocalizations.of(context).activeLabel}',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.accent,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -922,35 +881,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const Text('📋', style: TextStyle(fontSize: 20)),
-                const SizedBox(width: 8),
-                Text(
-                  AppLocalizations.of(context).recentActivity,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            TextButton(
-              onPressed: () {
-                HapticService.buttonTap();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProgressScreen()),
-                );
-              },
-              child: Text(
-                AppLocalizations.of(context).viewAll,
-                style: const TextStyle(color: AppColors.primary),
+        GlassSectionHeader(
+          title: AppLocalizations.of(context).recentActivity,
+          trailing: GestureDetector(
+            onTap: () {
+              HapticService.buttonTap();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProgressScreen()),
+              );
+            },
+            child: Text(
+              AppLocalizations.of(context).viewAll,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 12),
         Consumer<ProgressProvider>(
@@ -983,12 +933,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 return _buildActivityItem(
                   context,
-                  icon: isQuiz ? '🎯' : (item.isCompleted ? '✅' : '📚'),
+                  icon: isQuiz
+                      ? Icons.track_changes_rounded
+                      : (item.isCompleted
+                          ? Icons.check_circle_rounded
+                          : Icons.menu_book_rounded),
                   iconBgColor: isQuiz
-                      ? const Color(0xFFEC4899)
+                      ? AppColors.primary
                       : (item.isCompleted
                           ? const Color(0xFF10B981)
-                          : const Color(0xFF6366F1)),
+                          : AppColors.primary),
                   title: isQuiz
                       ? '${AppLocalizations.of(context).completedActivity} "$title"'
                       : (item.isCompleted
@@ -1007,26 +961,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildEmptyActivityState(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return GlassCard(
+      alternate: true,
       child: Column(
         children: [
-          const Text('📭', style: TextStyle(fontSize: 40)),
+          Icon(Icons.inbox_rounded,
+              color: context.textMuted, size: 40),
           const SizedBox(height: 12),
           Text(
             AppLocalizations.of(context).noActivityYet,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: TextStyle(
+              color: context.textPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             AppLocalizations.of(context).startLearningProgress,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.textMuted,
-                ),
+            style: TextStyle(
+              color: context.textMuted,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -1035,73 +991,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildActivityItem(
     BuildContext context, {
-    required String icon,
+    required IconData icon,
     required Color iconBgColor,
     required String title,
     required String subtitle,
     required String xpText,
     required Color xpColor,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: iconBgColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 20)),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GlassTile(
+        alternate: true,
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: iconBgColor.withValues(alpha: 0.15),
+            borderRadius: kGlassRadius,
+            border: Border.all(
+              color: iconBgColor.withValues(alpha: 0.25),
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.textMuted,
-                      ),
-                ),
-              ],
+          child: Icon(icon, color: iconBgColor, size: 20),
+        ),
+        title: Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(subtitle),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: xpColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: xpColor.withValues(alpha: 0.25),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: xpColor.withAlpha(26),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              xpText,
-              style: TextStyle(
-                color: xpColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+          child: Text(
+            xpText,
+            style: TextStyle(
+              color: xpColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1120,26 +1056,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Text('🎯', style: TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context).dailyChallenges,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
-              ),
+              GlassSectionHeader(
+                  title: AppLocalizations.of(context).dailyChallenges),
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: context.bgCard,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: context.borderColor),
-                ),
+              GlassCard(
                 child: ShimmerWidgets.challengesLoading(),
               ),
             ],
@@ -1149,50 +1069,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Text('🎯', style: TextStyle(fontSize: 20)),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context).dailyChallenges,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+            GlassSectionHeader(
+              title: AppLocalizations.of(context).dailyChallenges,
+              trailing: GestureDetector(
+                onTap: () {
+                  HapticService.buttonTap();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ChallengesScreen(),
                     ),
-                  ],
-                ),
-                GestureDetector(
-                  onTap: () {
-                    HapticService.buttonTap();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ChallengesScreen(),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    AppLocalizations.of(context).viewAll,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  );
+                },
+                child: Text(
+                  AppLocalizations.of(context).viewAll,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
                 ),
-              ],
+              ),
             ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: context.bgCard,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: context.borderColor),
-              ),
+            GlassCard(
               child: Column(
                 children: [
                   Row(
@@ -1200,9 +1101,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Text(
                         AppLocalizations.of(context).todaysProgress,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: context.textSecondary,
-                            ),
+                        style: TextStyle(
+                          color: context.textSecondary,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -1210,16 +1113,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: completedChallenges == totalChallenges && totalChallenges > 0
-                              ? context.success.withAlpha(26)
-                              : AppColors.primary.withAlpha(26),
+                          color: completedChallenges == totalChallenges &&
+                                  totalChallenges > 0
+                              ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                              : AppColors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: completedChallenges == totalChallenges &&
+                                    totalChallenges > 0
+                                ? const Color(0xFF10B981)
+                                    .withValues(alpha: 0.30)
+                                : AppColors.primary.withValues(alpha: 0.30),
+                          ),
                         ),
                         child: Text(
                           '$completedChallenges/$totalChallenges ${AppLocalizations.of(context).completed}',
                           style: TextStyle(
-                            color: completedChallenges == totalChallenges && totalChallenges > 0
-                                ? context.success
+                            color: completedChallenges == totalChallenges &&
+                                    totalChallenges > 0
+                                ? const Color(0xFF10B981)
                                 : AppColors.primary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -1229,19 +1141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: percentage,
-                      minHeight: 8,
-                      backgroundColor: context.bgElevated,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        completedChallenges == totalChallenges && totalChallenges > 0
-                            ? context.success
-                            : AppColors.primary,
-                      ),
-                    ),
-                  ),
+                  GlassProgressBar(value: percentage),
                   const SizedBox(height: 18),
                   if (dailyChallenges.isEmpty)
                     Padding(
@@ -1273,6 +1173,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     final isCompleted = challenge.isCompleted;
     
+    final accentColor =
+        isCompleted ? const Color(0xFF10B981) : AppColors.primary;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -1281,16 +1184,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: isCompleted 
-                  ? context.success.withAlpha(30) 
-                  : challenge.typeColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                challenge.emoji,
-                style: const TextStyle(fontSize: 18),
+              color: accentColor.withValues(alpha: 0.12),
+              borderRadius: kGlassRadius,
+              border: Border.all(
+                color: accentColor.withValues(alpha: 0.25),
               ),
+            ),
+            child: Icon(
+              isCompleted
+                  ? Icons.check_circle_rounded
+                  : Icons.track_changes_rounded,
+              color: accentColor,
+              size: 18,
             ),
           ),
           const SizedBox(width: 12),
@@ -1300,13 +1205,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Text(
                   challenge.title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isCompleted ? context.textMuted : context.textPrimary,
-                        decoration: isCompleted ? TextDecoration.lineThrough : null,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: TextStyle(
+                    color: isCompleted
+                        ? context.textMuted
+                        : context.textPrimary,
+                    decoration:
+                        isCompleted ? TextDecoration.lineThrough : null,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
-                if (challenge.isPersonalized || challenge.difficultyMultiplier != 1.0)
+                if (challenge.isPersonalized ||
+                    challenge.difficultyMultiplier != 1.0)
                   Padding(
                     padding: const EdgeInsets.only(top: 2, bottom: 2),
                     child: Row(
@@ -1316,14 +1226,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6366F1).withAlpha(25),
+                              color:
+                                  AppColors.primary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text('✨ For You',
-                                style: TextStyle(
-                                    color: Color(0xFF6366F1),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold)),
+                            child: const Text(
+                              'For You',
+                              style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ),
                           const SizedBox(width: 4),
                         ],
@@ -1332,41 +1245,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
-                              color:
-                                  challenge.difficultyTierColor.withAlpha(25),
+                              color: challenge.difficultyTierColor
+                                  .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(challenge.difficultyTierLabel,
-                                style: TextStyle(
-                                    color: challenge.difficultyTierColor,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold)),
+                            child: Text(
+                              challenge.difficultyTierLabel,
+                              style: TextStyle(
+                                  color: challenge.difficultyTierColor,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ),
                       ],
                     ),
                   ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Row(
                   children: [
                     Text(
                       '${challenge.currentValue}/${challenge.targetValue}',
                       style: TextStyle(
                         color: context.textMuted,
-                        fontSize: 12,
+                        fontSize: 11,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: challenge.progress,
-                          minHeight: 4,
-                          backgroundColor: context.bgElevated,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            isCompleted ? context.success : challenge.typeColor,
-                          ),
-                        ),
+                      child: GlassProgressBar(
+                        value: challenge.progress,
+                        height: 4,
                       ),
                     ),
                   ],
@@ -1376,17 +1284,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(width: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: isCompleted 
-                  ? context.success.withAlpha(26) 
-                  : AppColors.primary.withAlpha(26),
+              color: accentColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: accentColor.withValues(alpha: 0.25),
+              ),
             ),
             child: Text(
               '+${challenge.xpReward} XP',
               style: TextStyle(
-                color: isCompleted ? context.success : AppColors.primary,
+                color: accentColor,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),

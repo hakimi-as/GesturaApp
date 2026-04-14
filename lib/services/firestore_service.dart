@@ -908,6 +908,47 @@ class FirestoreService {
     }
   }
 
+  /// Returns completed lesson counts grouped by categoryId, plus the total.
+  /// Uses the same single Firestore query as [getCompletedLessonIdsForUser]
+  /// but avoids requiring lesson-list queries to compute per-category totals.
+  Future<({Map<String, int> perCategory, int total})>
+      getCompletedCountsPerCategory(String userId) async {
+    try {
+      final allProgress = await _firestore
+          .collection(AppConstants.progressCollection)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      final Map<String, Set<String>> seenPerCat = {};
+      int total = 0;
+
+      for (final doc in allProgress.docs) {
+        final data = doc.data();
+        if (data['type'] == 'quiz' || data['categoryId'] == 'quiz') continue;
+
+        final lessonId = data['lessonId'] as String?;
+        final categoryId = data['categoryId'] as String?;
+        if (lessonId == null || categoryId == null) continue;
+
+        final isCompleted = data['status'] == 'completed' ||
+            data['isCompleted'] == true ||
+            (data['completionPercentage'] ?? 0) >= 100;
+
+        if (isCompleted) {
+          seenPerCat.putIfAbsent(categoryId, () => {}).add(lessonId);
+        }
+      }
+
+      final perCategory = seenPerCat.map((k, v) => MapEntry(k, v.length));
+      for (final c in perCategory.values) total += c;
+
+      return (perCategory: perCategory, total: total);
+    } catch (e) {
+      debugPrint('❌ Error getting completed counts: $e');
+      return (perCategory: <String, int>{}, total: 0);
+    }
+  }
+
   Future<Set<String>> getCompletedLessonIdsForUser(String userId) async {
     try {
       Set<String> completedIds = {};

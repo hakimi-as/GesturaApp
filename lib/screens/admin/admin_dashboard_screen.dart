@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
+import '../../widgets/common/glass_ui.dart';
 import 'admin_users_screen.dart';
 import 'admin_categories_screen.dart';
 import 'admin_lessons_screen.dart';
@@ -14,6 +16,7 @@ import 'admin_badges_screen.dart';
 import 'admin_sign_library_screen.dart';
 import '../../services/learning_path_seeder.dart';
 import '../../services/learning_path_diagnostic.dart';
+import '../../services/quiz_seeder.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -63,19 +66,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Admin Panel'),
+      backgroundColor: Colors.transparent,
+      appBar: GlassAppBar(
+        title: AppLocalizations.of(context).adminPanel,
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: context.textPrimary),
-            onPressed: _loadStats,
+          GlassIconButton(
+            icon: Icons.refresh_rounded,
+            onTap: _loadStats,
+            iconColor: AppColors.primary,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: _isLoading
@@ -97,7 +97,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
                     // Stats Grid
                     Text(
-                      'Overview',
+                      AppLocalizations.of(context).overview,
                       style: Theme.of(context).textTheme.titleLarge,
                     ).animate().fadeIn(delay: 200.ms),
                     const SizedBox(height: 16),
@@ -106,7 +106,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
                     // Manage Section
                     Text(
-                      'Manage',
+                      AppLocalizations.of(context).manage,
                       style: Theme.of(context).textTheme.titleLarge,
                     ).animate().fadeIn(delay: 400.ms),
                     const SizedBox(height: 16),
@@ -115,7 +115,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
                     // Quick Actions
                     Text(
-                      'Quick Actions',
+                      AppLocalizations.of(context).quickActions,
                       style: Theme.of(context).textTheme.titleLarge,
                     ).animate().fadeIn(delay: 600.ms),
                     const SizedBox(height: 16),
@@ -133,23 +133,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6366F1).withValues(alpha: 0.3), // Fixed deprecation
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+        return GlassCard(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
           child: Row(
             children: [
@@ -158,15 +146,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome, Admin!',
+                      AppLocalizations.of(context).welcomeAdmin,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9), // Fixed deprecation
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      user?.fullName ?? 'Administrator',
+                      user?.fullName ?? AppLocalizations.of(context).administrator,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -175,9 +163,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Manage your app content here',
+                      AppLocalizations.of(context).adminContentDesc,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8), // Fixed deprecation
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 14,
                       ),
                     ),
@@ -188,11 +176,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2), // Fixed deprecation
-                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: kGlassRadius,
                 ),
                 child: const Center(
-                  child: Text('👨‍💼', style: TextStyle(fontSize: 32)),
+                  child: Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 32),
                 ),
               ),
             ],
@@ -213,33 +201,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       children: [
         _buildStatCard(
           context,
-          icon: '👥',
+          icon: Icons.group_rounded,
           value: '$_totalUsers',
-          label: 'Total Users',
+          label: AppLocalizations.of(context).totalUsers,
           color: AppColors.primary,
           index: 0,
         ),
         _buildStatCard(
           context,
-          icon: '📁',
+          icon: Icons.folder_rounded,
           value: '$_totalCategories',
-          label: 'Categories',
+          label: AppLocalizations.of(context).categories,
           color: AppColors.secondary,
           index: 1,
         ),
         _buildStatCard(
           context,
-          icon: '📚',
+          icon: Icons.menu_book_rounded,
           value: '$_totalLessons',
-          label: 'Lessons',
+          label: AppLocalizations.of(context).lessonsAdmin,
           color: AppColors.accent,
           index: 2,
         ),
         _buildStatCard(
           context,
-          icon: '🎯',
+          icon: Icons.quiz_rounded,
           value: '$_totalQuizzes',
-          label: 'Quizzes',
+          label: AppLocalizations.of(context).quizzesLabel,
           color: AppColors.warning,
           index: 3,
         ),
@@ -249,19 +237,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildStatCard(
     BuildContext context, {
-    required String icon,
+    required IconData icon,
     required String value,
     required String label,
     required Color color,
     required int index,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
-      ),
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -272,11 +254,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15), // Fixed deprecation
-                  borderRadius: BorderRadius.circular(10),
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: kGlassRadius,
                 ),
                 child: Center(
-                  child: Text(icon, style: const TextStyle(fontSize: 20)),
+                  child: Icon(icon, color: color, size: 20),
                 ),
               ),
               const Spacer(),
@@ -292,8 +274,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: TextStyle(
               color: context.textMuted,
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.5,
             ),
           ),
         ],
@@ -306,9 +291,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       children: [
         _buildManageCard(
           context,
-          icon: '👥',
-          title: 'Users',
-          subtitle: 'View and manage users',
+          icon: Icons.group_rounded,
+          title: AppLocalizations.of(context).users,
+          subtitle: AppLocalizations.of(context).viewManageUsers,
           color: AppColors.primary,
           onTap: () => Navigator.push(
             context,
@@ -319,9 +304,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const SizedBox(height: 12),
         _buildManageCard(
           context,
-          icon: '📁',
-          title: 'Categories',
-          subtitle: 'Add, edit, delete categories',
+          icon: Icons.folder_rounded,
+          title: AppLocalizations.of(context).categories,
+          subtitle: AppLocalizations.of(context).addEditDeleteCategories,
           color: AppColors.secondary,
           onTap: () => Navigator.push(
             context,
@@ -332,9 +317,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const SizedBox(height: 12),
         _buildManageCard(
           context,
-          icon: '📚',
-          title: 'Lessons',
-          subtitle: 'Manage lesson content',
+          icon: Icons.menu_book_rounded,
+          title: AppLocalizations.of(context).lessonsAdmin,
+          subtitle: AppLocalizations.of(context).manageLessonContent,
           color: AppColors.accent,
           onTap: () => Navigator.push(
             context,
@@ -345,9 +330,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const SizedBox(height: 12),
         _buildManageCard(
           context,
-          icon: '🎯',
-          title: 'Quizzes',
-          subtitle: 'Create and manage quizzes',
+          icon: Icons.quiz_rounded,
+          title: AppLocalizations.of(context).quizzesLabel,
+          subtitle: AppLocalizations.of(context).createManageQuizzes,
           color: AppColors.warning,
           onTap: () => Navigator.push(
             context,
@@ -358,10 +343,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const SizedBox(height: 12),
         _buildManageCard(
           context,
-          icon: '🏆',
-          title: 'Challenges',
-          subtitle: 'Manage daily/weekly challenges',
-          color: const Color(0xFF8B5CF6),
+          icon: Icons.emoji_events_rounded,
+          title: AppLocalizations.of(context).dailyChallenges,
+          subtitle: AppLocalizations.of(context).manageChallengesDesc,
+          color: AppColors.primary,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AdminChallengesScreen()),
@@ -371,42 +356,48 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const SizedBox(height: 12),
         _buildManageCard(
           context,
-          icon: '🎖️',
-          title: 'Badges',
-          subtitle: 'Manage achievement badges',
-          color: const Color(0xFFFFD700),
+          icon: Icons.military_tech_rounded,
+          title: AppLocalizations.of(context).badgesTitle,
+          subtitle: AppLocalizations.of(context).manageAchievementBadges,
+          color: AppColors.warning,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AdminBadgesScreen()),
           ),
           index: 5,
         ),
-        
-        // 2. UPDATED: Points to "Sign Library" which lets you View AND Upload
         const SizedBox(height: 12),
         _buildManageCard(
           context,
-          icon: '🤟', 
-          title: 'Sign Library', // Renamed
-          subtitle: 'View, Delete & Upload Signs',
-          color: Colors.purple, 
+          icon: Icons.sign_language_rounded,
+          title: AppLocalizations.of(context).signLibrary,
+          subtitle: AppLocalizations.of(context).viewDeleteUploadSigns,
+          color: const Color(0xFF06B6D4),
           onTap: () => Navigator.push(
             context,
-            // NAVIGATES TO LIBRARY SCREEN
-            MaterialPageRoute(builder: (_) => const AdminSignLibraryScreen()), 
+            MaterialPageRoute(builder: (_) => const AdminSignLibraryScreen()),
           ),
           index: 6,
         ),
-        // Learning Paths Seeder
         const SizedBox(height: 12),
         _buildManageCard(
           context,
-          icon: '🎯',
-          title: 'Learning Paths',
-          subtitle: 'Seed paths from existing lessons',
-          color: const Color(0xFF10B981),
+          icon: Icons.map_rounded,
+          title: AppLocalizations.of(context).learningPaths,
+          subtitle: AppLocalizations.of(context).seedPathsFromLessons,
+          color: AppColors.primary,
           onTap: () => _showLearningPathsDialog(context),
           index: 7,
+        ),
+        const SizedBox(height: 12),
+        _buildManageCard(
+          context,
+          icon: Icons.casino_rounded,
+          title: AppLocalizations.of(context).seedQuizzes,
+          subtitle: AppLocalizations.of(context).generate3QuizzesPerType,
+          color: AppColors.accent,
+          onTap: () => _showQuizSeederDialog(context),
+          index: 8,
         ),
       ],
     );
@@ -414,59 +405,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildManageCard(
     BuildContext context, {
-    required String icon,
+    required IconData icon,
     required String title,
     required String subtitle,
     required Color color,
     required VoidCallback onTap,
     required int index,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.borderColor),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 0),
+      child: GlassTile(
+        onTap: onTap,
+        leading: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: kGlassRadius,
+          ),
+          child: Icon(icon, color: color, size: 22),
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15), // Fixed deprecation
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: Text(icon, style: const TextStyle(fontSize: 26)),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: context.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: color, size: 18),
-          ],
-        ),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: Icon(Icons.arrow_forward_ios_rounded, color: color, size: 16),
       ),
     ).animate().fadeIn(delay: Duration(milliseconds: 500 + (index * 100))).slideX(begin: 0.1);
   }
@@ -478,7 +439,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           child: _buildQuickActionButton(
             context,
             icon: Icons.add_circle_outline,
-            label: 'Add Category',
+            label: AppLocalizations.of(context).addCategory,
             color: AppColors.secondary,
             onTap: () => Navigator.push(
               context,
@@ -491,7 +452,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           child: _buildQuickActionButton(
             context,
             icon: Icons.post_add,
-            label: 'Add Lesson',
+            label: AppLocalizations.of(context).addLesson,
             color: AppColors.accent,
             onTap: () => Navigator.push(
               context,
@@ -512,13 +473,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: GlassCard(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15), // Fixed deprecation
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.3)), // Fixed deprecation
-        ),
         child: Column(
           children: [
             Icon(icon, color: color, size: 28),
@@ -548,14 +504,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981).withAlpha(30),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: kGlassRadius,
               ),
               child: const Center(
-                child: Text('🎯', style: TextStyle(fontSize: 20)),
+                child: Icon(Icons.map_rounded, color: Color(0xFF10B981), size: 20),
               ),
             ),
             const SizedBox(width: 12),
-            const Text('Learning Paths'),
+            Text(AppLocalizations.of(context).learningPaths),
           ],
         ),
         content: Column(
@@ -566,17 +522,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 16),
-            _buildPathPreview('⚡', 'Quick Start', 'Beginner'),
-            _buildPathPreview('🤟', 'ASL Foundations', 'Beginner'),
-            _buildPathPreview('💬', 'Everyday Vocabulary', 'Intermediate'),
-            _buildPathPreview('🔄', 'Daily Practice Mix', 'Intermediate'),
-            _buildPathPreview('🎓', 'Fluent Signer', 'Advanced'),
+            _buildPathPreview(Icons.bolt_rounded, 'Quick Start', 'Beginner'),
+            _buildPathPreview(Icons.sign_language_rounded, 'ASL Foundations', 'Beginner'),
+            _buildPathPreview(Icons.chat_bubble_rounded, 'Everyday Vocabulary', 'Intermediate'),
+            _buildPathPreview(Icons.loop_rounded, 'Daily Practice Mix', 'Intermediate'),
+            _buildPathPreview(Icons.school_rounded, 'Fluent Signer', 'Advanced'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: context.textMuted)),
+            child: Text(AppLocalizations.of(context).cancel, style: TextStyle(color: context.textMuted)),
           ),
           TextButton(
             onPressed: () async {
@@ -622,7 +578,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildPathPreview(String emoji, String name, String difficulty) {
+  Widget _buildPathPreview(IconData icon, String name, String difficulty) {
     Color diffColor;
     switch (difficulty.toLowerCase()) {
       case 'beginner':
@@ -642,7 +598,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 16)),
+          Icon(icon, size: 16, color: diffColor),
           const SizedBox(width: 8),
           Expanded(child: Text(name, style: const TextStyle(fontSize: 13))),
           Container(
@@ -680,7 +636,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           const SnackBar(
             content: Row(
               children: [
-                Text('✅'),
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
                 SizedBox(width: 8),
                 Text('Learning paths created successfully!'),
               ],
@@ -749,7 +705,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           const SnackBar(
             content: Row(
               children: [
-                Text('🗑️'),
+                Icon(Icons.delete_rounded, color: Colors.white, size: 18),
                 SizedBox(width: 8),
                 Text('All learning paths deleted'),
               ],
@@ -772,6 +728,190 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       }
     }
   }
+  void _showQuizSeederDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.accent.withAlpha(30),
+                borderRadius: kGlassRadius,
+              ),
+              child: const Center(
+                child: Icon(Icons.casino_rounded, color: AppColors.accent, size: 20),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(AppLocalizations.of(context).seedQuizzes),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'This will create 3 quizzes for each quiz type using existing lessons:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            _buildPathPreview(Icons.image_rounded, 'Sign to Text (×3)', 'Beginner→Hard'),
+            _buildPathPreview(Icons.text_fields_rounded, 'Text to Sign (×3)', 'Beginner→Hard'),
+            _buildPathPreview(Icons.timer_rounded, 'Timed Challenge (×3)', 'Sprint→Expert'),
+            _buildPathPreview(Icons.spellcheck_rounded, 'Spelling Quiz (×3)', 'Short→Challenge'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context).cancel, style: TextStyle(color: context.textMuted)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteSeededQuizzes();
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.red.withAlpha(30),
+              foregroundColor: Colors.red,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Delete Seeded'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _seedQuizzes();
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: const Color(0xFFEC4899),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text(AppLocalizations.of(context).seedQuizzes),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _seedQuizzes() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFFEC4899)),
+      ),
+    );
+
+    try {
+      final result = await QuizSeederService.seedAllQuizzes();
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Text(result.success ? '✅' : '❌'),
+                const SizedBox(width: 8),
+                Expanded(child: Text(result.message)),
+              ],
+            ),
+            backgroundColor: result.success ? const Color(0xFFEC4899) : Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        if (result.success) _loadStats();
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteSeededQuizzes() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Seeded Quizzes?'),
+        content: const Text(
+          'This will delete all quizzes that were created by the seeder. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Colors.red),
+      ),
+    );
+
+    try {
+      await QuizSeederService.deleteAllSeededQuizzes();
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Text('🗑️'),
+                SizedBox(width: 8),
+                Text('Seeded quizzes deleted'),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _loadStats();
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _runDiagnostic() async {
     // Show loading
     showDialog(

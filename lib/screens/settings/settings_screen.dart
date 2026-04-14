@@ -21,6 +21,7 @@ import '../admin/admin_dashboard_screen.dart';
 import '../auth/login_screen.dart';
 import '../../widgets/share/share_progress_card.dart';
 import '../../widgets/gamification/streak_freeze_widgets.dart';
+import '../../widgets/common/glass_ui.dart';
 
 // --- Phase 2 Integration: Import ---
 import '../../widgets/offline/offline_settings_widgets.dart';
@@ -343,7 +344,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Text('🧊', style: TextStyle(fontSize: 24)),
+            const Icon(Icons.ac_unit, color: Color(0xFF0EA5E9), size: 24),
             const SizedBox(width: 10),
             Text(AppLocalizations.of(ctx).buyStreakFreeze),
           ],
@@ -446,25 +447,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: context.borderColor),
-            ),
-            child: Icon(
-              Icons.settings,
-              color: context.textPrimary,
-            ),
+          GlassIconButton(
+            icon: Icons.settings,
+            iconColor: AppColors.primary,
+            size: 44,
           ),
           const SizedBox(width: 16),
           Text(
             AppLocalizations.of(context).settingsTitle,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: TextStyle(
+              color: context.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 28,
+            ),
           ),
         ],
       ),
@@ -478,12 +473,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         return Container(
           margin: const EdgeInsets.all(20),
+          child: GlassCard(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.bgCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: context.borderColor),
-          ),
           child: Row(
             children: [
               GestureDetector(
@@ -497,7 +488,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: AppColors.primary,
-                          width: 3,
+                          width: 2.5,
                         ),
                       ),
                     ),
@@ -618,16 +609,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     Text(
                       user?.fullName ?? 'Learner',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 20,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       user?.email ?? 'user@gestura.app',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: context.textMuted,
-                          ),
+                      style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -641,17 +635,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                          horizontal: 14,
+                          vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: kGlassRadius,
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
                         ),
                         child: Text(
                           AppLocalizations.of(context).editProfile,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -662,6 +659,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ],
+          ),
           ),
         ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1);
       },
@@ -695,7 +693,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  emoji: '🔥',
+                  icon: Icons.local_fire_department_rounded,
                   value: '${user?.currentStreak ?? 0}',
                   label: AppLocalizations.of(context).dayStreakLabel,
                   color: const Color(0xFFEF4444),
@@ -704,7 +702,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  emoji: '⭐',
+                  icon: Icons.star_rounded,
                   value: _formatNumber(user?.totalXP ?? 0),
                   label: AppLocalizations.of(context).totalXP,
                   color: const Color(0xFFF59E0B),
@@ -713,7 +711,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  emoji: '🏆',
+                  icon: Icons.emoji_events_rounded,
                   value: '${user?.totalBadges ?? 0}',
                   label: AppLocalizations.of(context).badgesLabel,
                   color: const Color(0xFF6366F1),
@@ -727,18 +725,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildStatCard({
-    required String emoji,
+    required IconData icon,
     required String value,
     required String label,
     required Color color,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
-      ),
+      decoration: context.glassCardDecoration(),
       child: Column(
         children: [
           Container(
@@ -746,26 +740,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
             height: 40,
             decoration: BoxDecoration(
               color: color.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: kGlassRadius,
             ),
             child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 20)),
+              child: Icon(icon, color: color, size: 20),
             ),
           ),
           const SizedBox(height: 10),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: TextStyle(
+              color: context.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 20,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.textMuted,
-                  fontSize: 11,
-                ),
+            style: TextStyle(
+              color: context.textMuted,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -833,19 +829,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle(AppLocalizations.of(context).general),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: context.bgCard,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.borderColor),
-          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
-              _buildSettingsTile(
-                icon: Icons.notifications_outlined,
-                iconColor: const Color(0xFF6366F1),
-                title: AppLocalizations.of(context).notifications,
+              GlassTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withAlpha(30),
+                    borderRadius: kGlassRadius,
+                  ),
+                  child: const Icon(Icons.notifications_outlined, color: Color(0xFF6366F1), size: 20),
+                ),
+                title: Text(AppLocalizations.of(context).notifications),
                 trailing: Switch(
                   value: _notificationsEnabled,
                   onChanged: (value) {
@@ -853,20 +851,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() => _notificationsEnabled = value);
                     _saveSettings();
                   },
-                  activeTrackColor: AppColors.primary.withAlpha(128),
                   activeThumbColor: AppColors.primary,
+                  activeTrackColor: AppColors.primary.withAlpha(128),
                 ),
               ),
-              _buildDivider(),
-              _buildSettingsTile(
-                icon: Icons.tune,
-                iconColor: const Color(0xFFF59E0B),
-                title: AppLocalizations.of(context).notificationSettings,
-                trailing: Icon(
-                  Icons.chevron_right,
-                  color: context.textMuted,
-                  size: 20,
-                ),
+              const SizedBox(height: 8),
+              GlassTile(
                 onTap: () {
                   HapticService.buttonTap();
                   Navigator.push(
@@ -876,12 +866,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   );
                 },
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withAlpha(30),
+                    borderRadius: kGlassRadius,
+                  ),
+                  child: const Icon(Icons.tune, color: Color(0xFFF59E0B), size: 20),
+                ),
+                title: Text(AppLocalizations.of(context).notificationSettings),
+                trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
               ),
-              _buildDivider(),
-              _buildSettingsTile(
-                icon: Icons.volume_up_outlined,
-                iconColor: const Color(0xFF10B981),
-                title: AppLocalizations.of(context).soundEffects,
+              const SizedBox(height: 8),
+              GlassTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withAlpha(30),
+                    borderRadius: kGlassRadius,
+                  ),
+                  child: const Icon(Icons.volume_up_outlined, color: Color(0xFF10B981), size: 20),
+                ),
+                title: Text(AppLocalizations.of(context).soundEffects),
                 trailing: Switch(
                   value: _soundEnabled,
                   onChanged: (value) {
@@ -889,15 +897,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() => _soundEnabled = value);
                     _saveSettings();
                   },
-                  activeTrackColor: AppColors.primary.withAlpha(128),
                   activeThumbColor: AppColors.primary,
+                  activeTrackColor: AppColors.primary.withAlpha(128),
                 ),
               ),
-              _buildDivider(),
-              _buildSettingsTile(
-                icon: Icons.vibration,
-                iconColor: const Color(0xFFEF4444),
-                title: AppLocalizations.of(context).vibration,
+              const SizedBox(height: 8),
+              GlassTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withAlpha(30),
+                    borderRadius: kGlassRadius,
+                  ),
+                  child: const Icon(Icons.vibration, color: Color(0xFFEF4444), size: 20),
+                ),
+                title: Text(AppLocalizations.of(context).vibration),
                 trailing: Switch(
                   value: _vibrationEnabled,
                   onChanged: (value) {
@@ -905,8 +920,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() => _vibrationEnabled = value);
                     _saveSettings();
                   },
-                  activeTrackColor: AppColors.primary.withAlpha(128),
                   activeThumbColor: AppColors.primary,
+                  activeTrackColor: AppColors.primary.withAlpha(128),
                 ),
               ),
             ],
@@ -921,20 +936,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle(AppLocalizations.of(context).preferences),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: context.bgCard,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.borderColor),
-          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
               Consumer<LocaleProvider>(
-                builder: (context, localeProvider, _) => _buildSettingsTile(
-                  icon: Icons.language,
-                  iconColor: const Color(0xFF3B82F6),
-                  title: AppLocalizations.of(context).language,
+                builder: (context, localeProvider, _) => GlassTile(
+                  onTap: () => _showLanguageSelector(),
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6).withAlpha(30),
+                      borderRadius: kGlassRadius,
+                    ),
+                    child: const Icon(Icons.language, color: Color(0xFF3B82F6), size: 20),
+                  ),
+                  title: Text(AppLocalizations.of(context).language),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -946,44 +964,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Icon(Icons.chevron_right, color: context.textMuted, size: 20),
                     ],
                   ),
-                  onTap: () => _showLanguageSelector(),
                 ),
               ),
-              _buildDivider(),
-              _buildSettingsTile(
-                icon: Icons.sign_language,
-                iconColor: const Color(0xFFEC4899),
-                title: AppLocalizations.of(context).signLanguage,
+              const SizedBox(height: 8),
+              GlassTile(
+                onTap: () => _showSignLanguageSelector(),
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEC4899).withAlpha(30),
+                    borderRadius: kGlassRadius,
+                  ),
+                  child: const Icon(Icons.sign_language, color: Color(0xFFEC4899), size: 20),
+                ),
+                title: Text(AppLocalizations.of(context).signLanguage),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       _selectedSignLanguage,
-                      style: TextStyle(
-                        color: context.textMuted,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: context.textMuted, fontSize: 14),
                     ),
                     const SizedBox(width: 4),
-                    Icon(
-                      Icons.chevron_right,
-                      color: context.textMuted,
-                      size: 20,
-                    ),
+                    Icon(Icons.chevron_right, color: context.textMuted, size: 20),
                   ],
                 ),
-                onTap: () => _showSignLanguageSelector(),
               ),
-              _buildDivider(),
+              const SizedBox(height: 8),
               Consumer<AuthProvider>(
                 builder: (context, authProvider, child) {
                   final user = authProvider.currentUser;
                   if (user == null) return const SizedBox.shrink();
-                  
-                  return _buildSettingsTile(
-                    icon: Icons.ac_unit,
-                    iconColor: const Color(0xFF0EA5E9),
-                    title: AppLocalizations.of(context).autoUseFreeze,
+                  return GlassTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0EA5E9).withAlpha(30),
+                        borderRadius: kGlassRadius,
+                      ),
+                      child: const Icon(Icons.ac_unit, color: Color(0xFF0EA5E9), size: 20),
+                    ),
+                    title: Text(AppLocalizations.of(context).autoUseFreeze),
                     trailing: Switch(
                       value: user.autoUseFreeze,
                       onChanged: (value) async {
@@ -991,17 +1014,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         await _firestoreService.setAutoUseFreeze(user.id, value);
                         await authProvider.refreshUser();
                       },
-                      activeTrackColor: AppColors.primary.withAlpha(128),
                       activeThumbColor: AppColors.primary,
+                      activeTrackColor: AppColors.primary.withAlpha(128),
                     ),
                   );
                 },
               ),
-              _buildDivider(),
-              _buildSettingsTile(
-                icon: Icons.dark_mode_outlined,
-                iconColor: const Color(0xFF8B5CF6),
-                title: AppLocalizations.of(context).appearance,
+              const SizedBox(height: 8),
+              GlassTile(
+                onTap: () {
+                  HapticService.buttonTap();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ThemeSettingsScreen()),
+                  );
+                },
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B5CF6).withAlpha(30),
+                    borderRadius: kGlassRadius,
+                  ),
+                  child: const Icon(Icons.dark_mode_outlined, color: Color(0xFF8B5CF6), size: 20),
+                ),
+                title: Text(AppLocalizations.of(context).appearance),
                 trailing: Consumer<ThemeProvider>(
                   builder: (context, themeProvider, child) {
                     final l10n = AppLocalizations.of(context);
@@ -1014,28 +1051,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               : themeProvider.themeMode == AppThemeMode.light
                                   ? l10n.light
                                   : l10n.system,
-                          style: TextStyle(
-                            color: context.textMuted,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: context.textMuted, fontSize: 14),
                         ),
                         const SizedBox(width: 4),
-                        Icon(
-                          Icons.chevron_right,
-                          color: context.textMuted,
-                          size: 20,
-                        ),
+                        Icon(Icons.chevron_right, color: context.textMuted, size: 20),
                       ],
                     );
                   },
                 ),
-                onTap: () {
-                  HapticService.buttonTap();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ThemeSettingsScreen()),
-                  );
-                },
               ),
             ],
           ),
@@ -1055,22 +1078,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             if (isAdmin) ...[
               _buildSectionTitle(AppLocalizations.of(context).adminSection),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                decoration: BoxDecoration(
-                  color: context.bgCard,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF6366F1).withAlpha(100)),
-                ),
-                child: _buildSettingsTile(
-                  icon: Icons.admin_panel_settings,
-                  iconColor: const Color(0xFF6366F1),
-                  title: AppLocalizations.of(context).adminPanel,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GlassTile(
+                  onTap: () {
+                    HapticService.buttonTap();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AdminDashboardScreen(),
+                      ),
+                    );
+                  },
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1).withAlpha(30),
+                      borderRadius: kGlassRadius,
+                    ),
+                    child: const Icon(Icons.admin_panel_settings, color: Color(0xFF6366F1), size: 20),
+                  ),
+                  title: Text(AppLocalizations.of(context).adminPanel),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFF6366F1).withAlpha(30),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: kGlassRadius,
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1084,78 +1118,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         SizedBox(width: 4),
-                        Icon(
-                          Icons.chevron_right,
-                          color: Color(0xFF6366F1),
-                          size: 18,
-                        ),
+                        Icon(Icons.chevron_right, color: Color(0xFF6366F1), size: 18),
                       ],
                     ),
                   ),
-                  onTap: () {
-                    HapticService.buttonTap();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AdminDashboardScreen(),
-                      ),
-                    );
-                  },
                 ),
               ).animate().fadeIn(delay: 450.ms),
             ],
 
             _buildSectionTitle(AppLocalizations.of(context).accountSection),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: context.bgCard,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: context.borderColor),
-              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildSettingsTile(
-                    icon: Icons.share_outlined,
-                    iconColor: const Color(0xFF10B981),
-                    title: AppLocalizations.of(context).shareProgress,
-                    trailing: Icon(
-                      Icons.chevron_right,
-                      color: context.textMuted,
-                      size: 20,
-                    ),
+                  GlassTile(
                     onTap: () {
                       HapticService.buttonTap();
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                      if (authProvider.currentUser != null) {
-                        showShareProgressSheet(context, authProvider.currentUser!);
+                      final ap = Provider.of<AuthProvider>(context, listen: false);
+                      if (ap.currentUser != null) {
+                        showShareProgressSheet(context, ap.currentUser!);
                       }
                     },
-                  ),
-                  _buildDivider(),
-                  _buildSettingsTile(
-                    icon: Icons.info_outline,
-                    iconColor: const Color(0xFF6366F1),
-                    title: AppLocalizations.of(context).about,
-                    trailing: Icon(
-                      Icons.chevron_right,
-                      color: context.textMuted,
-                      size: 20,
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withAlpha(30),
+                        borderRadius: kGlassRadius,
+                      ),
+                      child: const Icon(Icons.share_outlined, color: Color(0xFF10B981), size: 20),
                     ),
+                    title: Text(AppLocalizations.of(context).shareProgress),
+                    trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
+                  ),
+                  const SizedBox(height: 8),
+                  GlassTile(
                     onTap: () => _showAboutDialog(),
-                  ),
-                  _buildDivider(),
-                  _buildSettingsTile(
-                    icon: Icons.logout,
-                    iconColor: AppColors.error,
-                    title: AppLocalizations.of(context).logOut,
-                    trailing: const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.error,
-                      size: 20,
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withAlpha(30),
+                        borderRadius: kGlassRadius,
+                      ),
+                      child: const Icon(Icons.info_outline, color: Color(0xFF6366F1), size: 20),
                     ),
+                    title: Text(AppLocalizations.of(context).about),
+                    trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
+                  ),
+                  const SizedBox(height: 8),
+                  // Sign out — custom outlined tile with error border
+                  GestureDetector(
                     onTap: () => _showLogoutConfirmation(),
-                    textColor: AppColors.error,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        borderRadius: kGlassRadius,
+                        border: Border.all(color: AppColors.error, width: 1.5),
+                        color: AppColors.error.withAlpha(15),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withAlpha(30),
+                              borderRadius: kGlassRadius,
+                            ),
+                            child: const Icon(Icons.logout, color: AppColors.error, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context).logOut,
+                              style: const TextStyle(
+                                color: AppColors.error,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: AppColors.error, size: 20),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -1169,65 +1216,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: context.textMuted,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required Widget trailing,
-    VoidCallback? onTap,
-    Color? textColor,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconColor.withAlpha(30),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: textColor ?? context.textPrimary,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-            trailing,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Divider(
-      color: context.borderColor,
-      height: 1,
-      indent: 70,
+      child: GlassSectionHeader(title: title),
     );
   }
 
@@ -1368,7 +1357,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Row(
           children: [
-            Text('🤟', style: TextStyle(fontSize: 28)),
+            Icon(Icons.sign_language, color: AppColors.primary, size: 28),
             SizedBox(width: 12),
             Text('Gestura'),
           ],

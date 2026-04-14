@@ -485,4 +485,126 @@ class CertificateService {
       filename: fileName,
     );
   }
+
+  /// Generate a certificate PDF for completing a learning path
+  static Future<Uint8List> generateLearningPathCertificate({
+    required String userName,
+    required String pathName,
+    required int stepsCompleted,
+    required int totalXP,
+    required DateTime completionDate,
+  }) async {
+    final pdf = pw.Document();
+
+    final fontRegular = await PdfGoogleFonts.poppinsRegular();
+    final fontBold = await PdfGoogleFonts.poppinsBold();
+    final fontItalic = await PdfGoogleFonts.poppinsItalic();
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.all(40),
+        build: (pw.Context context) {
+          return pw.Container(
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColor.fromHex('#10B981'), width: 3),
+              borderRadius: pw.BorderRadius.circular(20),
+            ),
+            padding: const pw.EdgeInsets.all(40),
+            child: pw.Column(
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              children: [
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Text('🗺️  ', style: pw.TextStyle(fontSize: 28, font: fontBold)),
+                    pw.Text(
+                      'GESTURA',
+                      style: pw.TextStyle(
+                        font: fontBold,
+                        fontSize: 28,
+                        color: PdfColor.fromHex('#10B981'),
+                        letterSpacing: 6,
+                      ),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 8),
+                pw.Text(
+                  'Learning Path Certificate',
+                  style: pw.TextStyle(
+                    font: fontRegular,
+                    fontSize: 14,
+                    color: PdfColor.fromHex('#6B7280'),
+                    letterSpacing: 2,
+                  ),
+                ),
+                pw.Divider(color: PdfColor.fromHex('#10B981'), thickness: 1.5),
+                pw.SizedBox(height: 20),
+                pw.Text(
+                  'This certifies that',
+                  style: pw.TextStyle(font: fontItalic, fontSize: 14, color: PdfColor.fromHex('#6B7280')),
+                ),
+                pw.SizedBox(height: 12),
+                pw.Text(
+                  userName,
+                  style: pw.TextStyle(font: fontBold, fontSize: 36, color: PdfColor.fromHex('#1F2937')),
+                ),
+                pw.SizedBox(height: 16),
+                pw.Text(
+                  'has successfully completed the learning path',
+                  style: pw.TextStyle(font: fontItalic, fontSize: 14, color: PdfColor.fromHex('#6B7280')),
+                ),
+                pw.SizedBox(height: 12),
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColor.fromHex('#F0FDF4'),
+                    borderRadius: pw.BorderRadius.circular(12),
+                    border: pw.Border.all(color: PdfColor.fromHex('#10B981')),
+                  ),
+                  child: pw.Text(
+                    pathName,
+                    style: pw.TextStyle(font: fontBold, fontSize: 22, color: PdfColor.fromHex('#10B981')),
+                  ),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    _buildPathStatBox(fontBold, fontRegular, '$stepsCompleted', 'Steps Completed'),
+                    pw.SizedBox(width: 30),
+                    _buildPathStatBox(fontBold, fontRegular, '$totalXP XP', 'Experience Earned'),
+                  ],
+                ),
+                pw.SizedBox(height: 20),
+                pw.Divider(color: PdfColor.fromHex('#E5E7EB'), thickness: 0.5),
+                pw.SizedBox(height: 8),
+                pw.Text(
+                  DateFormat('MMMM dd, yyyy').format(completionDate),
+                  style: pw.TextStyle(font: fontRegular, fontSize: 12, color: PdfColor.fromHex('#9CA3AF')),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  static pw.Widget _buildPathStatBox(
+    pw.Font fontBold,
+    pw.Font fontRegular,
+    String value,
+    String label,
+  ) {
+    return pw.Column(
+      children: [
+        pw.Text(value, style: pw.TextStyle(font: fontBold, fontSize: 20, color: PdfColor.fromHex('#1F2937'))),
+        pw.Text(label, style: pw.TextStyle(font: fontRegular, fontSize: 10, color: PdfColor.fromHex('#6B7280'))),
+      ],
+    );
+  }
 }

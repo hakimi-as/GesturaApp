@@ -3,17 +3,21 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
+import '../../widgets/common/glass_ui.dart';
 import '../../models/category_model.dart';
 import '../../models/lesson_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../services/certificate_service.dart';
+import '../../providers/badge_provider.dart';
+import '../../widgets/badges/badge_unlock_dialog.dart';
+import '../../services/analytics_service.dart';
 import 'lesson_detail_screen.dart';
 
 // --- Phase 2 Integration: Imports ---
 import '../../widgets/offline/download_widgets.dart';
-import '../../widgets/offline/offline_widgets.dart';
 
 class CategoryLessonsScreen extends StatefulWidget {
   final CategoryModel category;
@@ -32,6 +36,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
   List<LessonModel> _lessons = [];
   Set<String> _completedLessonIds = {};
   bool _isLoading = true;
+  bool _certificatePromptShown = false;
 
   /// Check if this category is an alphabet/letters category
   bool get isAlphabetCategory {
@@ -83,10 +88,91 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
         _completedLessonIds = completedIds;
         _isLoading = false;
       });
+
+      // All lessons complete: trigger badge check, analytics, and certificate prompt
+      if (lessons.isNotEmpty &&
+          completedIds.containsAll(lessons.map((l) => l.id))) {
+        // Log category completion analytics
+        AnalyticsService.logCategoryCompleted(
+          categoryId: widget.category.id,
+          categoryName: widget.category.name,
+        );
+
+        // Badge check for category completion (runs every load but badge service deduplicates)
+        if (authProvider.userId != null && authProvider.currentUser != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!mounted) return;
+            final badgeProvider = Provider.of<BadgeProvider>(context, listen: false);
+            final newBadges = await badgeProvider.checkForNewBadges(
+              userId: authProvider.userId!,
+              user: authProvider.currentUser!,
+              completedCategoryToday: true,
+              completedCategoryId: widget.category.id,
+            );
+            if (newBadges.isNotEmpty && mounted) {
+              await BadgeUnlockDialog.showMultiple(context, newBadges);
+            }
+          });
+        }
+
+        if (!_certificatePromptShown) {
+          _certificatePromptShown = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showCertificatePrompt();
+          });
+        }
+      }
     } catch (e) {
       debugPrint('❌ Error loading lessons: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _showCertificatePrompt() async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.workspace_premium_rounded, size: 60, color: AppColors.warning),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context).allLessonsCompleted,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              AppLocalizations.of(context).getCompletionCertificate,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: context.textMuted),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppLocalizations.of(context).cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _generateCertificate();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: Text(
+              AppLocalizations.of(context).getCompletionCertificate,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Generate and share certificate
@@ -101,26 +187,24 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => Center(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          margin: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.bgCard,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(color: AppColors.primary),
-              const SizedBox(height: 20),
-              Text(
-                'Generating Certificate...',
-                style: TextStyle(
-                  color: context.textPrimary,
-                  fontWeight: FontWeight.w500,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: GlassCard(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(color: AppColors.primary),
+                const SizedBox(height: 20),
+                Text(
+                  AppLocalizations.of(context).generatingCertificate,
+                  style: TextStyle(
+                    color: context.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -150,7 +234,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error generating certificate: $e'),
+          content: Text('${AppLocalizations.of(context).errorGeneratingCertificate}: $e'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -164,17 +248,12 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
     final progress = totalLessons > 0 ? completedCount / totalLessons : 0.0;
 
     return Scaffold(
-      backgroundColor: context.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(widget.category.name),
+      backgroundColor: Colors.transparent,
+      appBar: GlassAppBar(
+        title: widget.category.name,
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh, color: context.textPrimary),
+            icon: const Icon(Icons.refresh, color: AppColors.primary),
             onPressed: _loadLessons,
           ),
         ],
@@ -255,10 +334,10 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                 Flexible(
                   child: Text(
                     _completedCount == 0
-                        ? 'Complete lessons to get certificate'
+                        ? AppLocalizations.of(context).completeLessonsForCert
                         : isCompleted
-                            ? 'Get Completion Certificate 🎓'
-                            : 'Share Progress Certificate ($percentage%)',
+                            ? AppLocalizations.of(context).getCompletionCertificate
+                            : '${AppLocalizations.of(context).shareProgressCertificate} ($percentage%)',
                     style: TextStyle(
                       color: _completedCount > 0 ? Colors.white : context.textMuted,
                       fontWeight: FontWeight.w600,
@@ -288,23 +367,14 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
 
     return Container(
       margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      child: GlassCard(
+        padding: const EdgeInsets.all(20),
         gradient: isAllCompleted
             ? const LinearGradient(
                 colors: [Color(0xFF10B981), Color(0xFF34D399)],
               )
             : AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: (isAllCompleted ? AppColors.success : AppColors.primary).withAlpha(77),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
+        child: Column(
         children: [
           Row(
             children: [
@@ -340,7 +410,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       isAllCompleted
-                          ? '🎉 All lessons completed!'
+                          ? AppLocalizations.of(context).allLessonsCompleted
                           : widget.category.description,
                       style: TextStyle(
                         color: Colors.white.withAlpha(204),
@@ -375,18 +445,11 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: Colors.white.withAlpha(51),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                  minHeight: 8,
-                ),
-              ),
+              GlassProgressBar(value: progress, height: 8),
             ],
           ),
         ],
+        ),
       ),
     ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.1);
   }
@@ -415,16 +478,15 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isCompleted ? AppColors.success.withAlpha(128) : context.borderColor,
-            width: isCompleted ? 2 : 1,
+        child: GlassCard(
+          padding: const EdgeInsets.all(16),
+          decorationOverride: context.glassCardDecoration().copyWith(
+            border: Border.all(
+              color: isCompleted ? AppColors.success.withAlpha(128) : context.borderColor,
+              width: isCompleted ? 2 : 1,
+            ),
           ),
-        ),
-        child: Row(
+          child: Row(
           children: [
             // Lesson thumbnail
             Container(
@@ -513,17 +575,17 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                             color: AppColors.success.withAlpha(38),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.check_circle,
                                 color: AppColors.success,
                                 size: 14,
                               ),
                               SizedBox(width: 4),
                               Text(
-                                'Done',
+                                AppLocalizations.of(context).done,
                                 style: TextStyle(
                                   color: AppColors.success,
                                   fontSize: 11,
@@ -561,9 +623,10 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              isCompleted ? '✅' : '⭐',
-                              style: const TextStyle(fontSize: 12),
+                            Icon(
+                              isCompleted ? Icons.check_circle_rounded : Icons.star_rounded,
+                              size: 12,
+                              color: isCompleted ? AppColors.success : AppColors.warning,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -610,7 +673,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
           ],
         ),
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideX(begin: 0.1);
+    )).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideX(begin: 0.1);
   }
 
   Widget _buildEmptyState() {
@@ -618,13 +681,10 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            widget.category.icon,
-            style: const TextStyle(fontSize: 60),
-          ),
+          const TealGradientIcon(icon: Icons.menu_book_rounded, size: 72),
           const SizedBox(height: 16),
           Text(
-            'No lessons yet',
+            AppLocalizations.of(context).noLessonsYet,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
@@ -639,7 +699,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
           ElevatedButton.icon(
             onPressed: _loadLessons,
             icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
+            label: Text(AppLocalizations.of(context).refresh),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
             ),

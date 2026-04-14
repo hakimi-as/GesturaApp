@@ -15,6 +15,7 @@ import '../../services/firestore_service.dart';
 import '../../widgets/badges/badge_unlock_dialog.dart';
 import '../../widgets/challenges/challenge_complete_dialog.dart';
 import '../../widgets/video/video_player_widget.dart';
+import '../../widgets/common/glass_ui.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/analytics_service.dart';
 import '../../services/offline_service.dart';
@@ -135,12 +136,15 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           final newBadges = await badgeProvider.checkForNewBadges(
             userId: authProvider.userId!,
             user: authProvider.currentUser!,
-            quizzesCompleted: authProvider.currentUser!.quizzesCompleted,
-            perfectQuizzes:
-                isPerfect ? authProvider.currentUser!.perfectQuizzes : null,
+            quizzesCompleted:
+                authProvider.currentUser!.quizzesCompleted,
+            perfectQuizzes: isPerfect
+                ? authProvider.currentUser!.perfectQuizzes
+                : null,
           );
 
-          final completedChallenges = await challengeProvider.updateProgress(
+          final completedChallenges =
+              await challengeProvider.updateProgress(
             userId: authProvider.userId!,
             user: authProvider.currentUser!,
             quizzesCompleted: 1,
@@ -159,14 +163,16 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               if (mounted && _newBadges.isNotEmpty) {
                 await BadgeUnlockDialog.showMultiple(context, _newBadges);
                 for (final badge in _newBadges) {
-                  NotificationService().showAchievementUnlocked(badge.name, badge.xpReward);
+                  NotificationService()
+                      .showAchievementUnlocked(badge.name, badge.xpReward);
                 }
               }
               if (mounted && _completedChallenges.isNotEmpty) {
                 await ChallengeCompleteDialog.showMultiple(
                     context, _completedChallenges);
                 for (final c in _completedChallenges) {
-                  NotificationService().showChallengeCompleted(c.title, c.xpReward);
+                  NotificationService()
+                      .showChallengeCompleted(c.title, c.xpReward);
                 }
               }
             });
@@ -174,20 +180,20 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         }
       }
     }
-
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: Builder(
         builder: (context) {
           final correctAnswers = _cachedCorrect;
           final totalQuestions = _cachedTotal;
           final score = _cachedScore;
           final xpEarned = _cachedXP;
-          final quizProvider = Provider.of<QuizProvider>(context, listen: false);
+          final quizProvider =
+              Provider.of<QuizProvider>(context, listen: false);
           final percentage = totalQuestions > 0
               ? (correctAnswers / totalQuestions * 100).toInt()
               : 0;
@@ -205,10 +211,12 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
 
                   Text(
                     _getResultTitle(context, percentage),
-                    style:
-                        Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                        ?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                   ).animate().fadeIn(delay: 400.ms),
                   const SizedBox(height: 8),
 
@@ -254,15 +262,17 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  // ── Review Section ────────────────────────────────────────────────────────
+  // ── Review Section ─────────────────────────────────────────────────────────
 
-  Widget _buildReviewSection(BuildContext context, QuizProvider quizProvider) {
+  Widget _buildReviewSection(
+      BuildContext context, QuizProvider quizProvider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Text('📝', style: TextStyle(fontSize: 20)),
+            const Icon(Icons.assignment_late_rounded,
+                color: AppColors.error, size: 20),
             const SizedBox(width: 8),
             Text(
               AppLocalizations.of(context).reviewWrongAnswers,
@@ -279,7 +289,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                AppLocalizations.of(context).missedCount(quizProvider.wrongAnswers.length),
+                AppLocalizations.of(context)
+                    .missedCount(quizProvider.wrongAnswers.length),
                 style: const TextStyle(
                   color: AppColors.error,
                   fontSize: 12,
@@ -310,7 +321,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   ) {
     // Spelling Quiz: show letter images + word comparison
     if (question.letterImages != null && question.letterImages!.isNotEmpty) {
-      return _buildSpellingReviewCard(context, question, selectedAnswer, index);
+      return _buildSpellingReviewCard(
+          context, question, selectedAnswer, index);
     }
 
     // Text to Sign: no media on question — show word + side-by-side image comparison
@@ -323,20 +335,14 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     final hasVideo = question.videoUrl != null;
     final hasImage = question.imageUrl != null;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
-      ),
+    return GlassCard(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (hasVideo)
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: kGlassRadius.resolve(TextDirection.ltr),
               child: SizedBox(
                 width: double.infinity,
                 height: 160,
@@ -349,8 +355,10 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             )
           else if (hasImage)
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(6),
+              ),
               child: Image.network(
                 CloudinaryService.getOptimizedImage(question.imageUrl!,
                     width: 600, height: 320),
@@ -360,9 +368,9 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 errorBuilder: (_, __, ___) => Container(
                   height: 80,
                   color: context.bgElevated,
-                  child: Center(
-                    child: Text(question.signEmoji,
-                        style: const TextStyle(fontSize: 40)),
+                  child: const Center(
+                    child: Icon(Icons.sign_language_rounded,
+                        size: 40, color: AppColors.primary),
                   ),
                 ),
               ),
@@ -373,12 +381,14 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               height: 80,
               decoration: BoxDecoration(
                 color: context.bgElevated,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(6),
+                ),
               ),
-              child: Center(
-                child: Text(question.signEmoji,
-                    style: const TextStyle(fontSize: 40)),
+              child: const Center(
+                child: Icon(Icons.sign_language_rounded,
+                    size: 40, color: AppColors.primary),
               ),
             ),
 
@@ -413,11 +423,12 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           ),
         ],
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: 950 + index * 80));
+    )
+        .animate()
+        .fadeIn(delay: Duration(milliseconds: 950 + index * 80));
   }
 
   /// Review card for Spelling Quiz wrong answers.
-  /// Shows the fingerspelling letter sequence + your wrong word vs correct word.
   Widget _buildSpellingReviewCard(
     BuildContext context,
     QuizQuestionModel question,
@@ -426,21 +437,16 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   ) {
     final letters = question.letterImages!;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    return GlassCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
           Row(
             children: [
-              const Text('✍️', style: TextStyle(fontSize: 16)),
+              const Icon(Icons.spellcheck_rounded,
+                  color: AppColors.accent, size: 16),
               const SizedBox(width: 8),
               Text(
                 AppLocalizations.of(context).whatWordSpelled,
@@ -479,7 +485,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                         errorBuilder: (_, __, ___) => const Center(
                           child: Text('?',
                               style: TextStyle(
-                                  fontSize: 24, color: AppColors.accent)),
+                                  fontSize: 24,
+                                  color: AppColors.accent)),
                         ),
                       ),
                     ),
@@ -511,7 +518,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   }
 
   /// Review card for Text to Sign wrong answers.
-  /// Shows the word asked, then the wrong sign image vs the correct sign image.
   Widget _buildTextToSignReviewCard(
     BuildContext context,
     QuizQuestionModel question,
@@ -523,21 +529,16 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     final wrongImageUrl = question.getOptionImage(selectedIdx);
     final correctImageUrl = question.getOptionImage(correctIdx);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    return GlassCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Word prompt
           Row(
             children: [
-              const Text('✋', style: TextStyle(fontSize: 16)),
+              const Icon(Icons.back_hand_rounded,
+                  color: AppColors.primary, size: 16),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -578,16 +579,18 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                     height: 240),
                                 fit: BoxFit.cover,
                                 width: double.infinity,
-                                errorBuilder: (_, __, ___) => Center(
-                                  child: Text(question.signEmoji,
-                                      style:
-                                          const TextStyle(fontSize: 32)),
+                                errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(
+                                      Icons.sign_language_rounded,
+                                      size: 32,
+                                      color: AppColors.error),
                                 ),
                               )
-                            : Center(
-                                child: Text(question.signEmoji,
-                                    style:
-                                        const TextStyle(fontSize: 32)),
+                            : const Center(
+                                child: Icon(
+                                    Icons.sign_language_rounded,
+                                    size: 32,
+                                    color: AppColors.error),
                               ),
                       ),
                     ),
@@ -643,16 +646,18 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                                     height: 240),
                                 fit: BoxFit.cover,
                                 width: double.infinity,
-                                errorBuilder: (_, __, ___) => Center(
-                                  child: Text(question.signEmoji,
-                                      style:
-                                          const TextStyle(fontSize: 32)),
+                                errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(
+                                      Icons.sign_language_rounded,
+                                      size: 32,
+                                      color: AppColors.success),
                                 ),
                               )
-                            : Center(
-                                child: Text(question.signEmoji,
-                                    style:
-                                        const TextStyle(fontSize: 32)),
+                            : const Center(
+                                child: Icon(
+                                    Icons.sign_language_rounded,
+                                    size: 32,
+                                    color: AppColors.success),
                               ),
                       ),
                     ),
@@ -701,7 +706,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('💡', style: TextStyle(fontSize: 14)),
+          const Icon(Icons.lightbulb_outline_rounded,
+              color: AppColors.primary, size: 14),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
@@ -758,23 +764,23 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   // ── Existing widgets ───────────────────────────────────────────────────────
 
   Widget _buildResultIcon(bool isPassed, int percentage) {
-    String emoji;
+    IconData iconData;
     Color color;
 
     if (percentage == 100) {
-      emoji = '🏆';
+      iconData = Icons.emoji_events_rounded;
       color = const Color(0xFFFFD700);
     } else if (percentage >= 90) {
-      emoji = '🌟';
+      iconData = Icons.star_rounded;
       color = AppColors.success;
     } else if (percentage >= 70) {
-      emoji = '👏';
+      iconData = Icons.thumb_up_rounded;
       color = AppColors.success;
     } else if (percentage >= 50) {
-      emoji = '💪';
+      iconData = Icons.fitness_center_rounded;
       color = AppColors.warning;
     } else {
-      emoji = '📚';
+      iconData = Icons.menu_book_rounded;
       color = AppColors.secondary;
     }
 
@@ -793,7 +799,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         ],
       ),
       child: Center(
-        child: Text(emoji, style: const TextStyle(fontSize: 70)),
+        child: Icon(iconData, color: color, size: 70),
       ),
     )
         .animate()
@@ -822,21 +828,15 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
 
   Widget _buildScoreCard(
       BuildContext context, int correct, int total, int percentage) {
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         children: [
           Text(
             '$percentage%',
             style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: _getScoreColor(percentage),
-                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
                 ),
           ),
           const SizedBox(height: 8),
@@ -848,46 +848,27 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 ?.copyWith(color: context.textSecondary),
           ),
           const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: percentage / 100,
-              minHeight: 12,
-              backgroundColor: context.bgElevated,
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(_getScoreColor(percentage)),
-            ),
-          ),
+          GlassProgressBar(value: percentage / 100, height: 12),
         ],
       ),
     ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2);
   }
 
   Widget _buildXPCard(BuildContext context, int xpEarned, int score) {
-    return Container(
-      width: double.infinity,
+    return GlassCard(
+      gradient: AppColors.primaryGradient,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('⭐', style: TextStyle(fontSize: 32)),
+          const Icon(Icons.star_rounded, color: Colors.white, size: 32),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(AppLocalizations.of(context).xpEarned,
-                  style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                  style:
+                      const TextStyle(color: Colors.white70, fontSize: 14)),
               Text(
                 '+$xpEarned XP',
                 style: const TextStyle(
@@ -908,21 +889,21 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
       children: [
         Expanded(
           child: _buildStatCard(context,
-              icon: '⏱️',
+              icon: Icons.timer_outlined,
               value: '${quizProvider.timeSpent}s',
               label: AppLocalizations.of(context).timeSpent),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(context,
-              icon: '✅',
+              icon: Icons.check_circle_outline_rounded,
               value: '${quizProvider.correctAnswers}',
               label: AppLocalizations.of(context).correct),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(context,
-              icon: '❌',
+              icon: Icons.cancel_outlined,
               value:
                   '${quizProvider.totalQuestions - quizProvider.correctAnswers}',
               label: AppLocalizations.of(context).wrong),
@@ -933,19 +914,15 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
 
   Widget _buildStatCard(
     BuildContext context, {
-    required String icon,
+    required IconData icon,
     required String value,
     required String label,
   }) {
-    return Container(
+    return GlassCard(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(14),
-      ),
       child: Column(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 24)),
+          Icon(icon, color: AppColors.primary, size: 24),
           const SizedBox(height: 8),
           Text(value,
               style: Theme.of(context)
@@ -967,19 +944,19 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   }
 
   Widget _buildPerfectScoreBadge(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decorationOverride: BoxDecoration(
         color: const Color(0xFFFFD700).withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.5), width: 2),
+        borderRadius: kGlassRadius,
+        border: Border.all(
+            color: const Color(0xFFFFD700).withValues(alpha: 0.5), width: 2),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('🏆', style: TextStyle(fontSize: 28)),
+          const Icon(Icons.emoji_events_rounded,
+              color: Color(0xFFFFD700), size: 28),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1010,36 +987,16 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   Widget _buildButtons(BuildContext context) {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.refresh),
-            label: Text(AppLocalizations.of(context).tryAgain),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-            ),
-          ),
+        GlassPrimaryButton(
+          label: AppLocalizations.of(context).tryAgain,
+          onPressed: () => Navigator.pop(context),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: OutlinedButton.icon(
-            onPressed: () =>
-                Navigator.popUntil(context, (route) => route.isFirst),
-            icon: const Icon(Icons.home),
-            label: Text(AppLocalizations.of(context).backToHome),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.textSecondary,
-              side: BorderSide(color: context.borderColor),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-            ),
-          ),
+        GlassOutlineButton(
+          label: AppLocalizations.of(context).backToHome,
+          icon: Icons.home_rounded,
+          onPressed: () =>
+              Navigator.popUntil(context, (route) => route.isFirst),
         ),
       ],
     ).animate().fadeIn(delay: 1000.ms);

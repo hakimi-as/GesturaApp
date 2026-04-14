@@ -4,6 +4,7 @@ import 'package:confetti/confetti.dart';
 
 import '../../config/theme.dart';
 import '../../models/challenge_model.dart';
+import '../common/glass_ui.dart';
 
 class ChallengeCompleteDialog extends StatefulWidget {
   final ChallengeModel challenge;
@@ -41,7 +42,7 @@ class _ChallengeCompleteDialogState extends State<ChallengeCompleteDialog> {
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
-    
+
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) _confettiController.play();
     });
@@ -60,136 +61,132 @@ class _ChallengeCompleteDialogState extends State<ChallengeCompleteDialog> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Main content
-          Container(
-            width: 320,
+          // Main glass content
+          GlassCard(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(28),
+            decorationOverride: AppColors.glassCard().copyWith(
               border: Border.all(
-                color: widget.challenge.typeColor.withAlpha(100),
-                width: 2,
+                color: AppColors.primary.withAlpha(70),
+                width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: widget.challenge.typeColor.withAlpha(50),
+                  color: AppColors.primary.withAlpha(40),
                   blurRadius: 40,
                   spreadRadius: 10,
                 ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Text(
-                  '🎯 Challenge Complete!',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: widget.challenge.typeColor,
-                      ),
-                ).animate().fadeIn(delay: 200.ms).scale(delay: 200.ms),
-                const SizedBox(height: 24),
-
-                // Challenge Icon with animation
-                _buildChallengeIcon(),
-                const SizedBox(height: 20),
-
-                // Type Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: widget.challenge.typeColor.withAlpha(30),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    widget.challenge.typeLabel,
-                    style: TextStyle(
-                      color: widget.challenge.typeColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 400.ms),
-                const SizedBox(height: 12),
-
-                // Challenge name
-                Text(
-                  widget.challenge.title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
-                ).animate().fadeIn(delay: 500.ms),
-                const SizedBox(height: 8),
-
-                // Description
-                Text(
-                  widget.challenge.description,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: context.textMuted,
-                      ),
-                  textAlign: TextAlign.center,
-                ).animate().fadeIn(delay: 600.ms),
-                const SizedBox(height: 16),
-
-                // XP Reward
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        widget.challenge.typeColor,
-                        widget.challenge.typeColor.withAlpha(200),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+            child: SizedBox(
+              width: 320,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('⭐', style: TextStyle(fontSize: 20)),
+                      const Icon(
+                        Icons.military_tech_rounded,
+                        color: AppColors.primary,
+                        size: 22,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        '+${widget.challenge.xpReward} XP',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
+                        'Challenge Complete!',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColorsDark.textPrimary,
+                            ),
                       ),
                     ],
-                  ),
-                ).animate().fadeIn(delay: 700.ms).scale(delay: 700.ms),
-                const SizedBox(height: 24),
+                  ).animate().fadeIn(delay: 200.ms).scale(delay: 200.ms),
+                  const SizedBox(height: 24),
 
-                // Continue Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
+                  // Challenge icon
+                  _buildChallengeIcon(),
+                  const SizedBox(height: 20),
+
+                  // Type badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: widget.challenge.typeColor.withAlpha(30),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      widget.challenge.typeLabel,
+                      style: TextStyle(
+                        color: widget.challenge.typeColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 400.ms),
+                  const SizedBox(height: 12),
+
+                  // Challenge name
+                  Text(
+                    widget.challenge.title,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColorsDark.textPrimary,
+                        ),
+                    textAlign: TextAlign.center,
+                  ).animate().fadeIn(delay: 500.ms),
+                  const SizedBox(height: 8),
+
+                  // Description
+                  Text(
+                    widget.challenge.description,
+                    style: const TextStyle(
+                      color: AppColorsDark.textMuted,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ).animate().fadeIn(delay: 600.ms),
+                  const SizedBox(height: 16),
+
+                  // XP reward — teal color, bold
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withAlpha(26),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.primary.withAlpha(60)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '+${widget.challenge.xpReward} XP',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 700.ms).scale(delay: 700.ms),
+                  const SizedBox(height: 24),
+
+                  // Continue button
+                  GlassPrimaryButton(
+                    label: 'Awesome!',
                     onPressed: () {
                       Navigator.of(context).pop();
                       widget.onDismiss?.call();
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: widget.challenge.typeColor,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text(
-                      'Awesome!',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 800.ms),
-              ],
+                  ).animate().fadeIn(delay: 800.ms),
+                ],
+              ),
             ),
           ),
 
@@ -227,23 +224,24 @@ class _ChallengeCompleteDialogState extends State<ChallengeCompleteDialog> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            widget.challenge.typeColor,
-            widget.challenge.typeColor.withAlpha(150),
+            AppColors.primary,
+            AppColors.primary.withAlpha(180),
           ],
         ),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: kGlassRadius,
         boxShadow: [
           BoxShadow(
-            color: widget.challenge.typeColor.withAlpha(100),
+            color: AppColors.primary.withAlpha(100),
             blurRadius: 20,
             spreadRadius: 5,
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          widget.challenge.emoji,
-          style: const TextStyle(fontSize: 50),
+      child: const Center(
+        child: Icon(
+          Icons.military_tech_rounded,
+          size: 50,
+          color: Colors.white,
         ),
       ),
     )

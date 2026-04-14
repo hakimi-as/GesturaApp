@@ -45,7 +45,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [

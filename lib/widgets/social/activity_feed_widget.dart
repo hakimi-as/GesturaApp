@@ -7,6 +7,7 @@ import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart';
 import '../../models/friend_model.dart';
 import '../../screens/social/friend_profile_screen.dart';
+import '../common/glass_ui.dart';
 
 class ActivityFeedWidget extends StatefulWidget {
   final String userId;
@@ -71,33 +72,36 @@ class _ActivityFeedWidgetState extends State<ActivityFeedWidget> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Row(
               children: [
+                // Small teal icon box
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withAlpha(26),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: kGlassRadius,
                   ),
-                  child: const Text('📢', style: TextStyle(fontSize: 18)),
+                  child: const Icon(
+                    Icons.campaign_rounded,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Friend Activity',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: AppColorsDark.textPrimary,
+                      ),
                 ),
                 const Spacer(),
                 GestureDetector(
                   onTap: _loadActivities,
                   child: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: context.bgCard,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
+                    decoration: AppColors.glassCard(),
+                    child: const Icon(
                       Icons.refresh_rounded,
-                      color: context.textMuted,
+                      color: AppColorsDark.textMuted,
                       size: 20,
                     ),
                   ),
@@ -126,35 +130,16 @@ class _ActivityFeedWidgetState extends State<ActivityFeedWidget> {
     return Container(
       padding: const EdgeInsets.all(40),
       child: const Center(
-        child: CircularProgressIndicator(),
+        child: CircularProgressIndicator(color: AppColors.primary),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('🔔', style: TextStyle(fontSize: 50)),
-            const SizedBox(height: 16),
-            Text(
-              'No activity yet',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your friends\' activities will appear here',
-              style: TextStyle(color: context.textMuted),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return GlassEmptyState(
+      icon: Icons.notifications_none_rounded,
+      title: 'No activity yet',
+      subtitle: 'Your friends\' activities will appear here',
     );
   }
 
@@ -169,136 +154,147 @@ class _ActivityFeedWidgetState extends State<ActivityFeedWidget> {
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+      child: GlassTile(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        leading: _buildAvatar(activity),
+        title: Row(
           children: [
-            // Avatar
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: activity.userPhotoUrl == null
-                    ? const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                      )
-                    : null,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: activity.userPhotoUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: activity.userPhotoUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: context.bgElevated,
-                          child: Center(
-                            child: Text(
-                              activity.userInitials,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          activity.userInitials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+            Expanded(
+              child: Text(
+                activity.userName,
+                style: const TextStyle(
+                  color: AppColorsDark.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 14),
-            
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          activity.userName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        activity.timeAgo,
-                        style: TextStyle(
-                          color: context.textMuted,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        activity.activityIcon,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          activity.title ?? activity.description,
-                          style: TextStyle(
-                            color: context.textSecondary,
-                            fontSize: 14,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (activity.xpEarned > 0) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(26),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('⭐', style: TextStyle(fontSize: 12)),
-                          const SizedBox(width: 4),
-                          Text(
-                            '+${activity.xpEarned} XP',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
+            // Timestamp — muted, 11px
+            Text(
+              activity.timeAgo,
+              style: const TextStyle(
+                color: AppColorsDark.textMuted,
+                fontSize: 11,
               ),
             ),
           ],
         ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                // Small teal activity icon
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(26),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(
+                    Icons.bolt_rounded,
+                    color: AppColors.primary,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    activity.title ?? activity.description,
+                    style: const TextStyle(
+                      color: AppColorsDark.textSecondary,
+                      fontSize: 13,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            if (activity.xpEarned > 0) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(26),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star_rounded, color: AppColors.primary, size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      '+${activity.xpEarned} XP',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        onTap: () {
+          HapticService.buttonTap();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FriendProfileScreen(friendId: activity.userId),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAvatar(FriendActivity activity) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: activity.userPhotoUrl == null
+            ? const LinearGradient(
+                colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+              )
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: activity.userPhotoUrl != null
+            ? CachedNetworkImage(
+                imageUrl: activity.userPhotoUrl!,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: const Color(0xFF0D1A1A),
+                  child: Center(
+                    child: Text(
+                      activity.userInitials,
+                      style: const TextStyle(
+                        color: AppColorsDark.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : Center(
+                child: Text(
+                  activity.userInitials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
       ),
     );
   }

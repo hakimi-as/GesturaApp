@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../models/friend_model.dart';
 import '../models/user_model.dart';
 import '../models/badge_model.dart';
-import '../models/challenge_model.dart';
 import 'badge_service.dart';
+import 'analytics_service.dart';
 
 /// Friend Service with Badge & Challenge Integration
 /// 
@@ -139,6 +139,9 @@ class FriendService {
       } catch (e) {
         debugPrint('⚠️ Error posting activity: $e');
       }
+
+      // Log analytics
+      AnalyticsService.logFriendAdded();
 
       return {
         'success': true,
@@ -474,6 +477,122 @@ class FriendService {
     } catch (e) {
       debugPrint('Error getting leaderboard: $e');
       return [];
+    }
+  }
+
+  // ==================== FRIEND CHALLENGES ====================
+
+  static final CollectionReference _challengesCollection =
+      _firestore.collection('friendChallenges');
+
+  /// Send a quiz challenge to a friend
+  static Future<Map<String, dynamic>> sendFriendChallenge({
+    required String challengerId,
+    required String challengerName,
+    String? challengerPhotoUrl,
+    required String challengedId,
+    required String quizType,
+    required int challengerScore,
+    String? message,
+  }) async {
+    try {
+      final challenge = {
+        'challengerId': challengerId,
+        'challengerName': challengerName,
+        'challengerPhotoUrl': challengerPhotoUrl,
+        'challengedId': challengedId,
+        'quizType': quizType,
+        'challengerScore': challengerScore,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'expiresAt': Timestamp.fromDate(
+          DateTime.now().add(const Duration(days: 3)),
+        ),
+        if (message != null) 'message': message,
+      };
+      await _challengesCollection.add(challenge);
+      return {'success': true, 'message': 'Challenge sent!'};
+    } catch (e) {
+      debugPrint('Error sending challenge: $e');
+      return {'success': false, 'message': 'Failed to send challenge'};
+    }
+  }
+
+  /// Get pending friend challenges for a user (incoming)
+  static Future<List<FriendChallenge>> getIncomingChallenges(String userId) async {
+    try {
+      final snapshot = await _challengesCollection
+          .where('challengedId', isEqualTo: userId)
+          .where('status', isEqualTo: 'pending')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      return snapshot.docs
+          .map((doc) => FriendChallenge.fromFirestore(doc))
+          .where((c) => !c.isExpired)
+          .toList();
+    } catch (e) {
+      debugPrint('Error getting incoming challenges: $e');
+      return [];
+    }
+  }
+
+  /// Get challenges sent by the user (outgoing)
+  static Future<List<FriendChallenge>> getOutgoingChallenges(String userId) async {
+    try {
+      final snapshot = await _challengesCollection
+          .where('challengerId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      return snapshot.docs
+          .map((doc) => FriendChallenge.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      debugPrint('Error getting outgoing challenges: $e');
+      return [];
+    }
+  }
+
+  /// Accept a challenge (mark as accepted, then navigate to quiz)
+  static Future<bool> acceptChallenge(String challengeId) async {
+    try {
+      await _challengesCollection.doc(challengeId).update({
+        'status': 'accepted',
+        'acceptedAt': FieldValue.serverTimestamp(),
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error accepting challenge: $e');
+      return false;
+    }
+  }
+
+  /// Decline a challenge
+  static Future<bool> declineChallenge(String challengeId) async {
+    try {
+      await _challengesCollection.doc(challengeId).update({
+        'status': 'declined',
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error declining challenge: $e');
+      return false;
+    }
+  }
+
+  /// Complete a challenge by submitting the challenged user's score
+  static Future<bool> completeChallenge(String challengeId, int score) async {
+    try {
+      await _challengesCollection.doc(challengeId).update({
+        'challengedScore': score,
+        'status': 'completed',
+        'completedAt': FieldValue.serverTimestamp(),
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error completing challenge: $e');
+      return false;
     }
   }
 

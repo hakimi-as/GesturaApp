@@ -6,6 +6,7 @@ import '../../config/theme.dart';
 import '../../models/challenge_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/challenge_provider.dart';
+import '../../widgets/common/glass_ui.dart';
 
 class ChallengesScreen extends StatefulWidget {
   const ChallengesScreen({super.key});
@@ -34,7 +35,7 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   Future<void> _loadChallenges() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final challengeProvider = Provider.of<ChallengeProvider>(context, listen: false);
-    
+
     if (authProvider.userId != null && authProvider.currentUser != null) {
       await challengeProvider.loadChallenges(
         authProvider.userId!,
@@ -46,7 +47,7 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Consumer<ChallengeProvider>(
           builder: (context, challengeProvider, child) {
@@ -58,10 +59,12 @@ class _ChallengesScreenState extends State<ChallengesScreen>
               children: [
                 _buildHeader(),
                 _buildStatsCard(challengeProvider),
-                _buildTabBar(challengeProvider),
+                _buildTabBar(),
                 Expanded(
                   child: challengeProvider.isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        )
                       : TabBarView(
                           controller: _tabController,
                           children: [
@@ -84,30 +87,19 @@ class _ChallengesScreenState extends State<ChallengesScreen>
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          GestureDetector(
+          GlassIconButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            iconColor: AppColors.primary,
             onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: context.bgCard,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.borderColor),
-              ),
-              child: Icon(
-                Icons.arrow_back,
-                color: context.textSecondary,
-                size: 20,
-              ),
-            ),
           ),
           const SizedBox(width: 12),
-          const Text('🎯', style: TextStyle(fontSize: 24)),
+          const Icon(Icons.emoji_events_rounded, color: AppColors.accent, size: 26),
           const SizedBox(width: 8),
           Text(
             'Challenges',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
+                  color: context.textPrimary,
                 ),
           ),
         ],
@@ -119,7 +111,7 @@ class _ChallengesScreenState extends State<ChallengesScreen>
     final dailyChallenges = challengeProvider.dailyChallenges;
     final weeklyChallenges = challengeProvider.weeklyChallenges;
     final specialChallenges = challengeProvider.specialChallenges;
-    
+
     final completedDaily = dailyChallenges.where((c) => c.isCompleted).length;
     final completedWeekly = weeklyChallenges.where((c) => c.isCompleted).length;
     final completedSpecial = specialChallenges.where((c) => c.isCompleted).length;
@@ -128,75 +120,73 @@ class _ChallengesScreenState extends State<ChallengesScreen>
 
     return Container(
       margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+      child: GlassCard(
         gradient: const LinearGradient(
           colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Active Challenges',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(180),
-                        fontSize: 12,
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Active Challenges',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$totalCompleted Completed',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 4),
+                      Text(
+                        '$totalCompleted Completed',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(50),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    const Text('⭐', style: TextStyle(fontSize: 18)),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$totalXpAvailable XP',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 6),
+                      Text(
+                        '$totalXpAvailable XP',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildMiniStat('Daily', '$completedDaily/${dailyChallenges.length}'),
-              const SizedBox(width: 16),
-              _buildMiniStat('Weekly', '$completedWeekly/${weeklyChallenges.length}'),
-              const SizedBox(width: 16),
-              _buildMiniStat('Special', '$completedSpecial/${specialChallenges.length}'),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildMiniStat('Daily', '$completedDaily/${dailyChallenges.length}'),
+                const SizedBox(width: 16),
+                _buildMiniStat('Weekly', '$completedWeekly/${weeklyChallenges.length}'),
+                const SizedBox(width: 16),
+                _buildMiniStat('Special', '$completedSpecial/${specialChallenges.length}'),
+              ],
+            ),
+          ],
+        ),
       ),
     ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1);
   }
@@ -206,7 +196,7 @@ class _ChallengesScreenState extends State<ChallengesScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(30),
+          color: Colors.white.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -215,14 +205,14 @@ class _ChallengesScreenState extends State<ChallengesScreen>
               value,
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 fontSize: 16,
               ),
             ),
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withAlpha(180),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 11,
               ),
             ),
@@ -232,13 +222,10 @@ class _ChallengesScreenState extends State<ChallengesScreen>
     );
   }
 
-  Widget _buildTabBar(ChallengeProvider challengeProvider) {
+  Widget _buildTabBar() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: context.glassCardDecoration(),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
@@ -262,28 +249,10 @@ class _ChallengesScreenState extends State<ChallengesScreen>
 
   Widget _buildChallengesList(List<ChallengeModel> challenges, String type) {
     if (challenges.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('🎯', style: TextStyle(fontSize: 60)),
-            const SizedBox(height: 16),
-            Text(
-              'No $type challenges',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Check back later for new challenges!',
-              style: TextStyle(
-                color: context.textMuted,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+      return GlassEmptyState(
+        icon: Icons.emoji_events_outlined,
+        title: 'No $type challenges',
+        subtitle: 'Check back later for new challenges!',
       );
     }
 
@@ -299,188 +268,219 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   Widget _buildChallengeCard(ChallengeModel challenge, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: challenge.isCompleted
-              ? AppColors.success.withAlpha(100)
-              : context.borderColor,
-          width: challenge.isCompleted ? 2 : 1,
+      child: GlassCard(
+        alternate: index.isOdd,
+        padding: const EdgeInsets.all(16),
+        decorationOverride: AppColors.glassCard(alternate: index.isOdd).copyWith(
+          border: Border.all(
+            color: challenge.isCompleted
+                ? AppColors.success.withValues(alpha: 0.4)
+                : AppColorsDark.border,
+            width: challenge.isCompleted ? 1.5 : 1,
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Emoji Icon
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: challenge.typeColor.withAlpha(30),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Text(
-                    challenge.emoji,
-                    style: const TextStyle(fontSize: 28),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // Icon container
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: challenge.typeColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: challenge.typeColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      _getChallengeIcon(challenge.type.name),
+                      color: challenge.typeColor,
+                      size: 26,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                const SizedBox(width: 14),
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          GlassChip(
+                            label: challenge.typeLabel,
+                            active: true,
+                            onTap: null,
                           ),
-                          decoration: BoxDecoration(
-                            color: challenge.typeColor.withAlpha(30),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            challenge.typeLabel,
+                          if (challenge.isPersonalized || challenge.isAutoGenerated) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.auto_awesome,
+                                      color: Color(0xFF6366F1), size: 10),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'For You',
+                                    style: TextStyle(
+                                      color: Color(0xFF6366F1),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
+                          Text(
+                            challenge.remainingTimeText,
                             style: TextStyle(
-                              color: challenge.typeColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              color: challenge.remainingTime < 6
+                                  ? AppColors.error
+                                  : context.textMuted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          challenge.remainingTimeText,
-                          style: TextStyle(
-                            color: challenge.remainingTime < 6
-                                ? AppColors.error
-                                : context.textMuted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      challenge.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      challenge.description,
-                      style: TextStyle(
-                        color: context.textMuted,
-                        fontSize: 12,
+                      const SizedBox(height: 6),
+                      Text(
+                        challenge.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: context.textPrimary,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        challenge.description,
+                        style: TextStyle(
+                          color: context.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Progress Bar
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${challenge.currentValue}/${challenge.targetValue}',
-                          style: TextStyle(
-                            color: challenge.isCompleted
-                                ? AppColors.success
-                                : context.textSecondary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Progress Bar
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${challenge.currentValue}/${challenge.targetValue}',
+                            style: TextStyle(
+                              color: challenge.isCompleted
+                                  ? AppColors.success
+                                  : context.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                        Text(
-                          '${(challenge.progress * 100).toInt()}%',
-                          style: TextStyle(
-                            color: challenge.isCompleted
-                                ? AppColors.success
-                                : context.textMuted,
-                            fontSize: 12,
+                          Text(
+                            '${(challenge.progress * 100).toInt()}%',
+                            style: TextStyle(
+                              color: challenge.isCompleted
+                                  ? AppColors.success
+                                  : context.textMuted,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      GlassProgressBar(value: challenge.progress),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // XP Reward
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: challenge.isCompleted
+                        ? AppColors.success.withValues(alpha: 0.12)
+                        : AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: challenge.isCompleted
+                          ? AppColors.success.withValues(alpha: 0.3)
+                          : AppColors.primary.withValues(alpha: 0.3),
                     ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: challenge.progress,
-                        minHeight: 8,
-                        backgroundColor: context.bgElevated,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          challenge.isCompleted
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        challenge.isCompleted
+                            ? Icons.check_circle_rounded
+                            : Icons.star_rounded,
+                        color: challenge.isCompleted
+                            ? AppColors.success
+                            : AppColors.primary,
+                        size: 18,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '+${challenge.xpReward}',
+                        style: TextStyle(
+                          color: challenge.isCompleted
                               ? AppColors.success
-                              : challenge.typeColor,
+                              : AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              // XP Reward
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: challenge.isCompleted
-                      ? AppColors.success.withAlpha(26)
-                      : AppColors.primary.withAlpha(26),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      challenge.isCompleted ? '✅' : '⭐',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '+${challenge.xpReward}',
-                      style: TextStyle(
-                        color: challenge.isCompleted
-                            ? AppColors.success
-                            : AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                      Text(
+                        'XP',
+                        style: TextStyle(
+                          color: challenge.isCompleted
+                              ? AppColors.success
+                              : AppColors.primary,
+                          fontSize: 10,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'XP',
-                      style: TextStyle(
-                        color: challenge.isCompleted
-                            ? AppColors.success
-                            : AppColors.primary,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     ).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideX(begin: 0.1);
+  }
+
+  IconData _getChallengeIcon(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'daily':
+        return Icons.today_rounded;
+      case 'weekly':
+        return Icons.date_range_rounded;
+      case 'special':
+        return Icons.auto_awesome_rounded;
+      default:
+        return Icons.emoji_events_rounded;
+    }
   }
 }

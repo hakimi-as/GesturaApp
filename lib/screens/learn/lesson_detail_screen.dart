@@ -23,6 +23,10 @@ import '../../services/video_cache_service.dart';
 
 import '../../widgets/badges/badge_unlock_dialog.dart';
 import '../../widgets/challenges/challenge_complete_dialog.dart';
+import '../../services/analytics_service.dart';
+import '../../services/notification_service.dart';
+import '../../providers/connectivity_provider.dart';
+import '../../widgets/common/glass_ui.dart';
 
 class LessonDetailScreen extends StatefulWidget {
   final LessonModel lesson;
@@ -65,6 +69,12 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   void initState() {
     super.initState();
     _checkIfCompleted();
+    AnalyticsService.logLessonStarted(
+      lessonId: widget.lesson.id,
+      lessonName: widget.lesson.signName,
+      categoryId: widget.category.id,
+      categoryName: widget.category.name,
+    );
   }
 
   void _checkIfCompleted() {
@@ -85,7 +95,43 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
 
       if (authProvider.userId == null) return;
 
-      // Pass lesson and category names
+      // ── Offline-first: queue if no connection ───────────────────────────
+      if (ConnectivityService.isOffline) {
+        await OfflineService.queueLessonComplete(
+          userId: authProvider.userId!,
+          lessonId: widget.lesson.id,
+          xpEarned: widget.lesson.xpReward,
+          lessonName: widget.lesson.signName,
+          categoryName: widget.category.name,
+        );
+
+        setState(() {
+          _isCompleted = true;
+          _isCompleting = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.cloud_off, color: Colors.white, size: 18),
+                  SizedBox(width: 10),
+                  Text('Progress saved — will sync when online'),
+                ],
+              ),
+              backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          await _showCompletionDialog();
+        }
+        return;
+      }
+
+      // ── Online: normal Firestore completion ─────────────────────────────
+      final levelBefore = authProvider.currentUser?.level ?? 1;
+
       await _firestoreService.completeLesson(
         authProvider.userId!,
         widget.lesson.id,
@@ -93,6 +139,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         lessonName: widget.lesson.signName,
         categoryName: widget.category.name,
       );
+
+      // Cancel streak-at-risk reminder since user practiced today
+      NotificationService().cancelStreakAtRiskReminder();
 
       // Refresh user data
       await authProvider.refreshUser();
@@ -119,27 +168,53 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         );
       }
 
+      await AnalyticsService.logLessonCompleted(
+        lessonId: widget.lesson.id,
+        lessonName: widget.lesson.signName,
+        categoryId: widget.category.id,
+        categoryName: widget.category.name,
+        xpEarned: widget.lesson.xpReward,
+      );
+
       // Refresh progress provider
       final progressProvider = Provider.of<ProgressProvider>(context, listen: false);
       await progressProvider.loadUserProgress(authProvider.userId!);
+      progressProvider.refreshDailyGoals(authProvider.currentUser?.lessonsCompletedToday ?? 0);
 
       setState(() {
         _isCompleted = true;
         _isCompleting = false;
       });
 
+      // Fire level-up notification + analytics if level changed
+      final levelAfter = authProvider.currentUser?.level ?? 1;
+      if (levelAfter > levelBefore) {
+        NotificationService().showLevelUp(levelAfter);
+        AnalyticsService.logLevelUp(
+          newLevel: levelAfter,
+          totalXP: authProvider.currentUser?.totalXP ?? 0,
+        );
+      }
+
       if (mounted) {
         // Show completion dialog first
         await _showCompletionDialog();
-        
+
         // Then show badge dialogs if any new badges were unlocked
         if (newBadges.isNotEmpty && mounted) {
           await BadgeUnlockDialog.showMultiple(context, newBadges);
+          // Also fire local notification for each badge
+          for (final badge in newBadges) {
+            NotificationService().showAchievementUnlocked(badge.name, badge.xpReward);
+          }
         }
 
         // Show challenge completion dialogs
         if (completedChallenges.isNotEmpty && mounted) {
           await ChallengeCompleteDialog.showMultiple(context, completedChallenges);
+          for (final challenge in completedChallenges) {
+            NotificationService().showChallengeCompleted(challenge.title, challenge.xpReward);
+          }
         }
       }
     } catch (e) {
@@ -344,14 +419,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(displayName),
+      backgroundColor: Colors.transparent,
+      appBar: GlassAppBar(
+        title: displayName,
         actions: [
           // --- Phase 2: AppBar Download Button ---
           Padding(
@@ -402,7 +472,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Sign Display Card
             _buildSignCard(context),
@@ -412,18 +482,12 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             _buildSaveOfflineButton(),
             
             // Description
-            Text(
-              'How to Sign',
-              style: Theme.of(context).textTheme.titleLarge,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GlassSectionHeader(title: 'How to Sign'),
             ).animate().fadeIn(delay: 200.ms),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
+            GlassCard(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.bgCard,
-                borderRadius: BorderRadius.circular(16),
-              ),
               child: Text(
                 widget.lesson.description,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -432,13 +496,14 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                 ),
               ),
             ).animate().fadeIn(delay: 300.ms),
+            const SizedBox(height: 12),
             const SizedBox(height: 24),
 
             // Tips Section
             if (widget.lesson.tips.isNotEmpty) ...[
-              Text(
-                'Tips',
-                style: Theme.of(context).textTheme.titleLarge,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 0),
+                child: GlassSectionHeader(title: 'Tips'),
               ).animate().fadeIn(delay: 400.ms),
               const SizedBox(height: 12),
               ...widget.lesson.tips.asMap().entries.map((entry) {
@@ -450,17 +515,14 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             ],
 
             // Practice Hint
-            Container(
-              width: double.infinity,
+            GlassCard(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(26),
-                borderRadius: BorderRadius.circular(16),
+              decorationOverride: context.glassCardDecoration().copyWith(
                 border: Border.all(color: AppColors.primary.withAlpha(77)),
               ),
               child: Row(
                 children: [
-                  const Text('💡', style: TextStyle(fontSize: 24)),
+                  const Icon(Icons.lightbulb_rounded, size: 24, color: AppColors.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -486,21 +548,8 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     final hasVideo = widget.lesson.videoUrl != null;
     final hasImage = widget.lesson.imageUrl != null;
 
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            context.bgCard,
-            context.bgElevated,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         children: [
           // Category Badge
@@ -508,12 +557,12 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.primary.withAlpha(38),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: kPillRadius,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(widget.category.icon, style: const TextStyle(fontSize: 14)),
+                const Icon(Icons.category_rounded, size: 14, color: AppColors.primary),
                 const SizedBox(width: 6),
                 Text(
                   widget.category.name,
@@ -616,12 +665,12 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.warning.withAlpha(38),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: kPillRadius,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('⭐', style: TextStyle(fontSize: 16)),
+                const Icon(Icons.star_rounded, size: 16, color: AppColors.warning),
                 const SizedBox(width: 6),
                 Text(
                   '+${widget.lesson.xpReward} XP',
@@ -641,12 +690,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   Widget _buildTipCard(BuildContext context, int number, String tip) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
+      child: GlassCard(
+        padding: const EdgeInsets.all(14),
+        child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
@@ -677,63 +723,17 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildBottomBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.bgSecondary,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(26),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: _isCompleted ? null : _completeLesson,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _isCompleted ? AppColors.success : AppColors.primary,
-              disabledBackgroundColor: AppColors.success,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: _isCompleting
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _isCompleted ? Icons.check_circle : Icons.school,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _isCompleted ? 'Completed!' : 'Mark as Complete',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: GlassPrimaryButton(
+          label: _isCompleted ? 'Completed!' : 'Mark as Complete',
+          onPressed: _isCompleted ? null : _completeLesson,
+          loading: _isCompleting,
         ),
       ),
     );

@@ -7,6 +7,7 @@ import '../../models/quiz_model.dart';
 import '../../providers/quiz_provider.dart';
 import '../../services/cloudinary_service.dart';
 import '../../widgets/video/video_player_widget.dart';
+import '../../widgets/common/glass_ui.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/analytics_service.dart';
 import 'quiz_result_screen.dart';
@@ -77,28 +78,13 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
+      backgroundColor: Colors.transparent,
+      appBar: GlassAppBar(
+        title: _quizTitle(context),
         leading: IconButton(
-          icon: Icon(Icons.close, color: context.textPrimary),
+          icon: const Icon(Icons.close_rounded, color: AppColors.primary),
           onPressed: () => _showExitDialog(),
         ),
-        title: Builder(builder: (context) {
-          final l10n = AppLocalizations.of(context);
-          return Text(
-            widget.quizType == 'sign_to_text'
-                ? l10n.signToText
-                : widget.quizType == 'text_to_sign'
-                    ? l10n.textToSign
-                    : widget.quizType == 'timed'
-                        ? l10n.timedChallenge
-                        : widget.quizType == 'spelling'
-                            ? l10n.spellingQuiz
-                            : l10n.quizTitle,
-            style: const TextStyle(fontSize: 16),
-          );
-        }),
         actions: const [],
       ),
       body: Consumer<QuizProvider>(
@@ -111,7 +97,8 @@ class _QuizScreenState extends State<QuizScreen> {
 
           // Timed challenge auto-navigates to results when all questions done
           if (_isTimed && quizProvider.isQuizComplete) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => _goToResults());
+            WidgetsBinding.instance
+                .addPostFrameCallback((_) => _goToResults());
             return const Center(
               child: CircularProgressIndicator(color: AppColors.warning),
             );
@@ -119,7 +106,9 @@ class _QuizScreenState extends State<QuizScreen> {
 
           final question = quizProvider.currentQuestion;
           if (question == null) {
-            return Center(child: Text(AppLocalizations.of(context).noQuestionsAvailable));
+            return Center(
+                child: Text(
+                    AppLocalizations.of(context).noQuestionsAvailable));
           }
 
           return Column(
@@ -134,7 +123,8 @@ class _QuizScreenState extends State<QuizScreen> {
                       _buildQuestionCard(context, quizProvider),
                       const SizedBox(height: 24),
                       if (question.hasOptionImages)
-                        _buildImageOptionsGrid(context, quizProvider, question)
+                        _buildImageOptionsGrid(
+                            context, quizProvider, question)
                       else
                         ...question.options.asMap().entries.map((entry) {
                           return _buildOptionCard(
@@ -156,6 +146,22 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
+  String _quizTitle(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    switch (widget.quizType) {
+      case 'sign_to_text':
+        return l10n.signToText;
+      case 'text_to_sign':
+        return l10n.textToSign;
+      case 'timed':
+        return l10n.timedChallenge;
+      case 'spelling':
+        return l10n.spellingQuiz;
+      default:
+        return l10n.quizTitle;
+    }
+  }
+
   Widget _buildProgressBar(QuizProvider quizProvider) {
     final current = quizProvider.currentQuestionIndex + 1;
     final total = quizProvider.totalQuestions;
@@ -172,14 +178,15 @@ class _QuizScreenState extends State<QuizScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '$current / $total',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
@@ -207,15 +214,8 @@ class _QuizScreenState extends State<QuizScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: total > 0 ? current / total : 0,
-              minHeight: 6,
-              backgroundColor: context.bgCard,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
-          ),
+          GlassProgressBar(
+              value: total > 0 ? current / total : 0),
         ],
       ),
     );
@@ -248,7 +248,8 @@ class _QuizScreenState extends State<QuizScreen> {
               child: LinearProgressIndicator(
                 value: ratio,
                 minHeight: 8,
-                backgroundColor: context.bgCard,
+                backgroundColor:
+                    Colors.white.withValues(alpha: 0.08),
                 valueColor: AlwaysStoppedAnimation<Color>(barColor),
               ),
             ),
@@ -287,17 +288,11 @@ class _QuizScreenState extends State<QuizScreen> {
     final hasImage = question.imageUrl != null;
     final hasVideo = question.videoUrl != null;
 
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         children: [
-          // Sign Display - Video, Image, or Emoji fallback
+          // Sign Display - Video, Image, or Icon fallback
           if (hasVideo)
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
@@ -313,7 +308,8 @@ class _QuizScreenState extends State<QuizScreen> {
             ).animate().fadeIn(duration: 400.ms)
           else if (hasImage)
             GestureDetector(
-              onTap: () => _showFullscreenImage(context, question.imageUrl!),
+              onTap: () =>
+                  _showFullscreenImage(context, question.imageUrl!),
               child: Container(
                 width: 200,
                 height: 200,
@@ -334,25 +330,32 @@ class _QuizScreenState extends State<QuizScreen> {
                       borderRadius: BorderRadius.circular(20),
                       child: Image.network(
                         CloudinaryService.getOptimizedImage(
-                            question.imageUrl!, width: 400, height: 400),
+                            question.imageUrl!,
+                            width: 400,
+                            height: 400),
                         width: 200,
                         height: 200,
                         fit: BoxFit.contain,
-                        loadingBuilder: (context, child, loadingProgress) {
+                        loadingBuilder:
+                            (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
                           return Center(
                             child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
+                              value: loadingProgress
+                                          .expectedTotalBytes !=
+                                      null
+                                  ? loadingProgress
+                                          .cumulativeBytesLoaded /
+                                      loadingProgress
+                                          .expectedTotalBytes!
                                   : null,
                               color: AppColors.primary,
                             ),
                           );
                         },
                         errorBuilder: (_, __, ___) => Center(
-                          child: Text(question.signEmoji,
-                              style: const TextStyle(fontSize: 60)),
+                          child: Icon(Icons.sign_language_rounded,
+                              size: 60, color: context.textMuted),
                         ),
                       ),
                     ),
@@ -366,7 +369,8 @@ class _QuizScreenState extends State<QuizScreen> {
                           color: Colors.black.withAlpha(120),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Icon(Icons.zoom_in, color: Colors.white, size: 14),
+                        child: const Icon(Icons.zoom_in,
+                            color: Colors.white, size: 14),
                       ),
                     ),
                   ],
@@ -388,11 +392,9 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                 ],
               ),
-              child: Center(
-                child: Text(
-                  question.signEmoji,
-                  style: const TextStyle(fontSize: 60),
-                ),
+              child: const Center(
+                child: Icon(Icons.sign_language_rounded,
+                    size: 60, color: AppColors.primary),
               ),
             ).animate().scale(duration: 400.ms, curve: Curves.elasticOut),
           const SizedBox(height: 20),
@@ -405,7 +407,8 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.warning.withAlpha(38),
               borderRadius: BorderRadius.circular(20),
@@ -431,21 +434,16 @@ class _QuizScreenState extends State<QuizScreen> {
     final letters = question.letterImages ?? [];
     final wordLength = question.correctAnswer.length;
 
-    return Container(
-      width: double.infinity,
+    return GlassCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.borderColor),
-      ),
       child: Column(
         children: [
           // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('✍️', style: TextStyle(fontSize: 18)),
+              const Icon(Icons.spellcheck_rounded,
+                  color: AppColors.accent, size: 18),
               const SizedBox(width: 8),
               Text(
                 AppLocalizations.of(context).whatWordSpelled,
@@ -468,21 +466,21 @@ class _QuizScreenState extends State<QuizScreen> {
           SizedBox(
             height: 100,
             child: letters.isEmpty
-                ? Center(
-                    child: Text(
-                      question.signEmoji,
-                      style: const TextStyle(fontSize: 48),
-                    ),
+                ? const Center(
+                    child: Icon(Icons.sign_language_rounded,
+                        size: 48, color: AppColors.accent),
                   )
                 : SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: letters.asMap().entries.map((entry) {
+                      children:
+                          letters.asMap().entries.map((entry) {
                         final idx = entry.key;
                         final imageUrl = entry.value;
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4),
                           child: Column(
                             children: [
                               Container(
@@ -490,13 +488,16 @@ class _QuizScreenState extends State<QuizScreen> {
                                 height: 80,
                                 decoration: BoxDecoration(
                                   color: context.bgElevated,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius:
+                                      BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: AppColors.accent.withAlpha(80),
+                                    color:
+                                        AppColors.accent.withAlpha(80),
                                   ),
                                 ),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(11),
+                                  borderRadius:
+                                      BorderRadius.circular(11),
                                   child: Image.network(
                                     CloudinaryService.getOptimizedImage(
                                       imageUrl,
@@ -504,14 +505,17 @@ class _QuizScreenState extends State<QuizScreen> {
                                       height: 160,
                                     ),
                                     fit: BoxFit.contain,
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
+                                    loadingBuilder: (context, child,
+                                        loadingProgress) {
+                                      if (loadingProgress == null) {
+                                        return child;
+                                      }
                                       return Center(
                                         child: SizedBox(
                                           width: 20,
                                           height: 20,
-                                          child: CircularProgressIndicator(
+                                          child:
+                                              CircularProgressIndicator(
                                             strokeWidth: 2,
                                             color: AppColors.accent,
                                             value: loadingProgress
@@ -526,7 +530,8 @@ class _QuizScreenState extends State<QuizScreen> {
                                         ),
                                       );
                                     },
-                                    errorBuilder: (_, __, ___) => Center(
+                                    errorBuilder: (_, __, ___) =>
+                                        Center(
                                       child: Text(
                                         question.correctAnswer[idx],
                                         style: TextStyle(
@@ -542,7 +547,8 @@ class _QuizScreenState extends State<QuizScreen> {
                             ],
                           ),
                         ).animate().fadeIn(
-                              delay: Duration(milliseconds: 80 * idx),
+                              delay:
+                                  Duration(milliseconds: 80 * idx),
                             );
                       }).toList(),
                     ),
@@ -567,7 +573,8 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.warning.withAlpha(38),
               borderRadius: BorderRadius.circular(20),
@@ -590,27 +597,16 @@ class _QuizScreenState extends State<QuizScreen> {
   /// users will pick the matching sign from the image grid below.
   Widget _buildTextToSignQuestionCard(
       BuildContext context, QuizQuestionModel question) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.secondary.withAlpha(200),
-            AppColors.secondary.withAlpha(150),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withAlpha(80),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
+    return GlassCard(
+      gradient: LinearGradient(
+        colors: [
+          AppColors.secondary.withAlpha(200),
+          AppColors.secondary.withAlpha(150),
         ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       child: Column(
         children: [
           Text(
@@ -634,7 +630,8 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white.withAlpha(50),
               borderRadius: BorderRadius.circular(20),
@@ -642,7 +639,8 @@ class _QuizScreenState extends State<QuizScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('✋', style: TextStyle(fontSize: 14)),
+                const Icon(Icons.back_hand_rounded,
+                    color: Colors.white70, size: 14),
                 const SizedBox(width: 6),
                 Text(
                   AppLocalizations.of(context).pickCorrectSign,
@@ -670,22 +668,36 @@ class _QuizScreenState extends State<QuizScreen> {
     final isAnswered = quizProvider.isAnswered;
     final isCorrect = quizProvider.isCorrectAnswer(index);
 
-    Color bgColor = context.bgCard;
+    // Determine gradient / tint based on answer state
+    Gradient? cardGradient;
     Color borderColor = context.borderColor;
     Color textColor = context.textPrimary;
 
     if (isAnswered) {
       if (isCorrect) {
-        bgColor = AppColors.success.withAlpha(38);
+        cardGradient = LinearGradient(
+          colors: [
+            const Color(0xFF14B8A6).withAlpha(60),
+            const Color(0xFF06B6D4).withAlpha(40),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
         borderColor = AppColors.success;
         textColor = AppColors.success;
       } else if (isSelected && !isCorrect) {
-        bgColor = AppColors.error.withAlpha(38);
+        cardGradient = LinearGradient(
+          colors: [
+            AppColors.error.withAlpha(50),
+            AppColors.error.withAlpha(30),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
         borderColor = AppColors.error;
         textColor = AppColors.error;
       }
     } else if (isSelected) {
-      bgColor = AppColors.primary.withAlpha(38);
       borderColor = AppColors.primary;
       textColor = AppColors.primary;
     }
@@ -695,12 +707,12 @@ class _QuizScreenState extends State<QuizScreen> {
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
+        decoration: context.glassCardDecoration().copyWith(
+          gradient: cardGradient,
+          border: Border.all(
+              color: borderColor, width: isSelected ? 2 : 1),
         ),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Container(
@@ -726,7 +738,9 @@ class _QuizScreenState extends State<QuizScreen> {
                     : Text(
                         String.fromCharCode(65 + index),
                         style: TextStyle(
-                          color: isSelected ? borderColor : context.textMuted,
+                          color: isSelected
+                              ? borderColor
+                              : context.textMuted,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -737,9 +751,11 @@ class _QuizScreenState extends State<QuizScreen> {
               child: Text(
                 option,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: textColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
+                      color: textColor,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
               ),
             ),
             if (isSelected && !isAnswered)
@@ -751,9 +767,10 @@ class _QuizScreenState extends State<QuizScreen> {
           ],
         ),
       ),
-    ).animate().fadeIn(
-      delay: Duration(milliseconds: 100 + (index * 100)),
-    ).slideX(begin: 0.1);
+    )
+        .animate()
+        .fadeIn(delay: Duration(milliseconds: 100 + (index * 100)))
+        .slideX(begin: 0.1);
   }
 
   /// Build a 2x2 grid of image options for text-to-sign quiz
@@ -799,9 +816,7 @@ class _QuizScreenState extends State<QuizScreen> {
         return GestureDetector(
           onTap: isAnswered ? null : () => _handleOptionSelected(index),
           child: Container(
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(16),
+            decoration: context.glassCardDecoration().copyWith(
               border: Border.all(
                 color: borderColor,
                 width: isSelected || (isAnswered && isCorrect) ? 3 : 1,
@@ -821,20 +836,30 @@ class _QuizScreenState extends State<QuizScreen> {
                 // Option image
                 if (optionImage != null)
                   GestureDetector(
-                    onLongPress: () => _showFullscreenImage(context, optionImage),
+                    onLongPress: () =>
+                        _showFullscreenImage(context, optionImage),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
                       child: Image.network(
-                        CloudinaryService.getOptimizedImage(optionImage, width: 300, height: 300),
+                        CloudinaryService.getOptimizedImage(
+                            optionImage,
+                            width: 300,
+                            height: 300),
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.contain,
-                        loadingBuilder: (context, child, loadingProgress) {
+                        loadingBuilder:
+                            (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
                           return Center(
                             child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                              value: loadingProgress
+                                          .expectedTotalBytes !=
+                                      null
+                                  ? loadingProgress
+                                          .cumulativeBytesLoaded /
+                                      loadingProgress
+                                          .expectedTotalBytes!
                                   : null,
                               color: AppColors.primary,
                             ),
@@ -844,9 +869,12 @@ class _QuizScreenState extends State<QuizScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.broken_image, color: context.textMuted, size: 40),
+                              Icon(Icons.broken_image,
+                                  color: context.textMuted, size: 40),
                               const SizedBox(height: 4),
-                              Text(option, style: TextStyle(color: context.textMuted)),
+                              Text(option,
+                                  style: TextStyle(
+                                      color: context.textMuted)),
                             ],
                           ),
                         ),
@@ -858,10 +886,13 @@ class _QuizScreenState extends State<QuizScreen> {
                   Center(
                     child: Text(
                       option,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: context.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(
+                            color: context.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -894,13 +925,17 @@ class _QuizScreenState extends State<QuizScreen> {
                               isCorrect
                                   ? Icons.check
                                   : (isSelected ? Icons.close : null),
-                              color: isCorrect || isSelected ? Colors.white : context.textMuted,
+                              color: isCorrect || isSelected
+                                  ? Colors.white
+                                  : context.textMuted,
                               size: 16,
                             )
                           : Text(
                               String.fromCharCode(65 + index),
                               style: TextStyle(
-                                color: isSelected ? Colors.white : context.textMuted,
+                                color: isSelected
+                                    ? Colors.white
+                                    : context.textMuted,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -908,9 +943,6 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                   ),
                 ),
-
-                // Option label intentionally hidden — showing sign names
-                // would give away the answer in text_to_sign quiz.
 
                 // Check mark for selected
                 if (isSelected && !isAnswered)
@@ -933,9 +965,11 @@ class _QuizScreenState extends State<QuizScreen> {
               ],
             ),
           ),
-        ).animate().fadeIn(
-          delay: Duration(milliseconds: 100 + (index * 100)),
-        ).scale(begin: const Offset(0.9, 0.9));
+        )
+            .animate()
+            .fadeIn(
+                delay: Duration(milliseconds: 100 + (index * 100)))
+            .scale(begin: const Offset(0.9, 0.9));
       },
     );
   }
@@ -972,13 +1006,21 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
               child: Column(
                 children: [
-                  Text(
-                    '⏰ ${l10n.timeUp}',
-                    style: const TextStyle(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.alarm_off_rounded,
+                          color: AppColors.error, size: 20),
+                      const SizedBox(width: 6),
+                      Text(
+                        l10n.timeUp,
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -1028,13 +1070,13 @@ class _QuizScreenState extends State<QuizScreen> {
       final selectedIdx = quizProvider.selectedOptionIndex;
       if (selectedIdx != null) {
         final isCorrect = quizProvider.isCorrectAnswer(selectedIdx);
-        final l10n = AppLocalizations.of(context);
         if (isCorrect) {
           if (_isTimed) {
             final elapsed = quizProvider.questionTimerDuration -
                 quizProvider.questionTimeLeft;
             if (elapsed <= 3) {
-              feedbackText = '${l10n.lightningFastFeedback} +15 pts';
+              feedbackText =
+                  '${l10n.lightningFastFeedback} +15 pts';
             } else if (elapsed <= 6) {
               feedbackText = '${l10n.fastFeedback} +12 pts';
             } else {
@@ -1072,7 +1114,8 @@ class _QuizScreenState extends State<QuizScreen> {
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: feedbackColor.withAlpha(38),
                   borderRadius: BorderRadius.circular(10),
@@ -1086,29 +1129,9 @@ class _QuizScreenState extends State<QuizScreen> {
                   textAlign: TextAlign.center,
                 ),
               ).animate().fadeIn(duration: 300.ms),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: hasSelection ? _handleSubmit : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isAnswered
-                      ? (isLastQuestion ? AppColors.accent : AppColors.primary)
-                      : AppColors.primary,
-                  disabledBackgroundColor: context.bgElevated,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Text(
-                  buttonText,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: hasSelection ? Colors.white : context.textMuted,
-                  ),
-                ),
-              ),
+            GlassPrimaryButton(
+              label: buttonText,
+              onPressed: hasSelection ? _handleSubmit : null,
             ),
           ],
         ),
@@ -1131,12 +1154,14 @@ class _QuizScreenState extends State<QuizScreen> {
                   minScale: 0.5,
                   maxScale: 4.0,
                   child: Image.network(
-                    CloudinaryService.getOptimizedImage(imageUrl, width: 800, height: 800),
+                    CloudinaryService.getOptimizedImage(imageUrl,
+                        width: 800, height: 800),
                     fit: BoxFit.contain,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return const Center(
-                        child: CircularProgressIndicator(color: Colors.white),
+                        child: CircularProgressIndicator(
+                            color: Colors.white),
                       );
                     },
                   ),
@@ -1153,7 +1178,8 @@ class _QuizScreenState extends State<QuizScreen> {
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.close, color: Colors.white, size: 22),
+                    child: const Icon(Icons.close,
+                        color: Colors.white, size: 22),
                   ),
                 ),
               ),
@@ -1169,7 +1195,8 @@ class _QuizScreenState extends State<QuizScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: context.bgCard,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(AppLocalizations.of(context).quitQuiz),
         content: Text(AppLocalizations.of(context).quitQuizMessage),
         actions: [

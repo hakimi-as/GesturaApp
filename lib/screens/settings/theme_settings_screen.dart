@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/theme_provider.dart';
 
 class ThemeSettingsScreen extends StatelessWidget {
@@ -11,7 +12,7 @@ class ThemeSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -38,6 +39,7 @@ class ThemeSettingsScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
@@ -63,7 +65,7 @@ class ThemeSettingsScreen extends StatelessWidget {
           const Text('🎨', style: TextStyle(fontSize: 24)),
           const SizedBox(width: 8),
           Text(
-            'Appearance',
+            l10n.appearance,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -74,15 +76,14 @@ class ThemeSettingsScreen extends StatelessWidget {
   }
 
   Widget _buildPreviewCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = context.isDarkMode;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
-              : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -113,7 +114,7 @@ class ThemeSettingsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Current Theme',
+                      l10n.currentTheme,
                       style: TextStyle(
                         color: Colors.white.withAlpha(180),
                         fontSize: 12,
@@ -121,7 +122,7 @@ class ThemeSettingsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isDark ? 'Dark Mode' : 'Light Mode',
+                      isDark ? l10n.darkMode : l10n.lightMode,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -214,6 +215,7 @@ class ThemeSettingsScreen extends StatelessWidget {
   }
 
   Widget _buildThemeOptions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -222,7 +224,7 @@ class ThemeSettingsScreen extends StatelessWidget {
             const Text('⚙️', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Choose Theme',
+              l10n.chooseTheme,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -232,6 +234,7 @@ class ThemeSettingsScreen extends StatelessWidget {
         const SizedBox(height: 16),
         Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
+            final l = AppLocalizations.of(context);
             return Container(
               decoration: BoxDecoration(
                 color: context.bgCard,
@@ -243,8 +246,8 @@ class ThemeSettingsScreen extends StatelessWidget {
                   _buildThemeOption(
                     context,
                     icon: Icons.light_mode,
-                    title: 'Light',
-                    subtitle: 'Bright and clear',
+                    title: l.light,
+                    subtitle: l.brightAndClear,
                     isSelected: themeProvider.themeMode == AppThemeMode.light,
                     onTap: () => themeProvider.setThemeMode(AppThemeMode.light),
                   ),
@@ -252,8 +255,8 @@ class ThemeSettingsScreen extends StatelessWidget {
                   _buildThemeOption(
                     context,
                     icon: Icons.dark_mode,
-                    title: 'Dark',
-                    subtitle: 'Easy on the eyes',
+                    title: l.dark,
+                    subtitle: l.easyOnEyes,
                     isSelected: themeProvider.themeMode == AppThemeMode.dark,
                     onTap: () => themeProvider.setThemeMode(AppThemeMode.dark),
                   ),
@@ -261,8 +264,8 @@ class ThemeSettingsScreen extends StatelessWidget {
                   _buildThemeOption(
                     context,
                     icon: Icons.settings_brightness,
-                    title: 'System',
-                    subtitle: 'Match device settings',
+                    title: l.system,
+                    subtitle: l.matchDeviceSettings,
                     isSelected: themeProvider.themeMode == AppThemeMode.system,
                     onTap: () => themeProvider.setThemeMode(AppThemeMode.system),
                   ),
@@ -354,6 +357,7 @@ class ThemeSettingsScreen extends StatelessWidget {
   }
 
   Widget _buildInfoCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -381,14 +385,14 @@ class ThemeSettingsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pro Tip',
+                  l10n.proTip,
                   style: TextStyle(
                     color: context.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  'Dark mode can help reduce eye strain, especially in low-light conditions.',
+                  l10n.darkModeReduceStrain,
                   style: TextStyle(
                     color: context.textMuted,
                     fontSize: 12,

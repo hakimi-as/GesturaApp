@@ -7,7 +7,9 @@ class LearningProgressModel {
   final String categoryId;
   final String lessonName;
   final String categoryName;
-  final String type;            // NEW: 'lesson' or 'quiz'
+  final String type;            // 'lesson' or 'quiz'
+  final String? quizType;       // e.g. 'sign_to_text', 'timed' — only for quizzes
+  final double accuracy;        // quiz accuracy 0-100 (0 for lessons)
   final String status;
   final double completionPercentage;
   final int timeSpentSeconds;
@@ -25,7 +27,9 @@ class LearningProgressModel {
     required this.categoryId,
     this.lessonName = '',
     this.categoryName = '',
-    this.type = 'lesson',       // Default to lesson
+    this.type = 'lesson',
+    this.quizType,
+    this.accuracy = 0,
     required this.status,
     this.completionPercentage = 0,
     this.timeSpentSeconds = 0,
@@ -61,6 +65,8 @@ class LearningProgressModel {
       lessonName: data['lessonName'] ?? '',
       categoryName: data['categoryName'] ?? '',
       type: type,
+      quizType: data['quizType'] as String?,
+      accuracy: (data['accuracy'] ?? 0).toDouble(),
       status: status,
       completionPercentage: (data['completionPercentage'] ?? 0).toDouble(),
       timeSpentSeconds: data['timeSpentSeconds'] ?? 0,

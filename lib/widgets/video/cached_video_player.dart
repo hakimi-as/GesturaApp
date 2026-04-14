@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -42,7 +41,6 @@ class _CachedVideoPlayerState extends State<CachedVideoPlayer> {
   bool _isBuffering = false;
   bool _hasError = false;
   bool _isFromCache = false;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -101,7 +99,6 @@ class _CachedVideoPlayerState extends State<CachedVideoPlayer> {
       if (mounted) {
         setState(() {
           _hasError = true;
-          _errorMessage = e.toString();
         });
       }
     }

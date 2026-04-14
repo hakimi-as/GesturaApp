@@ -9,6 +9,7 @@ import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../learn/lesson_detail_screen.dart';
 import '../learn/category_lessons_screen.dart';
+import '../../widgets/common/glass_ui.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -24,20 +25,17 @@ class _SearchScreenState extends State<SearchScreen> {
 
   String _searchQuery = '';
   String _selectedFilter = 'all';
-  
-  // All data loaded upfront
+
   List<LessonModel> _allLessons = [];
   List<CategoryModel> _allCategories = [];
   Map<String, CategoryModel> _categoryMap = {};
-  
-  // Search results
+
   List<LessonModel> _lessonResults = [];
   List<CategoryModel> _categoryResults = [];
-  
+
   bool _isLoading = true;
   bool _isSearching = false;
-  
-  // Recent searches (persisted)
+
   List<String> _recentSearches = [];
 
   @override
@@ -58,16 +56,14 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _loadAllData() async {
     setState(() => _isLoading = true);
     try {
-      // Load all categories and lessons at once
       final categories = await _firestoreService.getCategories();
       final lessons = await _firestoreService.getAllLessons();
-      
-      // Create category map for quick lookup
+
       final categoryMap = <String, CategoryModel>{};
       for (var cat in categories) {
         categoryMap[cat.id] = cat;
       }
-      
+
       if (mounted) {
         setState(() {
           _allCategories = categories;
@@ -98,19 +94,17 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _saveRecentSearch(String query) async {
     if (query.trim().isEmpty) return;
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
-      
-      // Remove if exists, add to front
+
       _recentSearches.remove(query);
       _recentSearches.insert(0, query);
-      
-      // Keep only last 10
+
       if (_recentSearches.length > 10) {
         _recentSearches = _recentSearches.sublist(0, 10);
       }
-      
+
       await prefs.setStringList('recentSearches', _recentSearches);
       setState(() {});
     } catch (e) {
@@ -144,14 +138,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
     final lowerQuery = query.toLowerCase().trim();
 
-    // Search lessons - match by name, description
     final lessonResults = _allLessons.where((lesson) {
       final nameMatch = lesson.signName.toLowerCase().contains(lowerQuery);
       final descMatch = lesson.description.toLowerCase().contains(lowerQuery);
       return nameMatch || descMatch;
     }).toList();
 
-    // Search categories - match by name, description
     final categoryResults = _allCategories.where((category) {
       final nameMatch = category.name.toLowerCase().contains(lowerQuery);
       final descMatch = category.description.toLowerCase().contains(lowerQuery);
@@ -172,10 +164,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _onLessonTap(LessonModel lesson) {
     _saveRecentSearch(lesson.signName);
-    
+
     final category = _categoryMap[lesson.categoryId];
     if (category == null) return;
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -189,7 +181,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _onCategoryTap(CategoryModel category) {
     _saveRecentSearch(category.name);
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -201,7 +193,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -210,7 +202,8 @@ class _SearchScreenState extends State<SearchScreen> {
             if (_isSearching && !_isLoading) _buildFilterChips(),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  ? const Center(
+                      child: CircularProgressIndicator(color: AppColors.primary))
                   : _isSearching
                       ? _buildSearchResults()
                       : _buildSuggestions(),
@@ -226,30 +219,19 @@ class _SearchScreenState extends State<SearchScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          GestureDetector(
+          GlassIconButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            iconColor: AppColors.primary,
             onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: context.bgCard,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.borderColor),
-              ),
-              child: Icon(
-                Icons.arrow_back,
-                color: context.textSecondary,
-                size: 20,
-              ),
-            ),
           ),
           const SizedBox(width: 12),
-          const Text('🔍', style: TextStyle(fontSize: 24)),
+          const Icon(Icons.search_rounded, color: AppColors.primary, size: 26),
           const SizedBox(width: 8),
           Text(
             'Search',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
+                  color: context.textPrimary,
                 ),
           ),
           const Spacer(),
@@ -278,39 +260,22 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: TextField(
-          controller: _searchController,
-          focusNode: _focusNode,
-          onChanged: _performSearch,
-          onSubmitted: (query) {
-            if (query.isNotEmpty) {
-              _saveRecentSearch(query);
-            }
-          },
-          style: TextStyle(color: context.textPrimary),
-          decoration: InputDecoration(
-            hintText: 'Search for any sign... (e.g. "cat", "hello")',
-            hintStyle: TextStyle(color: context.textMuted),
-            prefixIcon: Icon(Icons.search, color: context.textMuted),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: Icon(Icons.close, color: context.textMuted),
-                    onPressed: _clearSearch,
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-        ),
+      child: GlassTextField(
+        controller: _searchController,
+        hint: 'Search for any sign... (e.g. "cat", "hello")',
+        prefixIcon: Icons.search_rounded,
+        suffixWidget: _searchQuery.isNotEmpty
+            ? IconButton(
+                icon: Icon(Icons.close_rounded,
+                    color: context.textMuted),
+                onPressed: _clearSearch,
+              )
+            : null,
+        onFieldSubmitted: (query) {
+          if (query.isNotEmpty) {
+            _saveRecentSearch(query);
+          }
+        },
       ),
     ).animate().fadeIn(delay: 100.ms);
   }
@@ -318,7 +283,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildFilterChips() {
     final lessonCount = _lessonResults.length;
     final categoryCount = _categoryResults.length;
-    
+
     final filters = [
       {'id': 'all', 'label': 'All (${lessonCount + categoryCount})'},
       {'id': 'lessons', 'label': 'Signs ($lessonCount)'},
@@ -332,27 +297,10 @@ class _SearchScreenState extends State<SearchScreen> {
           final isSelected = _selectedFilter == filter['id'];
           return Padding(
             padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
+            child: GlassChip(
+              label: filter['label']!,
+              active: isSelected,
               onTap: () => setState(() => _selectedFilter = filter['id']!),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : context.bgCard,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : context.borderColor,
-                  ),
-                ),
-                child: Text(
-                  filter['label']!,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : context.textMuted,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
             ),
           );
         }).toList(),
@@ -362,13 +310,18 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildSearchResults() {
     final showLessons = _selectedFilter == 'all' || _selectedFilter == 'lessons';
-    final showCategories = _selectedFilter == 'all' || _selectedFilter == 'categories';
+    final showCategories =
+        _selectedFilter == 'all' || _selectedFilter == 'categories';
 
     final hasResults = (showLessons && _lessonResults.isNotEmpty) ||
         (showCategories && _categoryResults.isNotEmpty);
 
     if (!hasResults) {
-      return _buildNoResults();
+      return GlassEmptyState(
+        icon: Icons.search_off_rounded,
+        title: 'No results for "$_searchQuery"',
+        subtitle: 'Try a different search term',
+      );
     }
 
     return ListView(
@@ -376,7 +329,11 @@ class _SearchScreenState extends State<SearchScreen> {
       children: [
         // Categories section
         if (showCategories && _categoryResults.isNotEmpty) ...[
-          _buildSectionTitle('📁', 'Categories (${_categoryResults.length})'),
+          GlassSectionHeader(
+            title: 'Categories (${_categoryResults.length})',
+            trailing: Icon(Icons.folder_open_rounded,
+                color: context.textMuted, size: 16),
+          ),
           const SizedBox(height: 12),
           ..._categoryResults.map((category) => _buildCategoryResult(category)),
           const SizedBox(height: 20),
@@ -384,7 +341,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
         // Lessons section
         if (showLessons && _lessonResults.isNotEmpty) ...[
-          _buildSectionTitle('🤟', 'Signs (${_lessonResults.length})'),
+          GlassSectionHeader(
+            title: 'Signs (${_lessonResults.length})',
+            trailing: Icon(Icons.sign_language_rounded,
+                color: context.textMuted, size: 16),
+          ),
           const SizedBox(height: 12),
           ..._lessonResults.map((lesson) => _buildLessonResult(lesson)),
         ],
@@ -392,203 +353,152 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String emoji, String title) {
-    return Row(
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 18)),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildCategoryResult(CategoryModel category) {
-    return GestureDetector(
-      onTap: () => _onCategoryTap(category),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(30),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: category.hasCustomImage
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        CloudinaryService.getOptimizedImage(category.imageUrl!, width: 96),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Center(
-                          child: Text(category.icon, style: const TextStyle(fontSize: 24)),
-                        ),
-                      ),
-                    )
-                  : Center(
-                      child: Text(category.icon, style: const TextStyle(fontSize: 24)),
-                    ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    category.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GlassTile(
+        onTap: () => _onCategoryTap(category),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: category.hasCustomImage
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    CloudinaryService.getOptimizedImage(category.imageUrl!, width: 96),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Center(
+                      child: Icon(Icons.category_rounded,
+                          color: AppColors.primary, size: 24),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${category.lessonCount} lessons',
-                    style: TextStyle(
-                      color: context.textMuted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: context.textMuted, size: 16),
-          ],
+                )
+              : Center(
+                  child: Icon(Icons.category_rounded,
+                      color: AppColors.primary, size: 24),
+                ),
         ),
+        title: Text(category.name,
+            style: const TextStyle(
+                fontWeight: FontWeight.w700, fontSize: 15)),
+        subtitle: Text('${category.lessonCount} lessons'),
+        trailing: Icon(Icons.arrow_forward_ios_rounded,
+            color: context.textMuted, size: 16),
       ),
     );
   }
 
   Widget _buildLessonResult(LessonModel lesson) {
     final category = _categoryMap[lesson.categoryId];
-    
-    return GestureDetector(
-      onTap: () => _onLessonTap(lesson),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Row(
-          children: [
-            // Thumbnail
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: context.bgElevated,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: lesson.imageUrl != null && lesson.imageUrl!.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        CloudinaryService.getOptimizedImage(lesson.imageUrl!, width: 112),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Center(
-                          child: Text(
-                            lesson.signName.isNotEmpty ? lesson.signName[0].toUpperCase() : '?',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: context.textMuted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  : Center(
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GlassTile(
+        onTap: () => _onLessonTap(lesson),
+        leading: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColorsDark.bgElevated,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: lesson.imageUrl != null && lesson.imageUrl!.isNotEmpty
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    CloudinaryService.getOptimizedImage(lesson.imageUrl!, width: 112),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Center(
                       child: Text(
-                        lesson.signName.isNotEmpty ? lesson.signName[0].toUpperCase() : '?',
+                        lesson.signName.isNotEmpty
+                            ? lesson.signName[0].toUpperCase()
+                            : '?',
                         style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
                           color: context.textMuted,
                         ),
                       ),
                     ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Sign name with highlight
-                  _buildHighlightedText(lesson.signName, _searchQuery),
-                  const SizedBox(height: 4),
-                  // Category name
-                  if (category != null)
-                    Row(
-                      children: [
-                        Text(category.icon, style: const TextStyle(fontSize: 12)),
-                        const SizedBox(width: 4),
-                        Text(
-                          category.name,
-                          style: TextStyle(
-                            color: context.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+                  ),
+                )
+              : Center(
+                  child: Text(
+                    lesson.signName.isNotEmpty
+                        ? lesson.signName[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: context.textMuted,
                     ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(26),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '+${lesson.xpReward} XP',
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _getDifficultyColor(lesson.difficulty).withAlpha(26),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          lesson.difficulty,
-                          style: TextStyle(
-                            color: _getDifficultyColor(lesson.difficulty),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+                  ),
+                ),
+        ),
+        title: _buildHighlightedText(lesson.signName, _searchQuery),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (category != null)
+              Row(
+                children: [
+                  Icon(Icons.folder_rounded,
+                      color: context.textMuted, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    category.name,
+                    style: TextStyle(
+                        color: context.textMuted, fontSize: 12),
                   ),
                 ],
               ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '+${lesson.xpReward} XP',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getDifficultyColor(lesson.difficulty)
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    lesson.difficulty,
+                    style: TextStyle(
+                      color: _getDifficultyColor(lesson.difficulty),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            Icon(Icons.arrow_forward_ios, color: context.textMuted, size: 16),
           ],
         ),
+        trailing: Icon(Icons.arrow_forward_ios_rounded,
+            color: context.textMuted, size: 16),
       ),
     );
   }
@@ -597,7 +507,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (query.isEmpty) {
       return Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       );
     }
 
@@ -608,16 +518,16 @@ class _SearchScreenState extends State<SearchScreen> {
     if (startIndex == -1) {
       return Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       );
     }
 
     final endIndex = startIndex + query.length;
-    
+
     return RichText(
       text: TextSpan(
         style: TextStyle(
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           fontSize: 15,
           color: context.textPrimary,
         ),
@@ -625,8 +535,9 @@ class _SearchScreenState extends State<SearchScreen> {
           TextSpan(text: text.substring(0, startIndex)),
           TextSpan(
             text: text.substring(startIndex, endIndex),
-            style: const TextStyle(
-              backgroundColor: Color(0x406366F1),
+            style: TextStyle(
+              backgroundColor:
+                  AppColors.primary.withValues(alpha: 0.25),
               color: AppColors.primary,
             ),
           ),
@@ -649,32 +560,6 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  Widget _buildNoResults() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('😕', style: TextStyle(fontSize: 60)),
-          const SizedBox(height: 16),
-          Text(
-            'No results for "$_searchQuery"',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Try a different search term',
-            style: TextStyle(
-              color: context.textMuted,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSuggestions() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -683,18 +568,15 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           // Recent Searches
           if (_recentSearches.isNotEmpty) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSectionTitle('🕐', 'Recent Searches'),
-                TextButton(
-                  onPressed: _clearRecentSearches,
-                  child: Text(
-                    'Clear',
-                    style: TextStyle(color: context.textMuted),
-                  ),
+            GlassSectionHeader(
+              title: 'Recent Searches',
+              trailing: TextButton(
+                onPressed: _clearRecentSearches,
+                child: Text(
+                  'Clear',
+                  style: TextStyle(color: context.textMuted, fontSize: 12),
                 ),
-              ],
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -709,17 +591,19 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
-                      vertical: 10,
+                      vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: context.bgCard,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: context.borderColor),
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.08)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.history, color: context.textMuted, size: 16),
+                        Icon(Icons.history_rounded,
+                            color: context.textMuted, size: 14),
                         const SizedBox(width: 6),
                         Text(
                           query,
@@ -738,7 +622,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
 
           // All Categories
-          _buildSectionTitle('📚', 'All Categories'),
+          const GlassSectionHeader(title: 'All Categories'),
           const SizedBox(height: 12),
           GridView.builder(
             shrinkWrap: true,
@@ -754,50 +638,48 @@ class _SearchScreenState extends State<SearchScreen> {
               final category = _allCategories[index];
               return GestureDetector(
                 onTap: () => _onCategoryTap(category),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: context.bgCard,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: context.borderColor),
-                  ),
+                child: GlassCard(
+                  alternate: index.isOdd,
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(30),
-                          borderRadius: BorderRadius.circular(14),
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: category.hasCustomImage
                             ? ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(12),
                                 child: Image.network(
-                                  CloudinaryService.getOptimizedImage(category.imageUrl!, width: 96),
+                                  CloudinaryService.getOptimizedImage(
+                                      category.imageUrl!, width: 88),
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Center(
-                                    child: Text(category.icon, style: const TextStyle(fontSize: 24)),
+                                  errorBuilder: (_, __, ___) => const Center(
+                                    child: Icon(Icons.category_rounded,
+                                        color: AppColors.primary, size: 22),
                                   ),
                                 ),
                               )
-                            : Center(
-                                child: Text(category.icon, style: const TextStyle(fontSize: 24)),
+                            : const Center(
+                                child: Icon(Icons.category_rounded,
+                                    color: AppColors.primary, size: 22),
                               ),
                       ),
                       const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          category.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        category.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                          color: context.textPrimary,
                         ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -805,37 +687,41 @@ class _SearchScreenState extends State<SearchScreen> {
               ).animate().fadeIn(delay: Duration(milliseconds: 30 * index));
             },
           ),
-          
+
           const SizedBox(height: 28),
-          
+
           // Quick tip
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(20),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primary.withAlpha(50)),
-            ),
+          GlassCard(
             child: Row(
               children: [
-                const Text('💡', style: TextStyle(fontSize: 24)),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.lightbulb_outline_rounded,
+                      color: AppColors.primary, size: 20),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Quick Tip',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: context.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         'Type any word to instantly search through ${_allLessons.length} signs!',
                         style: TextStyle(
-                          color: context.textSecondary,
+                          color: context.textMuted,
                           fontSize: 12,
                         ),
                       ),

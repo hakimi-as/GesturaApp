@@ -69,6 +69,8 @@ dependencies:
   pdf: ^3.10.8
   printing: ^5.12.0
 
+  camera: ^0.11.0
+  flutter_inappwebview: ^6.1.0
   flutter_cache_manager: ^3.3.1
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -89,6 +91,7 @@ flutter:
     - assets/animations/
     - assets/signs/
     - assets/icons/AppIcon.png
+    - assets/holistic_camera.html
 
 flutter_launcher_icons:
   android: true

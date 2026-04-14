@@ -6,9 +6,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart';
+import '../../services/analytics_service.dart';
 import '../../models/user_model.dart';
 import '../../models/badge_model.dart';
 import '../../widgets/badges/badge_unlock_dialog.dart';
@@ -217,6 +219,222 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     );
   }
 
+  void _showChallengeDialog() {
+    HapticService.buttonTap();
+    String selectedQuizType = 'sign_to_text';
+    final messageController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final l10n = AppLocalizations.of(context);
+          final quizTypes = [
+            {'key': 'sign_to_text', 'label': 'Sign to Text', 'icon': '🤟'},
+            {'key': 'text_to_sign', 'label': 'Text to Sign', 'icon': '💬'},
+            {'key': 'timed_challenge', 'label': 'Timed Challenge', 'icon': '⏱️'},
+            {'key': 'spelling_quiz', 'label': 'Spelling Quiz', 'icon': '🔤'},
+          ];
+
+          return Container(
+            margin: const EdgeInsets.all(16),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              top: 24,
+              left: 24,
+              right: 24,
+            ),
+            decoration: BoxDecoration(
+              color: context.bgCard,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: context.textMuted.withAlpha(50),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.sendChallenge,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          _friend?.fullName ?? '',
+                          style: TextStyle(color: context.textMuted, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text(l10n.selectQuizType, style: TextStyle(color: context.textMuted, fontSize: 13, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: quizTypes.map((qt) {
+                    final isSelected = selectedQuizType == qt['key'];
+                    return GestureDetector(
+                      onTap: () => setModalState(() => selectedQuizType = qt['key'] as String),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: isSelected
+                              ? const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFEF4444)])
+                              : null,
+                          color: isSelected ? null : context.bgElevated,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? Colors.transparent : context.borderColor,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(qt['icon'] as String, style: const TextStyle(fontSize: 16)),
+                            const SizedBox(width: 8),
+                            Text(
+                              qt['label'] as String,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : context.textSecondary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: messageController,
+                  decoration: InputDecoration(
+                    hintText: l10n.challengeMessageHint,
+                    hintStyle: TextStyle(color: context.textMuted),
+                    labelText: l10n.challengeMessage,
+                    labelStyle: TextStyle(color: context.textMuted),
+                    filled: true,
+                    fillColor: context.bgElevated,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.sendChallengeDesc,
+                  style: TextStyle(color: context.textMuted, fontSize: 12),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          await _sendChallenge(
+                            quizType: selectedQuizType,
+                            message: messageController.text.trim().isEmpty
+                                ? null
+                                : messageController.text.trim(),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(14),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                l10n.sendChallenge,
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _sendChallenge({required String quizType, String? message}) async {
+    if (_currentUser == null || _friend == null) return;
+    final l10n = AppLocalizations.of(context);
+
+    final result = await FriendService.sendFriendChallenge(
+      challengerId: _currentUser!.id,
+      challengerName: _currentUser!.fullName,
+      challengerPhotoUrl: _currentUser!.photoUrl,
+      challengedId: _friend!.id,
+      quizType: quizType,
+      challengerScore: 0,
+      message: message,
+    );
+
+    if (result['success'] == true) {
+      AnalyticsService.logChallengeIssuedToFriend(quizType: quizType);
+    }
+
+    if (mounted) {
+      HapticService.success();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['success'] == true ? l10n.challengeSent : result['message'] ?? l10n.anErrorOccurred),
+          backgroundColor: result['success'] == true ? AppColors.success : AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _showQRCode() {
     HapticService.buttonTap();
     showModalBottomSheet(
@@ -337,14 +555,14 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: context.bgPrimary,
+        backgroundColor: Colors.transparent,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_friend == null) {
       return Scaffold(
-        backgroundColor: context.bgPrimary,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -367,7 +585,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -538,6 +756,24 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       children: [
         Expanded(flex: 3, child: _buildFriendButton()),
         const SizedBox(width: 12),
+        if (_friendshipStatus == 'friends') ...[
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: IconButton(
+              onPressed: _showChallengeDialog,
+              icon: const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 22),
+              tooltip: 'Challenge',
+            ),
+          ),
+          const SizedBox(width: 12),
+        ],
         Container(
           width: 52,
           height: 52,

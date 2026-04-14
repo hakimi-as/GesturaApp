@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/quiz_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
@@ -42,7 +43,7 @@ class _AdminQuizzesScreenState extends State<AdminQuizzesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
@@ -342,11 +343,11 @@ class _AdminQuizzesScreenState extends State<AdminQuizzesScreen> {
                     isExpanded: true,
                     dropdownColor: context.bgCard,
                     underline: const SizedBox(),
-                    items: const [
-                      DropdownMenuItem(value: 'sign_to_text', child: Text('Sign to Text')),
-                      DropdownMenuItem(value: 'text_to_sign', child: Text('Text to Sign')),
-                      DropdownMenuItem(value: 'timed', child: Text('Timed Challenge')),
-                      DropdownMenuItem(value: 'spelling', child: Text('Spelling Quiz')),
+                    items: [
+                      DropdownMenuItem(value: 'sign_to_text', child: Text(AppLocalizations.of(context).signToText)),
+                      DropdownMenuItem(value: 'text_to_sign', child: Text(AppLocalizations.of(context).textToSign)),
+                      DropdownMenuItem(value: 'timed', child: Text(AppLocalizations.of(context).timedChallenge)),
+                      DropdownMenuItem(value: 'spelling', child: Text(AppLocalizations.of(context).spellingQuiz)),
                     ],
                     onChanged: (value) => setDialogState(() => selectedType = value!),
                   ),
@@ -531,7 +532,7 @@ class _QuizQuestionsScreenState extends State<_QuizQuestionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(

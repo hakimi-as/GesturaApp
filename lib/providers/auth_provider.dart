@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
+import '../services/notification_service.dart';
+import '../services/analytics_service.dart';
 
 enum AuthStatus {
   initial,
@@ -55,10 +57,35 @@ class AuthProvider extends ChangeNotifier {
     try {
       _currentUser = await _firestoreService.getUser(uid);
       notifyListeners();
+      // Schedule streak-at-risk reminder if user hasn't practiced today
+      _scheduleStreakReminderIfNeeded();
+      // Update analytics user properties
+      if (_currentUser != null) {
+        AnalyticsService.setUserId(uid);
+        AnalyticsService.setUserProperties(
+          level: _currentUser!.level,
+          streak: _currentUser!.currentStreak,
+          userType: _currentUser!.userType,
+        );
+      }
     } catch (e) {
       debugPrint('Error loading user data: $e');
       _currentUser = null;
       notifyListeners();
+    }
+  }
+
+  void _scheduleStreakReminderIfNeeded() {
+    final user = _currentUser;
+    if (user == null || user.currentStreak == 0) return;
+    // If lessonsCompletedToday is 0, the streak is at risk — schedule 8 PM reminder
+    if (user.lessonsCompletedToday == 0) {
+      NotificationService().scheduleStreakAtRiskReminder(
+        currentStreak: user.currentStreak,
+      );
+    } else {
+      // Already practiced today — cancel any pending streak reminder
+      NotificationService().cancelStreakAtRiskReminder();
     }
   }
 

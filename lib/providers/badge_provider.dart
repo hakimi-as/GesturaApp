@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/badge_model.dart';
 import '../models/user_model.dart';
 import '../services/badge_service.dart';
+import '../services/analytics_service.dart';
 
 /// Badge Provider with Dynamic Badge Checking
 /// 
@@ -179,6 +180,12 @@ class BadgeProvider extends ChangeNotifier {
         _newlyUnlockedBadges = newBadges;
         await loadUserBadges(userId);
         notifyListeners();
+        for (final badge in newBadges) {
+          AnalyticsService.logBadgeEarned(
+            badgeId: badge.id,
+            badgeName: badge.name,
+          );
+        }
       }
 
       return newBadges;

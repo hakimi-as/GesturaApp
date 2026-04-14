@@ -5,11 +5,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart';
 import '../../models/friend_model.dart';
 import '../../models/user_model.dart';
+import '../../widgets/common/glass_ui.dart';
 import 'friend_profile_screen.dart';
 import 'add_friend_screen.dart';
 
@@ -23,20 +25,22 @@ class FriendsScreen extends StatefulWidget {
 class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
-  
+
   List<FriendWithUser> _friends = [];
   List<FriendWithUser> _pendingRequests = [];
+  List<FriendChallenge> _incomingChallenges = [];
   List<UserModel> _searchResults = [];
-  
+
   bool _isLoadingFriends = true;
   bool _isLoadingRequests = true;
+  bool _isLoadingChallenges = true;
   bool _isSearching = false;
   String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
   }
 
@@ -55,7 +59,24 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       await Future.wait([
         _loadFriends(),
         _loadPendingRequests(),
+        _loadChallenges(),
       ]);
+    }
+  }
+
+  Future<void> _loadChallenges() async {
+    if (_currentUserId == null) return;
+    setState(() => _isLoadingChallenges = true);
+    try {
+      final challenges = await FriendService.getIncomingChallenges(_currentUserId!);
+      if (mounted) {
+        setState(() {
+          _incomingChallenges = challenges;
+          _isLoadingChallenges = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingChallenges = false);
     }
   }
 
@@ -186,37 +207,15 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Friends',
-          style: TextStyle(
-            color: context.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
+      backgroundColor: Colors.transparent,
+      appBar: GlassAppBar(
+        title: AppLocalizations.of(context).friends,
+        showBack: false,
         actions: [
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(26),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.qr_code_scanner_rounded,
-                color: AppColors.primary,
-                size: 20,
-              ),
-            ),
-            onPressed: () {
+          GlassIconButton(
+            icon: Icons.qr_code_scanner_rounded,
+            iconColor: AppColors.primary,
+            onTap: () {
               HapticService.buttonTap();
               Navigator.push(
                 context,
@@ -231,16 +230,13 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         children: [
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(14),
-            ),
+            decoration: context.glassCardDecoration(),
             child: TabBar(
               controller: _tabController,
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
                 ),
               ),
               labelColor: Colors.white,
@@ -250,12 +246,12 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               indicatorSize: TabBarIndicatorSize.tab,
               padding: const EdgeInsets.all(4),
               tabs: [
-                const Tab(text: 'Friends'),
+                Tab(text: AppLocalizations.of(context).friendsTab),
                 Tab(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('Requests'),
+                      Text(AppLocalizations.of(context).requestsTab),
                       if (_pendingRequests.isNotEmpty) ...[
                         const SizedBox(width: 6),
                         Container(
@@ -277,7 +273,33 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                     ],
                   ),
                 ),
-                const Tab(text: 'Find'),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(AppLocalizations.of(context).challengesTab),
+                      if (_incomingChallenges.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF59E0B),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '${_incomingChallenges.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Tab(text: AppLocalizations.of(context).findTab),
               ],
             ),
           ),
@@ -287,6 +309,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               children: [
                 _buildFriendsTab(),
                 _buildRequestsTab(),
+                _buildChallengesTab(),
                 _buildFindTab(),
               ],
             ),
@@ -298,15 +321,12 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
 
   Widget _buildShimmerItem({double height = 80}) {
     return Shimmer.fromColors(
-      baseColor: context.bgElevated,
-      highlightColor: context.bgCard,
+      baseColor: const Color(0xFF0D1A1A),
+      highlightColor: const Color(0xFF122020),
       child: Container(
         height: height,
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(18),
-        ),
+        decoration: context.glassCardDecoration(),
       ),
     );
   }
@@ -321,11 +341,11 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     }
 
     if (_friends.isEmpty) {
-      return _buildEmptyState(
-        emoji: '👥',
-        title: 'No friends yet',
-        subtitle: 'Search for friends or share your QR code',
-        actionText: 'Add Friends',
+      return GlassEmptyState(
+        icon: Icons.people_outline,
+        title: AppLocalizations.of(context).noFriendsYet,
+        subtitle: AppLocalizations.of(context).searchFriendsQr,
+        actionLabel: AppLocalizations.of(context).addFriendsBtn,
         onAction: () {
           HapticService.buttonTap();
           Navigator.push(
@@ -355,117 +375,97 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   Widget _buildFriendCard(FriendWithUser friendWithUser) {
     final user = friendWithUser.friendUser;
 
-    return GestureDetector(
-      onTap: () {
-        HapticService.buttonTap();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => FriendProfileScreen(
-              friendId: user.id,
-              friendshipId: friendWithUser.friendship.id,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GlassTile(
+        onTap: () {
+          HapticService.buttonTap();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FriendProfileScreen(
+                friendId: user.id,
+                friendshipId: friendWithUser.friendship.id,
+              ),
             ),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Row(
+          );
+        },
+        leading: _buildAvatarWithRing(user, 48),
+        title: Text(user.fullName),
+        subtitle: Row(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: user.photoUrl == null
-                    ? const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                      )
-                    : null,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: user.photoUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: user.photoUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: context.bgElevated,
-                          child: Center(
-                            child: Text(
-                              user.initials,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          user.initials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.fullName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      _buildStatBadge('⭐', '${user.totalXP}'),
-                      const SizedBox(width: 8),
-                      _buildStatBadge('🔥', '${user.currentStreak}'),
-                      const SizedBox(width: 8),
-                      _buildStatBadge('Lv', '${user.level}'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, color: context.textMuted),
+            _buildStatBadge(Icons.star_rounded, '${user.totalXP}'),
+            const SizedBox(width: 6),
+            _buildStatBadge(Icons.local_fire_department_rounded, '${user.currentStreak}'),
+            const SizedBox(width: 6),
+            _buildStatBadge(Icons.military_tech_rounded, 'Lv ${user.level}'),
           ],
         ),
+        trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 18),
       ),
     );
   }
 
-  Widget _buildStatBadge(String emoji, String value) {
+  Widget _buildAvatarWithRing(dynamic user, double size) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: context.bgElevated,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.primary, width: 2),
+        gradient: user.photoUrl == null
+            ? const LinearGradient(
+                colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+              )
+            : null,
+      ),
+      child: ClipOval(
+        child: user.photoUrl != null
+            ? CachedNetworkImage(
+                imageUrl: user.photoUrl!,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Center(
+                  child: Text(
+                    user.initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              )
+            : Center(
+                child: Text(
+                  user.initials,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: size * 0.3,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildStatBadge(IconData icon, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withAlpha(20),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 12)),
-          const SizedBox(width: 4),
+          Icon(icon, size: 11, color: AppColors.primary),
+          const SizedBox(width: 3),
           Text(
             value,
             style: TextStyle(
-              color: context.textSecondary,
-              fontSize: 12,
+              color: context.textMuted,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -484,10 +484,10 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     }
 
     if (_pendingRequests.isEmpty) {
-      return _buildEmptyState(
-        emoji: '📭',
-        title: 'No pending requests',
-        subtitle: 'Friend requests you receive will appear here',
+      return GlassEmptyState(
+        icon: Icons.mark_email_unread_outlined,
+        title: AppLocalizations.of(context).noPendingRequests,
+        subtitle: AppLocalizations.of(context).requestsWillAppear,
       );
     }
 
@@ -510,66 +510,194 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   Widget _buildRequestCard(FriendWithUser request) {
     final user = request.friendUser;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: context.borderColor),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                _buildAvatarWithRing(user, 52),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.fullName,
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          _buildStatBadge(Icons.star_rounded, '${user.totalXP} XP'),
+                          const SizedBox(width: 6),
+                          _buildStatBadge(Icons.military_tech_rounded, 'Lv ${user.level}'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _declineRequest(request.friendship.id),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D1A1A),
+                        borderRadius: kGlassRadiusAlt,
+                        border: Border.all(color: const Color(0xFF1A3030)),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context).decline,
+                        style: TextStyle(
+                          color: context.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _acceptRequest(request.friendship.id),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+                        ),
+                        borderRadius: kGlassRadius,
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context).accept,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildChallengesTab() {
+    if (_isLoadingChallenges) {
+      return ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: 3,
+        itemBuilder: (context, index) => _buildShimmerItem(height: 130),
+      );
+    }
+
+    if (_incomingChallenges.isEmpty) {
+      return GlassEmptyState(
+        icon: Icons.emoji_events_outlined,
+        title: AppLocalizations.of(context).noIncomingChallenges,
+        subtitle: AppLocalizations.of(context).challengesWillAppear,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadChallenges,
+      color: AppColors.primary,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: _incomingChallenges.length,
+        itemBuilder: (context, index) {
+          return _buildChallengeCard(_incomingChallenges[index])
+              .animate()
+              .fadeIn(delay: Duration(milliseconds: index * 50))
+              .slideX(begin: -0.1);
+        },
+      ),
+    );
+  }
+
+  Widget _buildChallengeCard(FriendChallenge challenge) {
+    final l10n = AppLocalizations.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GlassCard(
+      alternate: true,
+      padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: user.photoUrl == null
-                      ? const LinearGradient(
-                          colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                        )
-                      : null,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                  ),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: user.photoUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: user.photoUrl!,
-                          fit: BoxFit.cover,
-                        )
-                      : Center(
-                          child: Text(
-                            user.initials,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
+                child: Center(
+                  child: Text(
+                    challenge.userInitials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.fullName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
+                      '${l10n.challengeFrom} ${challenge.challengerName}',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Row(
                       children: [
-                        _buildStatBadge('⭐', '${user.totalXP} XP'),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B).withAlpha(30),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            challenge.quizTypeLabel,
+                            style: const TextStyle(
+                              color: Color(0xFFF59E0B),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                         const SizedBox(width: 8),
-                        _buildStatBadge('Lv', '${user.level}'),
+                        Text(
+                          challenge.timeLeftText,
+                          style: TextStyle(color: context.textMuted, fontSize: 12),
+                        ),
                       ],
                     ),
                   ],
@@ -577,25 +705,63 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               ),
             ],
           ),
+          if (challenge.challengerScore > 0) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: context.bgElevated,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.gps_fixed_rounded, size: 18, color: AppColors.primary),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${l10n.beatThisScore} ${challenge.challengerScore}!',
+                    style: TextStyle(fontWeight: FontWeight.w600, color: context.textPrimary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (challenge.message != null && challenge.message!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '"${challenge.message}"',
+              style: TextStyle(color: context.textMuted, fontStyle: FontStyle.italic, fontSize: 13),
+            ),
+          ],
           const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: GestureDetector(
-                  onTap: () => _declineRequest(request.friendship.id),
+                  onTap: () async {
+                    HapticService.buttonTap();
+                    final ok = await FriendService.declineChallenge(challenge.id);
+                    if (ok && mounted) {
+                      await _loadChallenges();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(l10n.challengeDeclined),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
+                  },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
                     decoration: BoxDecoration(
-                      color: context.bgElevated,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: context.borderColor),
+                      color: const Color(0xFF0D1A1A),
+                      borderRadius: kGlassRadiusAlt,
+                      border: Border.all(color: const Color(0xFF1A3030)),
                     ),
                     child: Text(
-                      'Decline',
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      l10n.declineChallenge,
+                      style: TextStyle(color: context.textMuted, fontWeight: FontWeight.w600),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -603,19 +769,33 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               ),
               const SizedBox(width: 12),
               Expanded(
+                flex: 2,
                 child: GestureDetector(
-                  onTap: () => _acceptRequest(request.friendship.id),
+                  onTap: () async {
+                    HapticService.buttonTap();
+                    await FriendService.acceptChallenge(challenge.id);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${l10n.acceptChallenge} — ${challenge.quizTypeLabel}'),
+                          backgroundColor: const Color(0xFFF59E0B),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      await _loadChallenges();
+                    }
+                  },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: kGlassRadius,
                     ),
-                    child: const Text(
-                      'Accept',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.acceptChallenge,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
@@ -628,57 +808,40 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildFindTab() {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(20),
-          child: TextField(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+          child: GlassTextField(
             controller: _searchController,
-            onChanged: (value) => _searchUsers(value),
-            decoration: InputDecoration(
-              hintText: 'Search by name or email...',
-              hintStyle: TextStyle(color: context.textMuted),
-              prefixIcon: Icon(Icons.search, color: context.textMuted),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: Icon(Icons.clear, color: context.textMuted),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchResults = []);
-                      },
-                    )
-                  : null,
-              filled: true,
-              fillColor: context.bgCard,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: context.borderColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
-              ),
-            ),
+            hint: AppLocalizations.of(context).searchByNameEmail,
+            prefixIcon: Icons.search_rounded,
+            suffixWidget: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear_rounded, color: context.textMuted, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchResults = []);
+                    },
+                  )
+                : null,
+            onFieldSubmitted: (_) => _searchUsers(_searchController.text),
           ),
         ),
         Expanded(
           child: _isSearching
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
               : _searchController.text.length < 2
                   ? _buildSearchPlaceholder()
                   : _searchResults.isEmpty
-                      ? _buildEmptyState(
-                          emoji: '🔍',
-                          title: 'No users found',
-                          subtitle: 'Try a different search term',
+                      ? GlassEmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: AppLocalizations.of(context).noUsersFound,
+                          subtitle: AppLocalizations.of(context).tryDifferentSearch,
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -696,67 +859,18 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   }
 
   Widget _buildSearchPlaceholder() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withAlpha(26),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.person_search_rounded,
-            size: 40,
-            color: AppColors.primary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Find New Friends',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Search by name or email to find friends',
-          style: TextStyle(color: context.textMuted),
-        ),
-        const SizedBox(height: 24),
-        GestureDetector(
-          onTap: () {
-            HapticService.buttonTap();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddFriendScreen()),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.qr_code_scanner, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text(
-                  'Add by QR Code',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+    return GlassEmptyState(
+      icon: Icons.person_search_rounded,
+      title: AppLocalizations.of(context).findNewFriends,
+      subtitle: AppLocalizations.of(context).searchByNameEmail,
+      actionLabel: AppLocalizations.of(context).addByQrCode,
+      onAction: () {
+        HapticService.buttonTap();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddFriendScreen()),
+        );
+      },
     );
   }
 
@@ -766,93 +880,31 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       builder: (context, snapshot) {
         final status = snapshot.data ?? 'none';
 
-        return GestureDetector(
-          onTap: () {
-            HapticService.buttonTap();
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => FriendProfileScreen(friendId: user.id),
-              ),
-            );
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: context.borderColor),
-            ),
-            child: Row(
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: GlassTile(
+            onTap: () {
+              HapticService.buttonTap();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FriendProfileScreen(friendId: user.id),
+                ),
+              );
+            },
+            leading: _buildAvatarWithRing(user, 46),
+            title: Text(user.fullName),
+            subtitle: Row(
               children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: user.photoUrl == null
-                        ? const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                          )
-                        : null,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(25),
-                    child: user.photoUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: user.photoUrl!,
-                            fit: BoxFit.cover,
-                          )
-                        : Center(
-                            child: Text(
-                              user.initials,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                  ),
+                const Icon(Icons.star_rounded, size: 12, color: AppColors.primary),
+                const SizedBox(width: 3),
+                Text(
+                  '${user.totalXP} XP  •  Lv ${user.level}',
+                  style: TextStyle(color: context.textMuted, fontSize: 12),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.fullName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Text(
-                            '⭐ ${user.totalXP} XP',
-                            style: TextStyle(
-                              color: context.textMuted,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '• Lv ${user.level}',
-                            style: TextStyle(
-                              color: context.textMuted,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                _buildStatusButton(status, user.id),
               ],
             ),
+            trailing: _buildStatusButton(status, user.id),
           ),
         );
       },
@@ -863,61 +915,47 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
     switch (status) {
       case 'friends':
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: AppColors.success.withAlpha(26),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: kGlassRadiusAlt,
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check, color: AppColors.success, size: 16),
-              SizedBox(width: 4),
+              const Icon(Icons.check_rounded, color: AppColors.success, size: 14),
+              const SizedBox(width: 4),
               Text(
-                'Friends',
-                style: TextStyle(
-                  color: AppColors.success,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
+                AppLocalizations.of(context).friendsTab,
+                style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w600, fontSize: 11),
               ),
             ],
           ),
         );
       case 'sent':
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: context.bgElevated,
-            borderRadius: BorderRadius.circular(8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0D1A1A),
+            borderRadius: kGlassRadiusAlt,
           ),
           child: Text(
-            'Pending',
-            style: TextStyle(
-              color: context.textMuted,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
+            AppLocalizations.of(context).pendingChallenge,
+            style: TextStyle(color: context.textMuted, fontWeight: FontWeight.w600, fontSize: 11),
           ),
         );
       case 'received':
         return GestureDetector(
           onTap: () => _tabController.animateTo(1),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              ),
-              borderRadius: BorderRadius.circular(8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)]),
+              borderRadius: kGlassRadius,
             ),
-            child: const Text(
-              'Respond',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
+            child: Text(
+              AppLocalizations.of(context).accept,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11),
             ),
           ),
         );
@@ -925,85 +963,24 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
         return GestureDetector(
           onTap: () => _sendRequest(userId),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              ),
-              borderRadius: BorderRadius.circular(8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)]),
+              borderRadius: kGlassRadius,
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.person_add, color: Colors.white, size: 16),
-                SizedBox(width: 4),
+                const Icon(Icons.person_add_rounded, color: Colors.white, size: 14),
+                const SizedBox(width: 4),
                 Text(
-                  'Add',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
+                  AppLocalizations.of(context).addFriendsBtn,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11),
                 ),
               ],
             ),
           ),
         );
     }
-  }
-
-  Widget _buildEmptyState({
-    required String emoji,
-    required String title,
-    required String subtitle,
-    String? actionText,
-    VoidCallback? onAction,
-  }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 60)),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: TextStyle(color: context.textMuted),
-              textAlign: TextAlign.center,
-            ),
-            if (actionText != null && onAction != null) ...[
-              const SizedBox(height: 24),
-              GestureDetector(
-                onTap: onAction,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    actionText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 }

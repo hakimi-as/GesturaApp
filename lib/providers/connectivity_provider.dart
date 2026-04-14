@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../services/offline_service.dart';
 
 /// Connection status enum
 enum ConnectionStatus {
@@ -81,13 +82,31 @@ class ConnectivityProvider extends ChangeNotifier {
     
     final isNowOnline = _status == ConnectionStatus.online;
     
-    // Log status changes
+    // Log status changes and trigger sync when back online
     if (wasOnline != isNowOnline) {
       debugPrint('📶 Connection changed: ${isNowOnline ? "ONLINE" : "OFFLINE"}');
       debugPrint('   Type: ${result.name}');
+
+      if (isNowOnline) {
+        // Back online — flush any queued offline actions
+        _triggerSync();
+      }
     }
-    
+
     notifyListeners();
+  }
+
+  /// Sync pending offline items — called automatically when going online
+  void _triggerSync() {
+    OfflineService.syncPendingItems().then((result) {
+      if (result.synced > 0 || result.failed > 0) {
+        debugPrint(
+          '🔄 Auto-sync: ${result.synced} synced, ${result.failed} failed, ${result.pending} remaining',
+        );
+      }
+    }).catchError((e) {
+      debugPrint('Auto-sync error: $e');
+    });
   }
 
   /// Manually check current connectivity

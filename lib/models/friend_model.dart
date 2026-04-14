@@ -204,3 +204,99 @@ class FriendActivity {
     }
   }
 }
+
+/// Represents a friend-to-friend quiz challenge
+class FriendChallenge {
+  final String id;
+  final String challengerId;
+  final String challengerName;
+  final String? challengerPhotoUrl;
+  final String challengedId;
+  final String quizType; // e.g. 'sign_to_text', 'timed_challenge'
+  final int challengerScore;
+  final int? challengedScore;
+  final String status; // 'pending', 'accepted', 'completed', 'declined', 'expired'
+  final DateTime createdAt;
+  final DateTime expiresAt;
+  final String? message;
+
+  FriendChallenge({
+    required this.id,
+    required this.challengerId,
+    required this.challengerName,
+    this.challengerPhotoUrl,
+    required this.challengedId,
+    required this.quizType,
+    required this.challengerScore,
+    this.challengedScore,
+    required this.status,
+    required this.createdAt,
+    required this.expiresAt,
+    this.message,
+  });
+
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
+  bool get isPending => status == 'pending' && !isExpired;
+  bool get isCompleted => status == 'completed';
+  bool get challengerWon =>
+      isCompleted && challengedScore != null && challengerScore > challengedScore!;
+
+  factory FriendChallenge.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return FriendChallenge(
+      id: doc.id,
+      challengerId: data['challengerId'] ?? '',
+      challengerName: data['challengerName'] ?? 'Someone',
+      challengerPhotoUrl: data['challengerPhotoUrl'],
+      challengedId: data['challengedId'] ?? '',
+      quizType: data['quizType'] ?? 'sign_to_text',
+      challengerScore: data['challengerScore'] ?? 0,
+      challengedScore: data['challengedScore'],
+      status: data['status'] ?? 'pending',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      expiresAt: (data['expiresAt'] as Timestamp?)?.toDate() ??
+          DateTime.now().add(const Duration(days: 3)),
+      message: data['message'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'challengerId': challengerId,
+      'challengerName': challengerName,
+      'challengerPhotoUrl': challengerPhotoUrl,
+      'challengedId': challengedId,
+      'quizType': quizType,
+      'challengerScore': challengerScore,
+      if (challengedScore != null) 'challengedScore': challengedScore,
+      'status': status,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'expiresAt': Timestamp.fromDate(expiresAt),
+      if (message != null) 'message': message,
+    };
+  }
+
+  String get quizTypeLabel {
+    switch (quizType) {
+      case 'sign_to_text': return 'Sign to Text';
+      case 'text_to_sign': return 'Text to Sign';
+      case 'timed_challenge': return 'Timed Challenge';
+      case 'spelling_quiz': return 'Spelling Quiz';
+      default: return quizType;
+    }
+  }
+
+  String get timeLeftText {
+    if (isExpired) return 'Expired';
+    final diff = expiresAt.difference(DateTime.now());
+    if (diff.inHours < 24) return '${diff.inHours}h left';
+    return '${diff.inDays}d left';
+  }
+
+  String get userInitials {
+    if (challengerName.isEmpty) return '?';
+    final parts = challengerName.split(' ');
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    return challengerName[0].toUpperCase();
+  }
+}

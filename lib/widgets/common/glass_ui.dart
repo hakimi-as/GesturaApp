@@ -54,10 +54,7 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = alternate
-        ? AppColors.glassCard(alternate: true)
-        : AppColors.glassCard();
-
+    final base = context.glassCardDecoration(alternate: alternate);
     final decoration = decorationOverride ??
         (gradient != null ? base.copyWith(gradient: gradient) : base);
 
@@ -218,6 +215,12 @@ class GlassTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textMuted = context.textMuted;
+    final textPrimary = context.textPrimary;
+    final borderColor = context.borderColor;
+    final bgCard = context.bgCard;
+    final errorColor = context.errorColor;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -225,11 +228,11 @@ class GlassTextField extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.5,
-              color: AppColorsDark.textMuted,
+              color: textMuted,
             ),
           ),
           const SizedBox(height: 8),
@@ -241,55 +244,40 @@ class GlassTextField extends StatelessWidget {
           maxLines: obscureText ? 1 : maxLines,
           textInputAction: textInputAction,
           onFieldSubmitted: onFieldSubmitted,
-          style: const TextStyle(color: AppColorsDark.textPrimary),
+          style: TextStyle(color: textPrimary),
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColorsDark.textMuted),
+            hintStyle: TextStyle(color: textMuted),
             prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, color: AppColorsDark.textMuted, size: 20)
+                ? Icon(prefixIcon, color: textMuted, size: 20)
                 : null,
             suffixIcon: suffixWidget,
             filled: true,
-            fillColor: const Color(0xFF0D1A1A),
+            fillColor: bgCard,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
             ),
             border: OutlineInputBorder(
               borderRadius: kGlassRadius,
-              borderSide: const BorderSide(
-                color: AppColorsDark.border,
-                width: 1,
-              ),
+              borderSide: BorderSide(color: borderColor, width: 1),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: kGlassRadius,
-              borderSide: const BorderSide(
-                color: AppColorsDark.border,
-                width: 1,
-              ),
+              borderSide: BorderSide(color: borderColor, width: 1),
             ),
-            focusedBorder: OutlineInputBorder(
+            focusedBorder: const OutlineInputBorder(
               borderRadius: kGlassRadius,
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: AppColors.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: kGlassRadius,
-              borderSide: const BorderSide(
-                color: AppColorsDark.error,
-                width: 1,
-              ),
+              borderSide: BorderSide(color: errorColor, width: 1),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: kGlassRadius,
-              borderSide: const BorderSide(
-                color: AppColorsDark.error,
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: errorColor, width: 1.5),
             ),
           ),
         ),
@@ -337,8 +325,8 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
               : null),
       title: Text(
         title,
-        style: const TextStyle(
-          color: AppColorsDark.textPrimary,
+        style: TextStyle(
+          color: context.textPrimary,
           fontWeight: FontWeight.w800,
           fontSize: 20,
         ),
@@ -364,11 +352,11 @@ class GlassSectionHeader extends StatelessWidget {
       children: [
         Text(
           title.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.8,
-            color: AppColorsDark.textMuted,
+            color: context.textMuted,
           ),
         ),
         if (trailing != null) trailing!,
@@ -407,7 +395,7 @@ class GlassTile extends StatelessWidget {
       child: Container(
         padding: padding ??
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: AppColors.glassCard(alternate: alternate),
+        decoration: context.glassCardDecoration(alternate: alternate),
         child: Row(
           children: [
             if (leading != null) ...[leading!, const SizedBox(width: 12)],
@@ -417,8 +405,8 @@ class GlassTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DefaultTextStyle(
-                    style: const TextStyle(
-                      color: AppColorsDark.textPrimary,
+                    style: TextStyle(
+                      color: context.textPrimary,
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                     ),
@@ -427,8 +415,8 @@ class GlassTile extends StatelessWidget {
                   if (subtitle != null) ...[
                     const SizedBox(height: 3),
                     DefaultTextStyle(
-                      style: const TextStyle(
-                        color: AppColorsDark.textMuted,
+                      style: TextStyle(
+                        color: context.textMuted,
                         fontSize: 12,
                       ),
                       child: subtitle!,
@@ -469,10 +457,10 @@ class GlassIconButton extends StatelessWidget {
       child: Container(
         width: size,
         height: size,
-        decoration: AppColors.glassCard(),
+        decoration: context.glassCardDecoration(),
         child: Icon(
           icon,
-          color: iconColor ?? AppColorsDark.textPrimary,
+          color: iconColor ?? context.textPrimary,
           size: size * 0.5,
         ),
       ),
@@ -497,6 +485,7 @@ class GlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -505,12 +494,16 @@ class GlassChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: active
               ? AppColors.primary.withValues(alpha: 0.15)
-              : Colors.white.withValues(alpha: 0.04),
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.black.withValues(alpha: 0.04)),
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
             color: active
                 ? AppColors.primary
-                : Colors.white.withValues(alpha: 0.10),
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : context.borderColor),
             width: active ? 1.5 : 1,
           ),
         ),
@@ -519,7 +512,7 @@ class GlassChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: active ? AppColors.primary : AppColorsDark.textSecondary,
+            color: active ? AppColors.primary : context.textSecondary,
           ),
         ),
       ),
@@ -599,8 +592,8 @@ class GlassEmptyState extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               title,
-              style: const TextStyle(
-                color: AppColorsDark.textPrimary,
+              style: TextStyle(
+                color: context.textPrimary,
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
               ),
@@ -610,8 +603,8 @@ class GlassEmptyState extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 subtitle!,
-                style: const TextStyle(
-                  color: AppColorsDark.textMuted,
+                style: TextStyle(
+                  color: context.textMuted,
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
@@ -642,12 +635,15 @@ class GlassProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
     return ClipRRect(
       borderRadius: BorderRadius.circular(100),
       child: LinearProgressIndicator(
         value: value.clamp(0.0, 1.0),
         minHeight: height,
-        backgroundColor: Colors.white.withValues(alpha: 0.08),
+        backgroundColor: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.08),
         valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF14B8A6)),
       ),
     );

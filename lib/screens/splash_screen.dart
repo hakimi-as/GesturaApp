@@ -4,8 +4,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/common/aurora_scaffold.dart';
 import 'auth/login_screen.dart';
-import 'main_navigator.dart';  // ← ADD THIS IMPORT
+import 'main_navigator.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,23 +24,22 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _navigateAfterDelay() async {
     await Future.delayed(const Duration(seconds: 3));
-    
+
     if (!mounted) return;
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     // Wait for auth state to be determined
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     if (!mounted) return;
-    
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
-          // ← CHANGED: Navigate to MainNavigator instead of DashboardScreen
-          return authProvider.isLoggedIn 
-              ? const MainNavigator()  // ← THIS HAS THE BOTTOM NAV BAR
+          return authProvider.isLoggedIn
+              ? const MainNavigator()
               : const LoginScreen();
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -53,93 +53,83 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              context.bgPrimary,
-              context.bgSecondary,
-              AppColors.primary.withAlpha(25),
+      backgroundColor: Colors.transparent,
+      body: AuroraScaffold(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo — teal gradient rounded square with sign icon
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 40,
+                      spreadRadius: 6,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.sign_language_rounded,
+                  color: Colors.white,
+                  size: 58,
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: 600.ms)
+                  .scale(begin: const Offset(0.5, 0.5), end: const Offset(1, 1)),
+
+              const SizedBox(height: 30),
+
+              // App Name
+              Text(
+                'Gestura',
+                style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                      color: context.textPrimary,
+                    ),
+              )
+                  .animate()
+                  .fadeIn(delay: 300.ms, duration: 600.ms)
+                  .slideY(begin: 0.3, end: 0),
+
+              const SizedBox(height: 10),
+
+              // Tagline
+              Text(
+                'Breaking Silence, Building Bridges',
+                style: TextStyle(
+                  color: context.textMuted,
+                  fontSize: 14,
+                  letterSpacing: 0.5,
+                ),
+              )
+                  .animate()
+                  .fadeIn(delay: 600.ms, duration: 600.ms),
+
+              const SizedBox(height: 60),
+
+              // Loading indicator — teal ring
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.primary.withValues(alpha: 0.75),
+                  ),
+                ),
+              )
+                  .animate()
+                  .fadeIn(delay: 900.ms, duration: 600.ms),
             ],
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withAlpha(100),
-                    blurRadius: 30,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Text(
-                  '🤟',
-                  style: TextStyle(fontSize: 60),
-                ),
-              ),
-            )
-                .animate()
-                .fadeIn(duration: 600.ms)
-                .scale(begin: const Offset(0.5, 0.5), end: const Offset(1, 1)),
-            
-            const SizedBox(height: 30),
-            
-            // App Name
-            Text(
-              'Gestura',
-              style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1,
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 300.ms, duration: 600.ms)
-                .slideY(begin: 0.3, end: 0),
-            
-            const SizedBox(height: 10),
-            
-            // Tagline
-            Text(
-              'Breaking Silence, Building Bridges',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: context.textSecondary,
-                letterSpacing: 0.5,
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 600.ms, duration: 600.ms),
-            
-            const SizedBox(height: 60),
-            
-            // Loading indicator
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppColors.primary.withAlpha(180),
-                ),
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 900.ms, duration: 600.ms),
-          ],
         ),
       ),
     );

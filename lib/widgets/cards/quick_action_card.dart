@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
+import '../common/glass_ui.dart';
 
 class QuickActionCard extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String title;
   final String subtitle;
   final Gradient gradient;
@@ -23,30 +24,11 @@ class QuickActionCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: context.borderColor,
-            width: 1,
-          ),
-        ),
+        decoration: AppColors.glassCard(),
         child: Row(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: gradient,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: Text(
-                  icon,
-                  style: const TextStyle(fontSize: 24),
-                ),
-              ),
-            ),
+            // Icon container — teal gradient circle
+            TealGradientIcon(icon: icon, size: 48),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -54,22 +36,29 @@ class QuickActionCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: const TextStyle(
+                      color: AppColorsDark.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: context.textMuted,
+                    subtitle.toUpperCase(),
+                    style: const TextStyle(
+                      color: AppColorsDark.textMuted,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: context.textMuted,
+              color: AppColorsDark.textMuted,
             ),
           ],
         ),

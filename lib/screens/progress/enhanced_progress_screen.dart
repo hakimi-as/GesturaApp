@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/badge_model.dart';
-import '../../models/category_model.dart';
+import '../../models/progress_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/badge_provider.dart';
 import '../../providers/progress_provider.dart';
@@ -22,15 +23,19 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final FirestoreService _firestoreService = FirestoreService();
-  
+
   // Category progress data
   List<Map<String, dynamic>> _categoryProgress = [];
   bool _isLoadingCategories = true;
 
+  // Analytics data
+  List<int> _weeklyXP = List.filled(7, 0);
+  bool _isLoadingAnalytics = true;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
   }
 
@@ -47,9 +52,23 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
           .loadUserBadges(authProvider.userId!);
       await Provider.of<ProgressProvider>(context, listen: false)
           .loadUserProgress(authProvider.userId!);
-      
-      // Load category progress
+
       await _loadCategoryProgress(authProvider.userId!);
+      await _loadAnalytics(authProvider.userId!);
+    }
+  }
+
+  Future<void> _loadAnalytics(String userId) async {
+    try {
+      final xp = await _firestoreService.getWeeklyXP(userId);
+      if (mounted) {
+        setState(() {
+          _weeklyXP = xp;
+          _isLoadingAnalytics = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingAnalytics = false);
     }
   }
 
@@ -122,7 +141,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -136,6 +155,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                   _buildOverviewTab(),
                   _buildActivityTab(),
                   _buildAchievementsTab(),
+                  _buildAnalyticsTab(),
                 ],
               ),
             ),
@@ -171,7 +191,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
           const Text('📊', style: TextStyle(fontSize: 24)),
           const SizedBox(width: 8),
           Text(
-            'Progress',
+            AppLocalizations.of(context).progressTitle,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -260,10 +280,10 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
               // Quick Stats
               Row(
                 children: [
-                  _buildQuickStat('🔥', '${user?.currentStreak ?? 0}', 'Day Streak'),
-                  _buildQuickStat('⭐', _formatNumber(user?.totalXP ?? 0), 'Total XP'),
-                  _buildQuickStat('🤟', '${user?.signsLearned ?? 0}', 'Signs'),
-                  _buildQuickStat('🏆', '${user?.totalBadges ?? 0}', 'Badges'),
+                  _buildQuickStat('🔥', '${user?.currentStreak ?? 0}', AppLocalizations.of(context).dayStreakLabel),
+                  _buildQuickStat('⭐', _formatNumber(user?.totalXP ?? 0), AppLocalizations.of(context).totalXP),
+                  _buildQuickStat('🤟', '${user?.signsLearned ?? 0}', AppLocalizations.of(context).signsLabel),
+                  _buildQuickStat('🏆', '${user?.totalBadges ?? 0}', AppLocalizations.of(context).badgesLabel),
                 ],
               ),
             ],
@@ -318,10 +338,11 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
         unselectedLabelColor: context.textMuted,
         labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         dividerColor: Colors.transparent,
-        tabs: const [
-          Tab(text: 'Overview'),
-          Tab(text: 'Activity'),
-          Tab(text: 'Achievements'),
+        tabs: [
+          Tab(text: AppLocalizations.of(context).overviewTabLabel),
+          Tab(text: AppLocalizations.of(context).activityTab),
+          Tab(text: AppLocalizations.of(context).achievementsTab),
+          Tab(text: AppLocalizations.of(context).analyticsTab),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms);
@@ -348,7 +369,8 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
     return Consumer2<AuthProvider, ProgressProvider>(
       builder: (context, authProvider, progressProvider, child) {
         // Get real weekly data from ProgressProvider
-        final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        final l10n = AppLocalizations.of(context);
+        final weekDays = [l10n.monDay, l10n.tueDay, l10n.wedDay, l10n.thuDay, l10n.friDay, l10n.satDay, l10n.sunDay];
         final weekData = progressProvider.getWeeklyLessonsCount();
         final maxValue = weekData.reduce((a, b) => a > b ? a : b).clamp(1, 100);
 
@@ -360,7 +382,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                 const Text('📈', style: TextStyle(fontSize: 20)),
                 const SizedBox(width: 8),
                 Text(
-                  'This Week',
+                  AppLocalizations.of(context).thisWeek,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -443,9 +465,9 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildChartStat('Total', '${progressProvider.weeklyTotal}', 'lessons'),
-                      _buildChartStat('Average', progressProvider.weeklyAverage.toStringAsFixed(1), 'per day'),
-                      _buildChartStat('Best', '${progressProvider.weeklyBest}', 'lessons'),
+                      _buildChartStat(AppLocalizations.of(context).totalLabel, '${progressProvider.weeklyTotal}', AppLocalizations.of(context).lessonsLabel),
+                      _buildChartStat(AppLocalizations.of(context).averageLabel, progressProvider.weeklyAverage.toStringAsFixed(1), AppLocalizations.of(context).perDayLabel),
+                      _buildChartStat(AppLocalizations.of(context).bestLabel, '${progressProvider.weeklyBest}', AppLocalizations.of(context).lessonsLabel),
                     ],
                   ),
                 ],
@@ -505,7 +527,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
             const Text('🔥', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Streak Calendar',
+              AppLocalizations.of(context).streakCalendarLabel,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -667,7 +689,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
               const Text('📚', style: TextStyle(fontSize: 40)),
               const SizedBox(height: 12),
               Text(
-                'No categories yet',
+                AppLocalizations.of(context).noCategoriesYet,
                 style: TextStyle(color: context.textMuted),
               ),
             ],
@@ -684,7 +706,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
             const Text('📚', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Category Progress',
+              AppLocalizations.of(context).categoryProgressLabel,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -793,8 +815,8 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
         if (activities.isEmpty) {
           return _buildEmptyState(
             '📭',
-            'No activity yet',
-            'Start learning to see your progress here!',
+            AppLocalizations.of(context).noActivityYet,
+            AppLocalizations.of(context).startLearningProgress,
           );
         }
 
@@ -814,7 +836,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
 
   Widget _buildActivityItem(dynamic activity) {
     final isCompleted = activity.isCompleted;
-    final title = activity.displayTitle.isNotEmpty ? activity.displayTitle : 'Lesson';
+    final title = activity.displayTitle.isNotEmpty ? activity.displayTitle : AppLocalizations.of(context).lessonLabel;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -911,7 +933,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                       const Text('🏆', style: TextStyle(fontSize: 20)),
                       const SizedBox(width: 8),
                       Text(
-                        'Your Badges',
+                        AppLocalizations.of(context).yourBadges,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -925,7 +947,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                         MaterialPageRoute(builder: (_) => const BadgesScreen()),
                       );
                     },
-                    child: const Text('View All'),
+                    child: Text(AppLocalizations.of(context).viewAll),
                   ),
                 ],
               ),
@@ -934,8 +956,8 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
               if (unlockedBadges.isEmpty)
                 _buildEmptyState(
                   '🔒',
-                  'No badges yet',
-                  'Complete lessons and quizzes to earn badges!',
+                  AppLocalizations.of(context).noBadgesYet,
+                  AppLocalizations.of(context).earnBadgesPrompt,
                 )
               else
                 _buildBadgesGrid(unlockedBadges),
@@ -965,7 +987,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Badge Collection',
+                    AppLocalizations.of(context).badgeCollection,
                     style: TextStyle(
                       color: context.textMuted,
                       fontSize: 12,
@@ -1004,10 +1026,10 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildTierStat('Bronze', stats['bronze'] ?? 0, const Color(0xFFCD7F32)),
-              _buildTierStat('Silver', stats['silver'] ?? 0, const Color(0xFFC0C0C0)),
-              _buildTierStat('Gold', stats['gold'] ?? 0, const Color(0xFFFFD700)),
-              _buildTierStat('Platinum', stats['platinum'] ?? 0, const Color(0xFF00D9FF)),
+              _buildTierStat(AppLocalizations.of(context).bronzeTier, stats['bronze'] ?? 0, const Color(0xFFCD7F32)),
+              _buildTierStat(AppLocalizations.of(context).silverTier, stats['silver'] ?? 0, const Color(0xFFC0C0C0)),
+              _buildTierStat(AppLocalizations.of(context).goldTier, stats['gold'] ?? 0, const Color(0xFFFFD700)),
+              _buildTierStat(AppLocalizations.of(context).platinumTier, stats['platinum'] ?? 0, const Color(0xFF00D9FF)),
             ],
           ),
         ],
@@ -1098,6 +1120,468 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
     );
   }
 
+  // ── ANALYTICS TAB ───────────────────────────────────────────────────────────
+
+  Widget _buildAnalyticsTab() {
+    if (_isLoadingAnalytics) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+    return Consumer2<AuthProvider, ProgressProvider>(
+      builder: (context, authProvider, progressProvider, _) {
+        final user = authProvider.currentUser;
+        final allProgress = progressProvider.progressList;
+        final quizEntries = allProgress.where((p) => p.type == 'quiz' && p.isCompleted).toList();
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildXPTrendCard(),
+              const SizedBox(height: 24),
+              _buildQuizPerformanceCard(quizEntries),
+              const SizedBox(height: 24),
+              _buildInsightsCard(user, allProgress, quizEntries),
+              const SizedBox(height: 100),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildXPTrendCard() {
+    final l10n = AppLocalizations.of(context);
+    final days = [l10n.monDay, l10n.tueDay, l10n.wedDay, l10n.thuDay, l10n.friDay, l10n.satDay, l10n.sunDay];
+    // _weeklyXP index 0 = 6 days ago, index 6 = today
+    // Map to Mon-Sun order based on current weekday
+    final now = DateTime.now();
+    final todayIndex = now.weekday - 1; // Mon=0 ... Sun=6
+
+    // Build a Mon-Sun array from our rolling 7-day window
+    final monSunXP = List.filled(7, 0);
+    for (int i = 0; i < 7; i++) {
+      // i=0 → 6 days ago, i=6 → today
+      final dayOfWeek = (now.weekday - 1 - (6 - i)) % 7;
+      final correctedDay = dayOfWeek < 0 ? dayOfWeek + 7 : dayOfWeek;
+      monSunXP[correctedDay] = _weeklyXP[i];
+    }
+
+    final maxXP = monSunXP.reduce((a, b) => a > b ? a : b).clamp(1, 9999);
+    final totalXP = _weeklyXP.reduce((a, b) => a + b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('⚡', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Text(
+              AppLocalizations.of(context).xpThisWeek,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: context.bgCard,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: context.borderColor),
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 160,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(7, (i) {
+                    final xp = monSunXP[i];
+                    final barHeight = maxXP > 0 ? (xp / maxXP) * 100.0 : 0.0;
+                    final isToday = i == todayIndex;
+                    return SizedBox(
+                      width: 36,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (xp > 0)
+                            Text(
+                              _formatNumber(xp),
+                              style: TextStyle(
+                                color: isToday ? AppColors.primary : context.textMuted,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          const SizedBox(height: 4),
+                          AnimatedContainer(
+                            duration: Duration(milliseconds: 500 + i * 80),
+                            width: 32,
+                            height: barHeight.clamp(8.0, 100.0),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: isToday
+                                    ? [const Color(0xFFF59E0B), const Color(0xFFEF4444)]
+                                    : xp > 0
+                                        ? [const Color(0xFF6366F1).withAlpha(150), const Color(0xFF6366F1)]
+                                        : [context.bgElevated, context.bgElevated],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              border: xp == 0
+                                  ? Border.all(color: context.borderColor)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            days[i],
+                            style: TextStyle(
+                              color: isToday ? AppColors.primary : context.textMuted,
+                              fontSize: 11,
+                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildChartStat(AppLocalizations.of(context).totalLabel, _formatNumber(totalXP), AppLocalizations.of(context).xpLabel),
+                  _buildChartStat(
+                    AppLocalizations.of(context).dailyAvgLabel,
+                    _formatNumber((totalXP / 7).round()),
+                    AppLocalizations.of(context).xpLabel,
+                  ),
+                  _buildChartStat(
+                    AppLocalizations.of(context).bestDayLabel,
+                    _formatNumber(monSunXP.reduce((a, b) => a > b ? a : b)),
+                    AppLocalizations.of(context).xpLabel,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    ).animate().fadeIn(delay: 300.ms);
+  }
+
+  Widget _buildQuizPerformanceCard(List<LearningProgressModel> quizEntries) {
+    // Group by quizType
+    final Map<String, List<double>> accuracyByType = {};
+    for (final q in quizEntries) {
+      final type = q.quizType ?? 'unknown';
+      accuracyByType.putIfAbsent(type, () => []).add(q.accuracy);
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final quizTypeInfo = {
+      'sign_to_text': (l10n.signToTextTab, '🤟', const Color(0xFF6366F1)),
+      'text_to_sign': (l10n.textToSignTab, '📝', const Color(0xFF10B981)),
+      'spelling': (l10n.spellingQuizType, '🔤', const Color(0xFFF59E0B)),
+      'timed': (l10n.timedQuizType, '⏱️', const Color(0xFFEF4444)),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('🎯', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Text(
+              AppLocalizations.of(context).quizPerformanceLabel,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (quizEntries.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: context.bgCard,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.borderColor),
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  const Text('🎮', style: TextStyle(fontSize: 40)),
+                  const SizedBox(height: 12),
+                  Text(
+                    AppLocalizations.of(context).noQuizzesYetAnalytics,
+                    style: TextStyle(color: context.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: context.bgCard,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.borderColor),
+            ),
+            child: Column(
+              children: quizTypeInfo.entries.map((entry) {
+                final type = entry.key;
+                final label = entry.value.$1;
+                final emoji = entry.value.$2;
+                final color = entry.value.$3;
+                final entries = accuracyByType[type] ?? [];
+                final count = entries.length;
+                final avgAcc = count > 0
+                    ? entries.reduce((a, b) => a + b) / count
+                    : 0.0;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: color.withAlpha(30),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text(emoji, style: const TextStyle(fontSize: 18)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  label,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      count > 0
+                                          ? '${avgAcc.toInt()}%'
+                                          : '—',
+                                      style: TextStyle(
+                                        color: count > 0 ? color : context.textMuted,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      count > 0 ? '$count quiz${count == 1 ? '' : 'zes'}' : AppLocalizations.of(context).notPlayed,
+                                      style: TextStyle(
+                                        color: context.textMuted,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: count > 0 ? avgAcc / 100.0 : 0.0,
+                                minHeight: 6,
+                                backgroundColor: context.bgElevated,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  count > 0 ? color : context.borderColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+      ],
+    ).animate().fadeIn(delay: 400.ms);
+  }
+
+  Widget _buildInsightsCard(dynamic user, List<LearningProgressModel> allProgress,
+      List<LearningProgressModel> quizEntries) {
+    final now = DateTime.now();
+
+    // Sessions this month (lessons + quizzes)
+    final sessionsThisMonth = allProgress.where((p) {
+      if (!p.isCompleted) return false;
+      final date = p.completedAt;
+      if (date == null) return false;
+      return date.year == now.year && date.month == now.month;
+    }).length;
+
+    // Active days this month
+    final activeDays = <int>{};
+    for (final p in allProgress) {
+      if (!p.isCompleted) continue;
+      final date = p.completedAt;
+      if (date == null) continue;
+      if (date.year == now.year && date.month == now.month) {
+        activeDays.add(date.day);
+      }
+    }
+    final avgPerActiveDay = activeDays.isEmpty
+        ? 0.0
+        : sessionsThisMonth / activeDays.length;
+
+    // Best day of week (most sessions)
+    final dayCount = List.filled(7, 0);
+    for (final p in allProgress) {
+      if (!p.isCompleted) continue;
+      final date = p.completedAt;
+      if (date == null) continue;
+      dayCount[date.weekday - 1]++;
+    }
+    final bestDayIndex = dayCount.indexWhere(
+        (v) => v == dayCount.reduce((a, b) => a > b ? a : b));
+    final _l10n = AppLocalizations.of(context);
+    final dayNames = [_l10n.monDay, _l10n.tueDay, _l10n.wedDay, _l10n.thuDay, _l10n.friDay, _l10n.satDay, _l10n.sunDay];
+    final bestDay = dayCount.every((v) => v == 0) ? '—' : dayNames[bestDayIndex];
+
+    // Total quizzes & overall accuracy
+    final totalQuizzes = quizEntries.length;
+    final overallAccuracy = totalQuizzes > 0
+        ? quizEntries.map((q) => q.accuracy).reduce((a, b) => a + b) / totalQuizzes
+        : 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('💡', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 8),
+            Text(
+              AppLocalizations.of(context).learningInsights,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.5,
+          children: [
+            _buildInsightTile(
+              '📅',
+              '$sessionsThisMonth',
+              AppLocalizations.of(context).sessionsThisMonth,
+              const Color(0xFF6366F1),
+            ),
+            _buildInsightTile(
+              '📊',
+              avgPerActiveDay.toStringAsFixed(1),
+              AppLocalizations.of(context).avgPerActiveDay,
+              const Color(0xFF10B981),
+            ),
+            _buildInsightTile(
+              '🗓️',
+              bestDay,
+              AppLocalizations.of(context).mostActiveDayLabel,
+              const Color(0xFFF59E0B),
+            ),
+            _buildInsightTile(
+              '🎯',
+              totalQuizzes > 0 ? '${overallAccuracy.toInt()}%' : '—',
+              AppLocalizations.of(context).overallAccuracyLabel,
+              const Color(0xFFEF4444),
+            ),
+            _buildInsightTile(
+              '🔥',
+              '${user?.longestStreak ?? 0}',
+              AppLocalizations.of(context).longestStreakLabel,
+              const Color(0xFFEC4899),
+            ),
+            _buildInsightTile(
+              '🏅',
+              '$totalQuizzes',
+              AppLocalizations.of(context).totalQuizzesLabel,
+              const Color(0xFF8B5CF6),
+            ),
+          ],
+        ),
+      ],
+    ).animate().fadeIn(delay: 500.ms);
+  }
+
+  Widget _buildInsightTile(
+      String emoji, String value, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 22)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  color: context.textMuted,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyState(String emoji, String title, String subtitle) {
     return Center(
       child: Padding(
@@ -1136,27 +1620,29 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
   }
 
   String _getCurrentMonthName() {
+    final l10n = AppLocalizations.of(context);
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      l10n.monthJanuary, l10n.monthFebruary, l10n.monthMarch, l10n.monthApril, l10n.monthMay, l10n.monthJune,
+      l10n.monthJuly, l10n.monthAugust, l10n.monthSeptember, l10n.monthOctober, l10n.monthNovember, l10n.monthDecember,
     ];
     return '${months[DateTime.now().month - 1]} ${DateTime.now().year}';
   }
 
   String _formatTimeAgo(DateTime date) {
+    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inMinutes < 1) {
-      return 'Just now';
+      return l10n.justNow;
     } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} min ago';
+      return '${difference.inMinutes} ${l10n.minAgo}';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours} hours ago';
+      return '${difference.inHours} ${l10n.hoursAgo}';
     } else if (difference.inDays == 1) {
-      return 'Yesterday';
+      return l10n.yesterday;
     } else {
-      return '${difference.inDays} days ago';
+      return '${difference.inDays} ${l10n.daysAgoLabel}';
     }
   }
 }

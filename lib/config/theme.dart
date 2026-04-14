@@ -391,6 +391,52 @@ class AppTheme {
   }
 }
 
+// ============ GLASS CARD DECORATION EXTENSION ============
+extension GlassDecoration on BuildContext {
+  BoxDecoration glassCardDecoration({bool alternate = false}) {
+    final borderRadius = alternate
+        ? const BorderRadius.only(
+            topLeft:     Radius.circular(4),
+            topRight:    Radius.circular(16),
+            bottomLeft:  Radius.circular(16),
+            bottomRight: Radius.circular(4),
+          )
+        : const BorderRadius.only(
+            topLeft:     Radius.circular(20),
+            topRight:    Radius.circular(6),
+            bottomLeft:  Radius.circular(6),
+            bottomRight: Radius.circular(20),
+          );
+
+    if (Theme.of(this).brightness == Brightness.dark) {
+      return BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: borderRadius,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF14B8A6).withValues(alpha: 0.08),
+            blurRadius: 24,
+          ),
+        ],
+      );
+    } else {
+      return BoxDecoration(
+        color: AppColorsLight.bgCard,
+        borderRadius: borderRadius,
+        border: Border.all(color: AppColorsLight.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0D9488).withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      );
+    }
+  }
+}
+
 // ============ THEME EXTENSION FOR EASY ACCESS ============
 extension ThemeColors on BuildContext {
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;

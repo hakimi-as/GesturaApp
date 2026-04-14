@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/notification_service.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
@@ -79,7 +80,7 @@ class _NotificationSettingsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: _isLoading
             ? const Center(
@@ -138,7 +139,7 @@ class _NotificationSettingsScreenState
           const Text('🔔', style: TextStyle(fontSize: 24)),
           const SizedBox(width: 8),
           Text(
-            'Notifications',
+            AppLocalizations.of(context).notifications,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -191,7 +192,7 @@ class _NotificationSettingsScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Push Notifications',
+                  AppLocalizations.of(context).pushNotifications,
                   style: TextStyle(
                     color: isEnabled ? Colors.white : context.textPrimary,
                     fontSize: 18,
@@ -201,8 +202,8 @@ class _NotificationSettingsScreenState
                 const SizedBox(height: 4),
                 Text(
                   isEnabled
-                      ? 'You\'ll receive important updates'
-                      : 'Notifications are disabled',
+                      ? AppLocalizations.of(context).receiveImportantUpdates
+                      : AppLocalizations.of(context).notificationsDisabled,
                   style: TextStyle(
                     color: isEnabled
                         ? Colors.white.withAlpha(180)
@@ -235,7 +236,7 @@ class _NotificationSettingsScreenState
             const Text('⚙️', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Notification Types',
+              AppLocalizations.of(context).notificationTypes,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -253,32 +254,32 @@ class _NotificationSettingsScreenState
             children: [
               _buildNotificationTile(
                 icon: '🔥',
-                title: 'Streak Reminders',
-                subtitle: 'Don\'t lose your learning streak',
+                title: AppLocalizations.of(context).streakReminders,
+                subtitle: AppLocalizations.of(context).dontLoseStreak,
                 settingKey: 'streak_reminder',
                 enabled: isEnabled,
               ),
               _buildDivider(),
               _buildNotificationTile(
                 icon: '🎯',
-                title: 'Daily Goals',
-                subtitle: 'Reminders to complete your goals',
+                title: AppLocalizations.of(context).dailyGoalsNotif,
+                subtitle: AppLocalizations.of(context).remindersToComplete,
                 settingKey: 'daily_goals',
                 enabled: isEnabled,
               ),
               _buildDivider(),
               _buildNotificationTile(
                 icon: '🏆',
-                title: 'Achievements',
-                subtitle: 'When you unlock new badges',
+                title: AppLocalizations.of(context).achievementsNotif,
+                subtitle: AppLocalizations.of(context).whenUnlockBadges,
                 settingKey: 'achievements',
                 enabled: isEnabled,
               ),
               _buildDivider(),
               _buildNotificationTile(
                 icon: '🎯',
-                title: 'Challenges',
-                subtitle: 'New challenges and completions',
+                title: AppLocalizations.of(context).challengesNotif,
+                subtitle: AppLocalizations.of(context).newChallengesCompletions,
                 settingKey: 'challenges',
                 enabled: isEnabled,
               ),
@@ -378,7 +379,7 @@ class _NotificationSettingsScreenState
             const Text('⏰', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Daily Reminder Time',
+              AppLocalizations.of(context).dailyReminderTime,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -419,7 +420,7 @@ class _NotificationSettingsScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Reminder Time',
+                        AppLocalizations.of(context).reminderTime,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
@@ -429,7 +430,7 @@ class _NotificationSettingsScreenState
                         ),
                       ),
                       Text(
-                        'When to send daily reminders',
+                        AppLocalizations.of(context).whenToSendReminders,
                         style: TextStyle(
                           fontSize: 12,
                           color: isEnabled
@@ -476,7 +477,7 @@ class _NotificationSettingsScreenState
             const Text('🧪', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Text(
-              'Test Notifications',
+              AppLocalizations.of(context).testNotifications,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -494,8 +495,8 @@ class _NotificationSettingsScreenState
               );
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Test notification sent!'),
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context).testNotificationSent),
                     backgroundColor: AppColors.success,
                   ),
                 );
@@ -511,14 +512,14 @@ class _NotificationSettingsScreenState
               ),
               elevation: 0,
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.send, size: 20),
-                SizedBox(width: 10),
+                const Icon(Icons.send, size: 20),
+                const SizedBox(width: 10),
                 Text(
-                  'Send Test Notification',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                  AppLocalizations.of(context).sendTestNotification,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ],
             ),

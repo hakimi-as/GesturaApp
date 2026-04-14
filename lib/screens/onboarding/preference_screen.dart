@@ -3,6 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
+import '../../widgets/common/aurora_scaffold.dart';
+import '../../widgets/common/glass_ui.dart';
 import '../auth/register_screen.dart';
 
 class PreferenceScreen extends StatefulWidget {
@@ -17,23 +20,11 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
   String? _selectedGoal;
   String? _selectedExperience;
 
-  final List<Map<String, String>> _languages = [
-    {'code': 'ASL', 'name': 'American Sign Language', 'emoji': '🇺🇸'},
-    {'code': 'BSL', 'name': 'British Sign Language', 'emoji': '🇬🇧'},
-    {'code': 'MSL', 'name': 'Malaysian Sign Language', 'emoji': '🇲🇾'},
-    {'code': 'ISL', 'name': 'International Sign', 'emoji': '🌍'},
-  ];
-
-  final List<Map<String, String>> _goals = [
-    {'id': 'casual', 'name': 'Casual Learning', 'emoji': '🎯', 'desc': '5-10 min/day'},
-    {'id': 'regular', 'name': 'Regular Practice', 'emoji': '📚', 'desc': '15-20 min/day'},
-    {'id': 'intensive', 'name': 'Intensive Study', 'emoji': '🚀', 'desc': '30+ min/day'},
-  ];
-
-  final List<Map<String, String>> _experiences = [
-    {'id': 'beginner', 'name': 'Complete Beginner', 'emoji': '🌱'},
-    {'id': 'some', 'name': 'Know Some Signs', 'emoji': '🌿'},
-    {'id': 'intermediate', 'name': 'Intermediate', 'emoji': '🌳'},
+  final List<Map<String, dynamic>> _languages = [
+    {'code': 'ASL', 'name': 'American Sign Language', 'icon': Icons.flag_rounded},
+    {'code': 'BSL', 'name': 'British Sign Language', 'icon': Icons.flag_rounded},
+    {'code': 'MSL', 'name': 'Malaysian Sign Language', 'icon': Icons.flag_rounded},
+    {'code': 'ISL', 'name': 'International Sign', 'icon': Icons.public_rounded},
   ];
 
   bool get _canContinue =>
@@ -55,117 +46,104 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    final goals = [
+      {'id': 'casual', 'name': l10n.casualLearning, 'icon': Icons.self_improvement_rounded, 'desc': '5-10 min/day'},
+      {'id': 'regular', 'name': l10n.regularPractice, 'icon': Icons.menu_book_rounded, 'desc': '15-20 min/day'},
+      {'id': 'intensive', 'name': l10n.intensiveStudy, 'icon': Icons.rocket_launch_rounded, 'desc': '30+ min/day'},
+    ];
+
+    final experiences = [
+      {'id': 'beginner', 'name': l10n.completeBeginner, 'icon': Icons.eco_rounded},
+      {'id': 'some', 'name': l10n.knowSomeSigns, 'icon': Icons.spa_rounded},
+      {'id': 'intermediate', 'name': l10n.intermediate, 'icon': Icons.park_rounded},
+    ];
+
     return Scaffold(
-      backgroundColor: context.bgPrimary,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: context.bgCard,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.borderColor),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back,
-                        color: context.textSecondary,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text('⚙️', style: TextStyle(fontSize: 24)),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Preferences',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 500.ms),
-
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: Colors.transparent,
+      body: AuroraScaffold(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
                   children: [
-                    // Sign Language Selection
-                    _buildSectionTitle('🌐', 'Choose Your Sign Language'),
-                    const SizedBox(height: 12),
-                    _buildLanguageSelector(),
-                    const SizedBox(height: 28),
-
-                    // Learning Goal Selection
-                    _buildSectionTitle('🎯', 'Daily Learning Goal'),
-                    const SizedBox(height: 12),
-                    _buildGoalSelector(),
-                    const SizedBox(height: 28),
-
-                    // Experience Level
-                    _buildSectionTitle('📊', 'Your Experience Level'),
-                    const SizedBox(height: 12),
-                    _buildExperienceSelector(),
-                    const SizedBox(height: 40),
+                    GlassIconButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      iconColor: AppColors.primary,
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 12),
+                    const TealGradientIcon(icon: Icons.tune_rounded, size: 36),
+                    const SizedBox(width: 10),
+                    Text(
+                      l10n.preferencesTitle,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
+                    ),
                   ],
                 ),
-              ),
-            ),
+              ).animate().fadeIn(duration: 500.ms),
 
-            // Continue Button
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _canContinue ? _savePreferences : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _canContinue ? AppColors.primary : context.bgElevated,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    disabledBackgroundColor: context.bgElevated,
-                    disabledForegroundColor: context.textMuted,
-                  ),
-                  child: Text(
-                    _canContinue ? 'Continue' : 'Select All Options',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Sign Language Selection
+                      _buildSectionTitle(Icons.language_rounded, l10n.chooseSignLanguage),
+                      const SizedBox(height: 12),
+                      _buildLanguageSelector(),
+                      const SizedBox(height: 28),
+
+                      // Learning Goal Selection
+                      _buildSectionTitle(Icons.track_changes_rounded, l10n.dailyLearningGoal),
+                      const SizedBox(height: 12),
+                      _buildGoalSelector(goals),
+                      const SizedBox(height: 28),
+
+                      // Experience Level
+                      _buildSectionTitle(Icons.bar_chart_rounded, l10n.experienceLevel),
+                      const SizedBox(height: 12),
+                      _buildExperienceSelector(experiences),
+                      const SizedBox(height: 40),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+
+              // Continue Button
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: GlassPrimaryButton(
+                  label: _canContinue ? l10n.continueLabel : l10n.selectAllOptions,
+                  onPressed: _canContinue ? _savePreferences : null,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String emoji, String title) {
+  Widget _buildSectionTitle(IconData icon, String title) {
     return Row(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
+        Icon(icon, size: 18, color: AppColors.primary),
         const SizedBox(width: 8),
         Text(
           title,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: context.textPrimary,
               ),
         ),
       ],
@@ -177,29 +155,47 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
       children: _languages.map((lang) {
         final isSelected = _selectedLanguage == lang['code'];
         return GestureDetector(
-          onTap: () => setState(() => _selectedLanguage = lang['code']),
+          onTap: () => setState(() => _selectedLanguage = lang['code'] as String),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withAlpha(20) : context.bgCard,
-              borderRadius: BorderRadius.circular(16),
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.04),
+              borderRadius: kGlassRadius,
               border: Border.all(
-                color: isSelected ? AppColors.primary : context.borderColor,
-                width: isSelected ? 2 : 1,
+                color: isSelected
+                    ? AppColors.primary
+                    : Colors.white.withValues(alpha: 0.10),
+                width: isSelected ? 1.5 : 1,
               ),
             ),
             child: Row(
               children: [
-                Text(lang['emoji']!, style: const TextStyle(fontSize: 28)),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary.withValues(alpha: 0.18)
+                        : Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    lang['icon'] as IconData,
+                    color: isSelected ? AppColors.primary : context.textMuted,
+                    size: 22,
+                  ),
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        lang['code']!,
+                        lang['code'] as String,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -207,7 +203,7 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
                         ),
                       ),
                       Text(
-                        lang['name']!,
+                        lang['name'] as String,
                         style: TextStyle(
                           color: context.textMuted,
                           fontSize: 13,
@@ -221,13 +217,13 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
                     width: 24,
                     height: 24,
                     decoration: const BoxDecoration(
-                      color: AppColors.primary,
+                      gradient: AppColors.primaryGradient,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
-                      Icons.check,
+                      Icons.check_rounded,
                       color: Colors.white,
-                      size: 16,
+                      size: 15,
                     ),
                   ),
               ],
@@ -238,43 +234,61 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
     ).animate().fadeIn(delay: 100.ms);
   }
 
-  Widget _buildGoalSelector() {
+  Widget _buildGoalSelector(List<Map<String, dynamic>> goals) {
     return Row(
-      children: _goals.map((goal) {
+      children: goals.map((goal) {
         final isSelected = _selectedGoal == goal['id'];
         return Expanded(
           child: GestureDetector(
-            onTap: () => setState(() => _selectedGoal = goal['id']),
+            onTap: () => setState(() => _selectedGoal = goal['id'] as String),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: EdgeInsets.only(
-                right: goal != _goals.last ? 10 : 0,
+                right: goal != goals.last ? 10 : 0,
               ),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary.withAlpha(20) : context.bgCard,
-                borderRadius: BorderRadius.circular(16),
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.12)
+                    : Colors.white.withValues(alpha: 0.04),
+                borderRadius: kGlassRadius,
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : context.borderColor,
-                  width: isSelected ? 2 : 1,
+                  color: isSelected
+                      ? AppColors.primary
+                      : Colors.white.withValues(alpha: 0.10),
+                  width: isSelected ? 1.5 : 1,
                 ),
               ),
               child: Column(
                 children: [
-                  Text(goal['emoji']!, style: const TextStyle(fontSize: 28)),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary.withValues(alpha: 0.18)
+                          : Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      goal['icon'] as IconData,
+                      color: isSelected ? AppColors.primary : context.textMuted,
+                      size: 22,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
-                    goal['name']!,
+                    goal['name'] as String,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 11,
                       color: isSelected ? AppColors.primary : context.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    goal['desc']!,
+                    goal['desc'] as String,
                     style: TextStyle(
                       color: context.textMuted,
                       fontSize: 10,
@@ -289,31 +303,49 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
     ).animate().fadeIn(delay: 200.ms);
   }
 
-  Widget _buildExperienceSelector() {
+  Widget _buildExperienceSelector(List<Map<String, dynamic>> experiences) {
     return Column(
-      children: _experiences.map((exp) {
+      children: experiences.map((exp) {
         final isSelected = _selectedExperience == exp['id'];
         return GestureDetector(
-          onTap: () => setState(() => _selectedExperience = exp['id']),
+          onTap: () => setState(() => _selectedExperience = exp['id'] as String),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withAlpha(20) : context.bgCard,
-              borderRadius: BorderRadius.circular(16),
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.04),
+              borderRadius: kGlassRadius,
               border: Border.all(
-                color: isSelected ? AppColors.primary : context.borderColor,
-                width: isSelected ? 2 : 1,
+                color: isSelected
+                    ? AppColors.primary
+                    : Colors.white.withValues(alpha: 0.10),
+                width: isSelected ? 1.5 : 1,
               ),
             ),
             child: Row(
               children: [
-                Text(exp['emoji']!, style: const TextStyle(fontSize: 28)),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary.withValues(alpha: 0.18)
+                        : Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    exp['icon'] as IconData,
+                    color: isSelected ? AppColors.primary : context.textMuted,
+                    size: 22,
+                  ),
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    exp['name']!,
+                    exp['name'] as String,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
@@ -326,13 +358,13 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
                     width: 24,
                     height: 24,
                     decoration: const BoxDecoration(
-                      color: AppColors.primary,
+                      gradient: AppColors.primaryGradient,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
-                      Icons.check,
+                      Icons.check_rounded,
                       color: Colors.white,
-                      size: 16,
+                      size: 15,
                     ),
                   ),
               ],

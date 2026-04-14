@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../config/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
 import 'friend_profile_screen.dart';
@@ -40,7 +41,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
   Future<void> _searchByCode([String? code]) async {
     final searchCode = code ?? _codeController.text.trim();
     if (searchCode.isEmpty) {
-      setState(() => _error = 'Please enter a friend code');
+      setState(() => _error = AppLocalizations.of(context).pleaseEnterFriendCode);
       return;
     }
 
@@ -58,7 +59,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
       if (!userDoc.exists) {
         if (mounted) {
           setState(() {
-            _error = 'User not found. Check the code and try again.';
+            _error = AppLocalizations.of(context).userNotFound;
             _isLoading = false;
           });
         }
@@ -69,7 +70,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
       if (searchCode == authProvider.userId) {
         if (mounted) {
           setState(() {
-            _error = 'You cannot add yourself as a friend!';
+            _error = AppLocalizations.of(context).cannotAddSelf;
             _isLoading = false;
           });
         }
@@ -88,7 +89,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'An error occurred. Please try again.';
+          _error = AppLocalizations.of(context).anErrorOccurred;
           _isLoading = false;
         });
       }
@@ -113,8 +114,8 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
     } else {
       HapticService.error();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Invalid QR code format'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).invalidQrFormat),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -125,7 +126,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: context.bgPrimary,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -134,7 +135,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Add Friend',
+          AppLocalizations.of(context).addFriendTitle,
           style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -162,10 +163,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
               dividerColor: Colors.transparent,
               indicatorSize: TabBarIndicatorSize.tab,
               padding: const EdgeInsets.all(4),
-              tabs: const [
-                Tab(text: 'Scan QR'),
-                Tab(text: 'My QR'),
-                Tab(text: 'Enter Code'),
+              tabs: [
+                Tab(text: AppLocalizations.of(context).scanQrTab),
+                Tab(text: AppLocalizations.of(context).myQrTab),
+                Tab(text: AppLocalizations.of(context).enterCodeTab),
               ],
             ),
           ),
@@ -218,7 +219,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Scan Friend\'s QR Code',
+                        AppLocalizations.of(context).scanFriendQr,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: context.textPrimary,
@@ -226,7 +227,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Point your camera at their QR code to add them',
+                        AppLocalizations.of(context).pointCameraQr,
                         style: TextStyle(
                           color: context.textMuted,
                           fontSize: 12,
@@ -271,16 +272,16 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
         if (_isLoading)
           Container(
             padding: const EdgeInsets.all(20),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                SizedBox(width: 12),
-                Text('Finding user...'),
+                const SizedBox(width: 12),
+                Text(AppLocalizations.of(context).findingUser),
               ],
             ),
           ),
@@ -334,8 +335,8 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'Align QR code within frame',
+                child: Text(
+                  AppLocalizations.of(context).alignQrFrame,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 13,
@@ -476,7 +477,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Let friends scan this code to add you',
+                  AppLocalizations.of(context).letFriendsScan,
                   style: TextStyle(color: context.textMuted),
                 ),
               ],
@@ -507,7 +508,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'My Friend Code',
+                      AppLocalizations.of(context).myFriendCode,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -540,10 +541,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                           Clipboard.setData(ClipboardData(text: userId));
                           HapticService.lightTap();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Friend code copied!'),
+                            SnackBar(
+                              content: Text(AppLocalizations.of(context).friendCodeCopied),
                               behavior: SnackBarBehavior.floating,
-                              duration: Duration(seconds: 1),
+                              duration: const Duration(seconds: 1),
                             ),
                           );
                         },
@@ -607,16 +608,16 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
           const SizedBox(height: 24),
           
           Text(
-            'Enter Friend Code',
+            AppLocalizations.of(context).enterFriendCode,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ).animate().fadeIn(delay: 100.ms),
-          
+
           const SizedBox(height: 8),
-          
+
           Text(
-            'Ask your friend for their code or scan their QR',
+            AppLocalizations.of(context).askFriendCode,
             style: TextStyle(color: context.textMuted),
             textAlign: TextAlign.center,
           ).animate().fadeIn(delay: 150.ms),
@@ -636,7 +637,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                 TextField(
                   controller: _codeController,
                   decoration: InputDecoration(
-                    hintText: 'Paste friend code here',
+                    hintText: AppLocalizations.of(context).pasteFriendCode,
                     hintStyle: TextStyle(color: context.textMuted),
                     prefixIcon: Icon(Icons.tag, color: context.textMuted),
                     suffixIcon: IconButton(
@@ -730,14 +731,14 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
                   else
-                    const Row(
+                    Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.search_rounded, color: Colors.white, size: 20),
-                        SizedBox(width: 10),
+                        const Icon(Icons.search_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 10),
                         Text(
-                          'Find Friend',
-                          style: TextStyle(
+                          AppLocalizations.of(context).findFriend,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -768,7 +769,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                     const Text('💡', style: TextStyle(fontSize: 18)),
                     const SizedBox(width: 8),
                     Text(
-                      'Tips',
+                      AppLocalizations.of(context).tipsLabel,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

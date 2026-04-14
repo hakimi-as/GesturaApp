@@ -4,6 +4,7 @@ import 'package:confetti/confetti.dart';
 
 import '../../config/theme.dart';
 import '../../models/badge_model.dart';
+import '../common/glass_ui.dart';
 
 class BadgeUnlockDialog extends StatefulWidget {
   final BadgeModel badge;
@@ -41,8 +42,7 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
-    
-    // Start confetti after a short delay
+
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _confettiController.play();
     });
@@ -61,145 +61,144 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Main content
-          Container(
-            width: 320,
+          // Main glass content
+          GlassCard(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(28),
+            decorationOverride: AppColors.glassCard().copyWith(
               border: Border.all(
-                color: widget.badge.tierColor.withAlpha(100),
-                width: 2,
+                color: AppColors.primary.withAlpha(80),
+                width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: widget.badge.tierColor.withAlpha(50),
+                  color: AppColors.primary.withAlpha(40),
                   blurRadius: 40,
-                  spreadRadius: 10,
+                  spreadRadius: 8,
                 ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Text(
-                  '🎉 Badge Unlocked!',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: widget.badge.tierColor,
+            child: SizedBox(
+              width: 320,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.workspace_premium_rounded,
+                        color: AppColors.primary,
+                        size: 22,
                       ),
-                ).animate().fadeIn(delay: 200.ms).scale(delay: 200.ms),
-                const SizedBox(height: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Badge Unlocked!',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColorsDark.textPrimary,
+                            ),
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 200.ms).scale(delay: 200.ms),
+                  const SizedBox(height: 24),
 
-                // Badge Icon with animation
-                _buildBadgeIcon(),
-                const SizedBox(height: 20),
+                  // Badge icon with animation
+                  _buildBadgeIcon(),
+                  const SizedBox(height: 20),
 
-                // Tier Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        widget.badge.tierGradientStart,
-                        widget.badge.tierGradientEnd,
+                  // Tier badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          widget.badge.tierGradientStart,
+                          widget.badge.tierGradientEnd,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: widget.badge.tierColor.withAlpha(100),
+                          blurRadius: 10,
+                          spreadRadius: 0,
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: widget.badge.tierColor.withAlpha(100),
-                        blurRadius: 10,
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    widget.badge.tierName.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.5, delay: 600.ms),
-                const SizedBox(height: 20),
-
-                // Badge Name
-                Text(
-                  widget.badge.name,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    child: Text(
+                      widget.badge.tierName.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
                       ),
-                  textAlign: TextAlign.center,
-                ).animate().fadeIn(delay: 800.ms),
-                const SizedBox(height: 8),
+                    ),
+                  ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.5, delay: 600.ms),
+                  const SizedBox(height: 20),
 
-                // Description
-                Text(
-                  widget.badge.description,
-                  style: TextStyle(
-                    color: context.textSecondary,
-                    fontSize: 14,
-                  ),
-                  textAlign: TextAlign.center,
-                ).animate().fadeIn(delay: 900.ms),
-                const SizedBox(height: 20),
-
-                // XP Reward
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withAlpha(26),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.success.withAlpha(50)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('⭐', style: TextStyle(fontSize: 24)),
-                      const SizedBox(width: 10),
-                      Text(
-                        '+${widget.badge.xpReward} XP',
-                        style: const TextStyle(
-                          color: AppColors.success,
-                          fontSize: 20,
+                  // Badge name
+                  Text(
+                    widget.badge.name,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: AppColorsDark.textPrimary,
                         ),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 1000.ms).scale(delay: 1000.ms),
-                const SizedBox(height: 24),
+                    textAlign: TextAlign.center,
+                  ).animate().fadeIn(delay: 800.ms),
+                  const SizedBox(height: 8),
 
-                // Continue Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
+                  // Description
+                  Text(
+                    widget.badge.description,
+                    style: const TextStyle(
+                      color: AppColorsDark.textSecondary,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ).animate().fadeIn(delay: 900.ms),
+                  const SizedBox(height: 20),
+
+                  // XP reward
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withAlpha(26),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.success.withAlpha(50)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          color: AppColors.success,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          '+${widget.badge.xpReward} XP',
+                          style: const TextStyle(
+                            color: AppColors.success,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 1000.ms).scale(delay: 1000.ms),
+                  const SizedBox(height: 24),
+
+                  // Continue button
+                  GlassPrimaryButton(
+                    label: 'Awesome!',
                     onPressed: () {
                       Navigator.of(context).pop();
                       widget.onDismiss?.call();
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: widget.badge.tierColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Text(
-                      'Awesome!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 1200.ms).slideY(begin: 0.3, delay: 1200.ms),
-              ],
+                  ).animate().fadeIn(delay: 1200.ms).slideY(begin: 0.3, delay: 1200.ms),
+                ],
+              ),
             ),
           ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
 
@@ -237,7 +236,7 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: widget.badge.tierColor.withAlpha(50 - (index * 15)),
+                color: AppColors.primary.withAlpha(50 - (index * 15)),
                 width: 2,
               ),
             ),
@@ -269,7 +268,7 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
             ),
             boxShadow: [
               BoxShadow(
-                color: widget.badge.tierColor.withAlpha(150),
+                color: AppColors.primary.withAlpha(150),
                 blurRadius: 30,
                 spreadRadius: 5,
               ),
@@ -277,15 +276,12 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
           ),
           padding: const EdgeInsets.all(5),
           child: Container(
-            decoration: BoxDecoration(
-              color: context.bgCard,
+            decoration: const BoxDecoration(
+              color: Color(0xFF0F2020),
               shape: BoxShape.circle,
             ),
-            child: Center(
-              child: Text(
-                widget.badge.icon,
-                style: const TextStyle(fontSize: 50),
-              ),
+            child: const Center(
+              child: Icon(Icons.emoji_events_rounded, size: 50, color: Colors.white),
             ),
           ),
         )
@@ -319,8 +315,8 @@ class BadgeUnlockSnackBar {
                   colors: [badge.tierGradientStart, badge.tierGradientEnd],
                 ),
               ),
-              child: Center(
-                child: Text(badge.icon, style: const TextStyle(fontSize: 20)),
+              child: const Center(
+                child: Icon(Icons.emoji_events_rounded, size: 20, color: Colors.white),
               ),
             ),
             const SizedBox(width: 12),
@@ -329,12 +325,18 @@ class BadgeUnlockSnackBar {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    '🎉 Badge Unlocked!',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
+                  const Row(
+                    children: [
+                      Icon(Icons.workspace_premium_rounded, size: 14, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        'Badge Unlocked!',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                   Text(
                     badge.name,

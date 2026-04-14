@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config/theme.dart';
 import 'firebase_options.dart';
+import 'l10n/app_localizations.dart';
+import 'providers/locale_provider.dart';
 
 // --- Existing Providers ---
 import 'providers/auth_provider.dart';
@@ -22,12 +25,14 @@ import 'services/offline_service.dart';        // Handles Hive & Caching
 // --- Services ---
 import 'services/notification_service.dart';
 import 'services/haptic_service.dart';
+import 'services/analytics_service.dart';
 
 // --- Screens ---
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/main_navigator.dart';
+import 'widgets/common/aurora_scaffold.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,20 +63,27 @@ void main() async {
   final themeProvider = ThemeProvider();
   await themeProvider.initialize();
 
+  // Initialize locale provider
+  final localeProvider = LocaleProvider();
+  await localeProvider.initialize();
+
   runApp(MyApp(
     hasSeenOnboarding: hasSeenOnboarding,
     themeProvider: themeProvider,
+    localeProvider: localeProvider,
   ));
 }
 
 class MyApp extends StatelessWidget {
   final bool hasSeenOnboarding;
   final ThemeProvider themeProvider;
+  final LocaleProvider localeProvider;
 
   const MyApp({
     super.key,
     required this.hasSeenOnboarding,
     required this.themeProvider,
+    required this.localeProvider,
   });
 
   @override
@@ -90,17 +102,29 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ConnectivityService.instance),
         
         ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: localeProvider),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
+      child: Consumer2<ThemeProvider, LocaleProvider>(
+        builder: (context, themeProvider, localeProvider, child) {
           return MaterialApp(
             title: 'Gestura',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.flutterThemeMode,
-            home: hasSeenOnboarding 
-                ? const SplashScreen()  // Shows splash, then goes to MainNavigator or Login
+            locale: localeProvider.locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            navigatorObservers: [AnalyticsService.observer],
+            builder: (context, child) =>
+                AuroraScaffold(child: child ?? const SizedBox()),
+            home: hasSeenOnboarding
+                ? const SplashScreen()
                 : const OnboardingScreen(),
           );
         },

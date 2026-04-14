@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'dart:math' as math;
-
 import '../../config/theme.dart';
 import '../../services/haptic_service.dart';
 import '../../models/learning_path_model.dart';
 import '../../services/learning_path_service.dart';
+import '../common/glass_ui.dart';
 
 /// Compact learning path card for dashboard - REDESIGNED
 class LearningPathMiniCard extends StatelessWidget {
@@ -35,14 +34,7 @@ class LearningPathMiniCard extends StatelessWidget {
       child: Container(
         width: 180,
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isCompleted
-                ? const Color(0xFF10B981).withAlpha(100)
-                : context.borderColor,
-          ),
+        decoration: AppColors.glassCard().copyWith(
           boxShadow: [
             BoxShadow(
               color: pathColor.withAlpha(20),
@@ -54,7 +46,7 @@ class LearningPathMiniCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Row
+            // Header row
             Row(
               children: [
                 Container(
@@ -64,12 +56,12 @@ class LearningPathMiniCard extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: [pathColor.withAlpha(40), pathColor.withAlpha(20)],
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: kGlassRadius,
                   ),
                   child: Center(
                     child: isCompleted
-                        ? Icon(Icons.check_circle, color: const Color(0xFF10B981), size: 24)
-                        : Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 22)),
+                        ? const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 24)
+                        : Icon(Icons.auto_stories_rounded, color: pathColor, size: 22),
                   ),
                 ),
                 const Spacer(),
@@ -122,15 +114,17 @@ class LearningPathMiniCard extends StatelessWidget {
             // Title
             Text(
               path.name,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: const TextStyle(
+                color: AppColorsDark.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
 
-            // Difficulty Badge
+            // Difficulty badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -162,14 +156,22 @@ class LearningPathMiniCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            // Stats Row
+            // Stats row
             Row(
               children: [
-                Text('📚 ${path.totalLessons}',
-                    style: TextStyle(color: context.textMuted, fontSize: 11)),
+                Icon(Icons.menu_book_rounded, size: 12, color: AppColorsDark.textMuted),
+                const SizedBox(width: 4),
+                Text(
+                  '${path.totalLessons}',
+                  style: const TextStyle(color: AppColorsDark.textMuted, fontSize: 11),
+                ),
                 const SizedBox(width: 12),
-                Text('⭐ ${path.totalXP}',
-                    style: TextStyle(color: context.textMuted, fontSize: 11)),
+                const Icon(Icons.star_rounded, size: 12, color: AppColorsDark.textMuted),
+                const SizedBox(width: 4),
+                Text(
+                  '${path.totalXP}',
+                  style: const TextStyle(color: AppColorsDark.textMuted, fontSize: 11),
+                ),
               ],
             ),
           ],
@@ -237,15 +239,15 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
       return Container(
         height: 140,
         margin: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(24),
-        ),
+        decoration: AppColors.glassCard(),
         child: const Center(
           child: SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primary,
+            ),
           ),
         ),
       );
@@ -274,7 +276,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: kGlassRadius,
           boxShadow: [
             BoxShadow(
               color: pathColor.withAlpha(80),
@@ -285,7 +287,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
         ),
         child: Stack(
           children: [
-            // Background Pattern
+            // Background pattern
             Positioned(
               right: -30,
               top: -30,
@@ -317,7 +319,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Row
+                  // Header row
                   Row(
                     children: [
                       Container(
@@ -325,12 +327,13 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                         height: 52,
                         decoration: BoxDecoration(
                           color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: kGlassRadius,
                         ),
                         child: Center(
-                          child: Text(
-                            _currentPath!.iconEmoji ?? '📚',
-                            style: const TextStyle(fontSize: 26),
+                          child: Icon(
+                            Icons.auto_stories_rounded,
+                            color: Colors.white,
+                            size: 26,
                           ),
                         ),
                       ),
@@ -361,7 +364,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                           ],
                         ),
                       ),
-                      // Circular Progress
+                      // Circular progress
                       Stack(
                         alignment: Alignment.center,
                         children: [
@@ -389,13 +392,13 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                   ),
                   const SizedBox(height: 18),
 
-                  // Next Step Preview
+                  // Next step preview
                   if (nextStep != null)
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha(20),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: kGlassRadius,
                       ),
                       child: Row(
                         children: [
@@ -404,10 +407,14 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                             height: 36,
                             decoration: BoxDecoration(
                               color: Colors.white.withAlpha(30),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: kGlassRadius,
                             ),
                             child: Center(
-                              child: Text(nextStep.typeIcon, style: const TextStyle(fontSize: 18)),
+                              child: Icon(
+                                Icons.play_circle_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -426,7 +433,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
-                                  '+${nextStep.xpReward} XP • Step ${completedSteps + 1}/$totalSteps',
+                                  '+${nextStep.xpReward} XP  •  Step ${completedSteps + 1}/$totalSteps',
                                   style: TextStyle(
                                     color: Colors.white.withAlpha(180),
                                     fontSize: 11,
@@ -439,7 +446,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: kGlassRadius,
                             ),
                             child: Icon(
                               Icons.play_arrow_rounded,
@@ -454,15 +461,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                     Row(
                       children: [
                         Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: progressPercent,
-                              backgroundColor: Colors.white.withAlpha(40),
-                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                              minHeight: 6,
-                            ),
-                          ),
+                          child: GlassProgressBar(value: progressPercent),
                         ),
                         const SizedBox(width: 12),
                         Text(
@@ -473,7 +472,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+                        const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 16),
                       ],
                     ),
                 ],
@@ -487,7 +486,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
 
   LearningPathStep? _getNextStep() {
     if (_currentPath == null || _progress == null) return null;
-    
+
     for (final step in _currentPath!.steps) {
       if (!_progress!.completedStepIds.contains(step.id)) {
         return step;
@@ -507,14 +506,14 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+            colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: kGlassRadius,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6366F1).withAlpha(60),
+              color: AppColors.primary.withAlpha(60),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -527,18 +526,18 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
               height: 56,
               decoration: BoxDecoration(
                 color: Colors.white.withAlpha(30),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: kGlassRadius,
               ),
               child: const Center(
-                child: Text('🎯', style: TextStyle(fontSize: 28)),
+                child: Icon(Icons.flag_rounded, color: Colors.white, size: 28),
               ),
             ),
             const SizedBox(width: 16),
-            Expanded(
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Start Your Journey',
                     style: TextStyle(
                       color: Colors.white,
@@ -546,11 +545,11 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     'Choose a learning path to begin',
                     style: TextStyle(
-                      color: Colors.white.withAlpha(200),
+                      color: Colors.white70,
                       fontSize: 13,
                     ),
                   ),
@@ -561,11 +560,11 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: kGlassRadius,
               ),
               child: const Icon(
                 Icons.arrow_forward_rounded,
-                color: Color(0xFF6366F1),
+                color: AppColors.primary,
                 size: 22,
               ),
             ),
@@ -607,20 +606,30 @@ class LearningPathStepItem extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isCurrent
-                ? AppColors.primary.withAlpha(15)
-                : context.bgCard,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isCurrent
-                  ? AppColors.primary.withAlpha(100)
-                  : isCompleted
-                      ? const Color(0xFF10B981).withAlpha(80)
-                      : context.borderColor,
-              width: isCurrent ? 2 : 1,
-            ),
-          ),
+          // Active step: teal gradient highlight; completed: success tint; locked: muted glass
+          decoration: isCurrent
+              ? AppColors.glassCard().copyWith(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withAlpha(30),
+                      AppColors.primary.withAlpha(10),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(
+                    color: AppColors.primary.withAlpha(100),
+                    width: 2,
+                  ),
+                )
+              : isCompleted
+                  ? AppColors.glassCard().copyWith(
+                      border: Border.all(
+                        color: const Color(0xFF10B981).withAlpha(80),
+                        width: 1,
+                      ),
+                    )
+                  : AppColors.glassCard(alternate: isLocked),
           child: Row(
             children: [
               // Status indicator
@@ -637,8 +646,8 @@ class LearningPathStepItem extends StatelessWidget {
                               colors: [AppColors.primary, AppColors.primary.withAlpha(200)],
                             )
                           : null,
-                  color: (isCompleted || isCurrent) ? null : context.bgElevated,
-                  borderRadius: BorderRadius.circular(14),
+                  color: (isCompleted || isCurrent) ? null : const Color(0xFF0D1A1A),
+                  borderRadius: kGlassRadius,
                   boxShadow: (isCompleted || isCurrent)
                       ? [
                           BoxShadow(
@@ -653,8 +662,8 @@ class LearningPathStepItem extends StatelessWidget {
                   child: isCompleted
                       ? const Icon(Icons.check_rounded, color: Colors.white, size: 24)
                       : isLocked
-                          ? Icon(Icons.lock_rounded, color: context.textMuted, size: 20)
-                          : Text(step.typeIcon, style: const TextStyle(fontSize: 24)),
+                          ? const Icon(Icons.lock_rounded, color: AppColorsDark.textMuted, size: 20)
+                          : const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
                 ),
               ),
               const SizedBox(width: 14),
@@ -669,11 +678,14 @@ class LearningPathStepItem extends StatelessWidget {
                         Expanded(
                           child: Text(
                             step.title,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  decoration: isCompleted ? TextDecoration.lineThrough : null,
-                                  color: isCompleted ? context.textMuted : null,
-                                ),
+                            style: TextStyle(
+                              color: isCompleted
+                                  ? AppColorsDark.textMuted
+                                  : AppColorsDark.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              decoration: isCompleted ? TextDecoration.lineThrough : null,
+                            ),
                           ),
                         ),
                         Container(
@@ -712,9 +724,10 @@ class LearningPathStepItem extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         step.description!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: context.textMuted,
-                            ),
+                        style: const TextStyle(
+                          color: AppColorsDark.textMuted,
+                          fontSize: 12,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -726,7 +739,7 @@ class LearningPathStepItem extends StatelessWidget {
               const SizedBox(width: 8),
               Icon(
                 isCurrent ? Icons.play_circle_fill_rounded : Icons.chevron_right_rounded,
-                color: isCurrent ? AppColors.primary : context.textMuted,
+                color: isCurrent ? AppColors.primary : AppColorsDark.textMuted,
                 size: isCurrent ? 32 : 24,
               ),
             ],
@@ -767,13 +780,11 @@ class LearningPathCard extends StatelessWidget {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(20),
+        decoration: AppColors.glassCard().copyWith(
           border: Border.all(
             color: isCompleted
                 ? const Color(0xFF10B981).withAlpha(100)
-                : context.borderColor,
+                : AppColorsDark.border,
             width: isCompleted ? 2 : 1,
           ),
         ),
@@ -791,7 +802,7 @@ class LearningPathCard extends StatelessWidget {
                 ),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+                  topRight: Radius.circular(6),
                 ),
               ),
               child: Row(
@@ -800,11 +811,11 @@ class LearningPathCard extends StatelessWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: context.bgCard,
-                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFF0F2020),
+                      borderRadius: kGlassRadius,
                     ),
                     child: Center(
-                      child: Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 28)),
+                      child: Icon(Icons.auto_stories_rounded, color: pathColor, size: 28),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -814,9 +825,11 @@ class LearningPathCard extends StatelessWidget {
                       children: [
                         Text(
                           path.name,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: const TextStyle(
+                            color: AppColorsDark.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Container(
@@ -844,7 +857,7 @@ class LearningPathCard extends StatelessWidget {
                         color: Color(0xFF10B981),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 14),
+                      child: const Icon(Icons.check_rounded, color: Colors.white, size: 14),
                     ),
                 ],
               ),
@@ -856,18 +869,27 @@ class LearningPathCard extends StatelessWidget {
                 children: [
                   Text(
                     path.description,
-                    style: TextStyle(color: context.textMuted),
+                    style: const TextStyle(color: AppColorsDark.textMuted),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      Text('📚 ${path.totalLessons}', style: TextStyle(color: context.textMuted, fontSize: 12)),
+                      const Icon(Icons.menu_book_rounded, size: 14, color: AppColorsDark.textMuted),
+                      const SizedBox(width: 4),
+                      Text('${path.totalLessons}',
+                          style: const TextStyle(color: AppColorsDark.textMuted, fontSize: 12)),
                       const SizedBox(width: 16),
-                      Text('⭐ ${path.totalXP} XP', style: TextStyle(color: context.textMuted, fontSize: 12)),
+                      const Icon(Icons.star_rounded, size: 14, color: AppColorsDark.textMuted),
+                      const SizedBox(width: 4),
+                      Text('${path.totalXP} XP',
+                          style: const TextStyle(color: AppColorsDark.textMuted, fontSize: 12)),
                       const SizedBox(width: 16),
-                      Text('📅 ~${path.estimatedDays}d', style: TextStyle(color: context.textMuted, fontSize: 12)),
+                      const Icon(Icons.calendar_today_rounded, size: 14, color: AppColorsDark.textMuted),
+                      const SizedBox(width: 4),
+                      Text('~${path.estimatedDays}d',
+                          style: const TextStyle(color: AppColorsDark.textMuted, fontSize: 12)),
                     ],
                   ),
                   if (isStarted) ...[
@@ -875,49 +897,31 @@ class LearningPathCard extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: progressPercent,
-                              backgroundColor: context.bgElevated,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isCompleted ? const Color(0xFF10B981) : pathColor,
-                              ),
-                              minHeight: 6,
-                            ),
-                          ),
+                          child: GlassProgressBar(value: progressPercent),
                         ),
                         const SizedBox(width: 10),
                         Text(
                           '${(progressPercent * 100).toInt()}%',
-                          style: TextStyle(color: context.textMuted, fontSize: 12, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            color: AppColorsDark.textMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
                   ],
                   const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticService.buttonTap();
-                        if (isStarted) {
-                          onTap?.call();
-                        } else {
-                          onStart?.call();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isCompleted ? const Color(0xFF10B981) : pathColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: Text(
-                        isCompleted ? 'Review Path' : isStarted ? 'Continue' : 'Start Learning',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
+                  GlassPrimaryButton(
+                    label: isCompleted ? 'Review Path' : isStarted ? 'Continue' : 'Start Learning',
+                    onPressed: () {
+                      HapticService.buttonTap();
+                      if (isStarted) {
+                        onTap?.call();
+                      } else {
+                        onStart?.call();
+                      }
+                    },
                   ),
                 ],
               ),

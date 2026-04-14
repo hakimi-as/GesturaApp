@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/theme.dart';
 import '../../services/haptic_service.dart';
+import 'glass_ui.dart';
 
 // ==================== ERROR WIDGET ====================
 
@@ -31,7 +32,7 @@ class ErrorStateWidget extends StatelessWidget {
   /// Network error preset
   factory ErrorStateWidget.network({VoidCallback? onRetry}) {
     return ErrorStateWidget(
-      emoji: '📡',
+      icon: Icons.wifi_off_rounded,
       title: 'Connection Error',
       message: 'Please check your internet connection and try again.',
       onRetry: onRetry,
@@ -41,7 +42,7 @@ class ErrorStateWidget extends StatelessWidget {
   /// Server error preset
   factory ErrorStateWidget.server({VoidCallback? onRetry}) {
     return ErrorStateWidget(
-      emoji: '🔧',
+      icon: Icons.build_rounded,
       title: 'Server Error',
       message: 'Something went wrong on our end. Please try again later.',
       onRetry: onRetry,
@@ -51,7 +52,7 @@ class ErrorStateWidget extends StatelessWidget {
   /// Generic error preset
   factory ErrorStateWidget.generic({String? message, VoidCallback? onRetry}) {
     return ErrorStateWidget(
-      emoji: '😕',
+      icon: Icons.sentiment_dissatisfied_rounded,
       title: 'Oops!',
       message: message ?? 'Something went wrong. Please try again.',
       onRetry: onRetry,
@@ -61,7 +62,7 @@ class ErrorStateWidget extends StatelessWidget {
   /// Timeout error preset
   factory ErrorStateWidget.timeout({VoidCallback? onRetry}) {
     return ErrorStateWidget(
-      emoji: '⏱️',
+      icon: Icons.timer_off_rounded,
       title: 'Request Timeout',
       message: 'The request took too long. Please try again.',
       onRetry: onRetry,
@@ -71,7 +72,7 @@ class ErrorStateWidget extends StatelessWidget {
   /// Permission denied preset
   factory ErrorStateWidget.permission({VoidCallback? onRetry}) {
     return ErrorStateWidget(
-      emoji: '🔒',
+      icon: Icons.lock_rounded,
       title: 'Permission Denied',
       message: 'You don\'t have permission to access this content.',
       onRetry: onRetry,
@@ -81,76 +82,66 @@ class ErrorStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final errorColor = iconColor ?? AppColors.error;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon or emoji
-            if (emoji != null)
-              Text(emoji!, style: const TextStyle(fontSize: 64))
-            else if (icon != null)
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: (iconColor ?? AppColors.error).withAlpha(26),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 40,
-                  color: iconColor ?? AppColors.error,
+            // Glass card wrapping icon — error red border
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: AppColors.glassCard().copyWith(
+                border: Border.all(
+                  color: AppColors.error.withAlpha(80),
+                  width: 1.5,
                 ),
               ),
-            
+              child: Icon(
+                icon ?? Icons.error_outline_rounded,
+                size: 48,
+                color: errorColor,
+              ),
+            ),
+
             const SizedBox(height: 24),
-            
+
             // Title
             if (title != null)
               Text(
                 title!,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                style: const TextStyle(
+                  color: AppColorsDark.textPrimary,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Message
             if (message != null)
               Text(
                 message!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: context.textMuted,
+                style: const TextStyle(
+                  color: AppColorsDark.textMuted,
+                  fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
               ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Retry button
             if (showRetry && onRetry != null)
-              ElevatedButton.icon(
+              GlassPrimaryButton(
+                label: retryText,
                 onPressed: () {
                   HapticService.buttonTap();
                   onRetry!();
                 },
-                icon: const Icon(Icons.refresh, size: 20),
-                label: Text(retryText),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
               ),
           ],
         ),
@@ -188,7 +179,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// No lessons preset
   factory EmptyStateWidget.noLessons({VoidCallback? onRefresh}) {
     return EmptyStateWidget(
-      emoji: '📚',
+      icon: Icons.menu_book_rounded,
       title: 'No Lessons Yet',
       message: 'Lessons will appear here once they\'re added.',
       actionText: 'Refresh',
@@ -199,7 +190,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// No categories preset
   factory EmptyStateWidget.noCategories({VoidCallback? onRefresh}) {
     return EmptyStateWidget(
-      emoji: '📂',
+      icon: Icons.folder_open_rounded,
       title: 'No Categories',
       message: 'Categories will appear here.',
       actionText: 'Refresh',
@@ -210,7 +201,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// No progress preset
   factory EmptyStateWidget.noProgress({VoidCallback? onStart}) {
     return EmptyStateWidget(
-      emoji: '🚀',
+      icon: Icons.rocket_launch_rounded,
       title: 'Start Learning!',
       message: 'Complete lessons to track your progress here.',
       actionText: 'Start Learning',
@@ -221,7 +212,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// No badges preset
   factory EmptyStateWidget.noBadges({VoidCallback? onLearn}) {
     return EmptyStateWidget(
-      emoji: '🏆',
+      icon: Icons.emoji_events_rounded,
       title: 'No Badges Yet',
       message: 'Complete lessons and challenges to earn badges!',
       actionText: 'Start Earning',
@@ -232,7 +223,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// No notifications preset
   factory EmptyStateWidget.noNotifications() {
     return const EmptyStateWidget(
-      emoji: '🔔',
+      icon: Icons.notifications_rounded,
       title: 'All Caught Up!',
       message: 'You have no new notifications.',
     );
@@ -241,9 +232,9 @@ class EmptyStateWidget extends StatelessWidget {
   /// No search results preset
   factory EmptyStateWidget.noSearchResults({String? query}) {
     return EmptyStateWidget(
-      emoji: '🔍',
+      icon: Icons.search_off_rounded,
       title: 'No Results Found',
-      message: query != null 
+      message: query != null
           ? 'No results for "$query". Try a different search.'
           : 'Try searching for something else.',
     );
@@ -252,7 +243,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// No friends preset
   factory EmptyStateWidget.noFriends({VoidCallback? onAddFriends}) {
     return EmptyStateWidget(
-      emoji: '👥',
+      icon: Icons.group_rounded,
       title: 'No Friends Yet',
       message: 'Add friends to compete on the leaderboard!',
       actionText: 'Add Friends',
@@ -263,7 +254,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// No challenges preset
   factory EmptyStateWidget.noChallenges() {
     return const EmptyStateWidget(
-      emoji: '🎯',
+      icon: Icons.military_tech_rounded,
       title: 'No Challenges',
       message: 'New challenges will appear here daily.',
     );
@@ -272,7 +263,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// No quizzes preset
   factory EmptyStateWidget.noQuizzes({VoidCallback? onLearn}) {
     return EmptyStateWidget(
-      emoji: '❓',
+      icon: Icons.quiz_rounded,
       title: 'Learn First!',
       message: 'Complete some lessons before taking quizzes.',
       actionText: 'Start Learning',
@@ -283,7 +274,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// Offline mode preset
   factory EmptyStateWidget.offline({VoidCallback? onRetry}) {
     return EmptyStateWidget(
-      emoji: '📴',
+      icon: Icons.cloud_off_rounded,
       title: 'You\'re Offline',
       message: 'Connect to the internet to see this content.',
       actionText: 'Retry',
@@ -294,7 +285,7 @@ class EmptyStateWidget extends StatelessWidget {
   /// Coming soon preset
   factory EmptyStateWidget.comingSoon() {
     return const EmptyStateWidget(
-      emoji: '🚧',
+      icon: Icons.construction_rounded,
       title: 'Coming Soon!',
       message: 'This feature is under development.',
     );
@@ -302,82 +293,20 @@ class EmptyStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Icon or emoji
-            if (emoji != null)
-              Text(emoji!, style: const TextStyle(fontSize: 64))
-            else if (icon != null)
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: (iconColor ?? AppColors.primary).withAlpha(26),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 40,
-                  color: iconColor ?? AppColors.primary,
-                ),
-              ),
-            
-            const SizedBox(height: 24),
-            
-            // Title
-            if (title != null)
-              Text(
-                title!,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            
-            const SizedBox(height: 8),
-            
-            // Message
-            if (message != null)
-              Text(
-                message!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: context.textMuted,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            
-            const SizedBox(height: 24),
-            
-            // Custom action widget or default button
-            if (action != null)
-              action!
-            else if (onAction != null && actionText != null)
-              ElevatedButton.icon(
-                onPressed: () {
-                  HapticService.buttonTap();
-                  onAction!();
-                },
-                icon: const Icon(Icons.arrow_forward, size: 20),
-                label: Text(actionText!),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+    // Prefer icon over emoji; fall back to a generic icon
+    final resolvedIcon = icon ?? Icons.info_outline_rounded;
+
+    return GlassEmptyState(
+      icon: resolvedIcon,
+      title: title ?? '',
+      subtitle: message,
+      actionLabel: (onAction != null && actionText != null) ? actionText : null,
+      onAction: onAction != null && actionText != null
+          ? () {
+              HapticService.buttonTap();
+              onAction!();
+            }
+          : null,
     ).animate().fadeIn(duration: 300.ms);
   }
 }
@@ -431,8 +360,9 @@ class LoadingStateWidget extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               message!,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: context.textMuted,
+              style: const TextStyle(
+                color: AppColorsDark.textMuted,
+                fontSize: 14,
               ),
               textAlign: TextAlign.center,
             ),
@@ -463,15 +393,13 @@ class InlineErrorWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.error.withAlpha(26),
-        borderRadius: BorderRadius.circular(8),
+      decoration: AppColors.glassCard().copyWith(
         border: Border.all(color: AppColors.error.withAlpha(77)),
       ),
       child: Row(
         children: [
           if (showIcon) ...[
-            const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+            const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18),
             const SizedBox(width: 8),
           ],
           Expanded(
@@ -491,7 +419,7 @@ class InlineErrorWidget extends StatelessWidget {
               },
               child: const Padding(
                 padding: EdgeInsets.only(left: 8),
-                child: Icon(Icons.refresh, color: AppColors.error, size: 18),
+                child: Icon(Icons.refresh_rounded, color: AppColors.error, size: 18),
               ),
             ),
         ],
@@ -512,7 +440,7 @@ class AppSnackBar {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -532,7 +460,7 @@ class AppSnackBar {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -559,7 +487,7 @@ class AppSnackBar {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.warning_amber, color: Colors.white, size: 20),
+            const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -578,7 +506,7 @@ class AppSnackBar {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.info_outline, color: Colors.white, size: 20),
+            const Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -597,12 +525,12 @@ class AppSnackBar {
       SnackBar(
         content: const Row(
           children: [
-            Icon(Icons.cloud_off, color: Colors.white, size: 20),
+            Icon(Icons.cloud_off_rounded, color: Colors.white, size: 20),
             SizedBox(width: 12),
             Expanded(child: Text('You\'re offline. Some features may be limited.')),
           ],
         ),
-        backgroundColor: Colors.grey[700],
+        backgroundColor: Color(0xFF374151),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),

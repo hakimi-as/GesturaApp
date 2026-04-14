@@ -145,6 +145,76 @@ class OfflineService {
     }
   }
 
+  /// Queue a lesson completion to sync when back online
+  static Future<void> queueLessonComplete({
+    required String userId,
+    required String lessonId,
+    required int xpEarned,
+    String lessonName = '',
+    String categoryName = '',
+  }) async {
+    await _ensureInitialized();
+    try {
+      final now = DateTime.now().toIso8601String();
+      final key = '${userId}_$lessonId';
+
+      // Save progress locally so UI can reflect completion immediately
+      await _progressBox?.put(key, {
+        'userId': userId,
+        'lessonId': lessonId,
+        'isCompleted': true,
+        'completedAt': now,
+        'xpEarned': xpEarned,
+        'savedAt': now,
+      });
+
+      // Queue the full lesson completion for Firestore sync
+      await _addToPendingSync('lessonComplete', key, {
+        'userId': userId,
+        'lessonId': lessonId,
+        'xpEarned': xpEarned,
+        'lessonName': lessonName,
+        'categoryName': categoryName,
+        'completedAt': now,
+      });
+
+      notifier.notifyDataChanged();
+      debugPrint('📋 Lesson completion queued for sync: $lessonId');
+    } catch (e) {
+      debugPrint('Error queuing lesson completion: $e');
+    }
+  }
+
+  /// Queue a quiz completion to sync when back online
+  static Future<void> queueQuizComplete({
+    required String userId,
+    required String quizType,
+    required int score,
+    required int xpEarned,
+    required int totalQuestions,
+    required int correctAnswers,
+  }) async {
+    await _ensureInitialized();
+    try {
+      final now = DateTime.now().toIso8601String();
+      final key = '${userId}_${quizType}_${DateTime.now().millisecondsSinceEpoch}';
+
+      await _addToPendingSync('quizComplete', key, {
+        'userId': userId,
+        'quizType': quizType,
+        'score': score,
+        'xpEarned': xpEarned,
+        'totalQuestions': totalQuestions,
+        'correctAnswers': correctAnswers,
+        'completedAt': now,
+      });
+
+      debugPrint('📋 Quiz completion queued for sync: $quizType');
+    } catch (e) {
+      debugPrint('Error queuing quiz completion: $e');
+    }
+  }
+
   /// Get locally saved progress
   static Future<Map<String, dynamic>?> getLocalProgress(
     String userId,
@@ -296,28 +366,97 @@ class OfflineService {
   /// Sync lesson completion to Firestore
   static Future<void> _syncLessonComplete(Map<String, dynamic> data) async {
     final userId = data['userId'] as String;
-    
-    // Update user stats
+    final lessonId = data['lessonId'] as String;
+    final xpEarned = (data['xpEarned'] ?? 10) as int;
+    final now = DateTime.now();
+
+    // Write progress doc
     await FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
-        .update({
-          'lessonsCompleted': FieldValue.increment(1),
-          'totalXP': FieldValue.increment(data['xpEarned'] ?? 10),
-          'lastLessonDate': FieldValue.serverTimestamp(),
-        });
+        .collection('progress')
+        .doc(lessonId)
+        .set({
+          'userId': userId,
+          'lessonId': lessonId,
+          'lessonName': data['lessonName'] ?? '',
+          'categoryName': data['categoryName'] ?? '',
+          'isCompleted': true,
+          'status': 'completed',
+          'completionPercentage': 100.0,
+          'xpEarned': xpEarned,
+          'completedAt': Timestamp.fromDate(now),
+          'lastAccessedAt': Timestamp.fromDate(now),
+          'syncedFromOffline': true,
+        }, SetOptions(merge: true));
+
+    // Update user stats — only increment if this is first completion
+    final existing = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('progress')
+        .doc(lessonId)
+        .get();
+
+    // Check if already synced (avoid double-counting)
+    final alreadyCounted = existing.data()?['syncedFromOffline'] == true &&
+        existing.data()?['isCompleted'] == true;
+
+    if (!alreadyCounted) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .update({
+            'signsLearned': FieldValue.increment(1),
+            'totalXP': FieldValue.increment(xpEarned),
+            'lastLessonDate': FieldValue.serverTimestamp(),
+            'lastActiveAt': FieldValue.serverTimestamp(),
+          });
+    }
   }
 
   /// Sync quiz completion to Firestore
   static Future<void> _syncQuizComplete(Map<String, dynamic> data) async {
     final userId = data['userId'] as String;
-    
+    final quizType = data['quizType'] as String? ?? 'unknown';
+    final xpEarned = (data['xpEarned'] ?? 10) as int;
+    final score = (data['score'] ?? 0) as int;
+    final totalQuestions = (data['totalQuestions'] ?? 0) as int;
+    final correctAnswers = (data['correctAnswers'] ?? 0) as int;
+    final now = DateTime.now();
+
+    // Write quiz progress doc
+    await FirebaseFirestore.instance
+        .collection('progress')
+        .add({
+          'userId': userId,
+          'lessonId': 'quiz_${quizType}_${now.millisecondsSinceEpoch}',
+          'categoryId': 'quiz',
+          'categoryName': quizType,
+          'displayTitle': quizType,
+          'type': 'quiz',
+          'quizType': quizType,
+          'status': 'completed',
+          'isCompleted': true,
+          'completionPercentage': 100.0,
+          'xpEarned': xpEarned,
+          'score': score,
+          'totalQuestions': totalQuestions,
+          'correctAnswers': correctAnswers,
+          'accuracy': totalQuestions > 0 ? (correctAnswers / totalQuestions * 100) : 0,
+          'completedAt': Timestamp.fromDate(now),
+          'lastAccessedAt': Timestamp.fromDate(now),
+          'syncedFromOffline': true,
+        });
+
+    // Update user stats
     await FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
         .update({
           'quizzesCompleted': FieldValue.increment(1),
-          'totalXP': FieldValue.increment(data['xpEarned'] ?? 10),
+          'totalXP': FieldValue.increment(xpEarned),
+          'lastActiveAt': FieldValue.serverTimestamp(),
         });
   }
 
