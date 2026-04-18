@@ -22,6 +22,7 @@ Memory-efficient mode (default):
 """
 
 from __future__ import annotations
+import gc
 import json
 import os
 import logging
@@ -73,42 +74,41 @@ class SignLibrary:
 
         db = firestore.client()
 
-        # Use pose-only (12-dim) by default to keep RAM under 512 MB.
-        # Set USE_POSE_ONLY=false to load full 96-dim holistic vectors.
-        pose_only = os.getenv("USE_POSE_ONLY", "true").lower() != "false"
-        mode = "pose-only (12-dim)" if pose_only else "full holistic (96-dim)"
-        logger.info("Loading sign library from Firestore — mode: %s…", mode)
+        # Stream docs one-at-a-time so we never hold all 2000 large
+        # holistic documents in RAM simultaneously.
+        # Each doc is processed and its raw data discarded before the next.
+        logger.info("Streaming sign library from Firestore (pose-only, low-RAM mode)…")
 
-        snapshot = db.collection("sign_animations").get()
-        total = len(snapshot)
         loaded = 0
+        total = 0
 
-        for doc in snapshot:
+        for doc in db.collection("sign_animations").stream():
+            total += 1
             try:
                 data = doc.to_dict()
                 frames_raw: list[dict[str, Any]] = data.get("data") or []
-                if not frames_raw:
-                    continue
 
-                if pose_only:
+                if frames_raw:
                     normalized = _normalize_pose_only(frames_raw)
-                else:
-                    normalized = normalize_sequence(frames_raw)
+                    if normalized:
+                        self._library[doc.id] = normalized
+                        loaded += 1
 
-                if not normalized:
-                    continue
+                # Explicitly discard raw data and help GC reclaim memory
+                del data, frames_raw
+                if total % 100 == 0:
+                    gc.collect()
+                    logger.info("  … %d processed, %d loaded so far", total, loaded)
 
-                self._library[doc.id] = normalized
-                loaded += 1
             except Exception as exc:
                 logger.warning("Skipping %s: %s", doc.id, exc)
 
+        gc.collect()
         self._loaded = True
         logger.info(
-            "Sign library ready — %d / %d signs loaded (%s)",
+            "Sign library ready — %d / %d signs loaded (pose-only)",
             loaded,
             total,
-            mode,
         )
 
 
