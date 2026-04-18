@@ -37,10 +37,13 @@ logger = logging.getLogger("gestura.api")
 
 def _load_library_sync() -> None:
     """Runs in a thread — loads Firestore data without blocking the event loop."""
-    cred_path = os.getenv("FIREBASE_CREDENTIALS", "serviceAccount.json")
-    lib = get_library()
-    if not lib.is_loaded:
-        lib.load(credentials_path=cred_path)
+    try:
+        cred_path = os.getenv("FIREBASE_CREDENTIALS", "serviceAccount.json")
+        lib = get_library()
+        if not lib.is_loaded:
+            lib.load(credentials_path=cred_path)
+    except Exception as exc:
+        logger.exception("LIBRARY LOAD FAILED: %s", exc)
 
 
 @asynccontextmanager
