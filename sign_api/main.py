@@ -10,6 +10,7 @@ during local dev).
 """
 
 from __future__ import annotations
+import asyncio
 import logging
 import os
 import time
@@ -34,12 +35,20 @@ logger = logging.getLogger("gestura.api")
 
 # ── Startup / shutdown ────────────────────────────────────────────────────────
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+def _load_library_sync() -> None:
+    """Runs in a thread — loads Firestore data without blocking the event loop."""
     cred_path = os.getenv("FIREBASE_CREDENTIALS", "serviceAccount.json")
     lib = get_library()
     if not lib.is_loaded:
         lib.load(credentials_path=cred_path)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Fire library loading in a background thread so the server starts
+    # accepting requests (including Railway health checks) immediately.
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, _load_library_sync)
     yield
 
 
