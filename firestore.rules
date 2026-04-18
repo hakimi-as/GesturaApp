@@ -1,0 +1,213 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────
+    // HELPER FUNCTIONS
+    // ─────────────────────────────────────────────────────────────
+
+    // Must be signed in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Requesting user is the owner of the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Requesting user has isAdmin == true in their users doc
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Document belongs to the requesting user (checks a userId field on the doc)
+    function ownsDoc() {
+      return isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // New document being written belongs to the requesting user
+    function creatingOwnDoc() {
+      return isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
+
+
+    // ─────────────────────────────────────────────────────────────
+    // USERS
+    // Any signed-in user can read profiles (needed for leaderboard,
+    // friend search, friend profile screen).
+    // Only the owner or an admin can write.
+    // ─────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read:   if isAuthenticated();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+
+      // Daily XP tracking — owner/admin only
+      match /daily_xp/{date} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      // Per-challenge progress stored under the user — owner/admin only
+      match /challengeProgress/{challengeId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      // Active challenges assigned to the user — owner/admin only
+      match /activeChallenges/{challengeId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+
+    // ─────────────────────────────────────────────────────────────
+    // CONTENT COLLECTIONS (admin writes, all authenticated users read)
+    // ─────────────────────────────────────────────────────────────
+
+    match /categories/{categoryId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /lessons/{lessonId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /quizzes/{quizId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /questions/{questionId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /achievements/{achievementId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /learningPaths/{pathId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /challengePool/{challengeId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /badgePool/{badgeId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /sign_library_categories/{docId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /signs/{signId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /sign_animations/{animId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+
+    // ─────────────────────────────────────────────────────────────
+    // USER-SCOPED COLLECTIONS (each doc belongs to one user)
+    // ─────────────────────────────────────────────────────────────
+
+    // Which achievements this user has earned
+    match /user_achievements/{docId} {
+      allow read:   if ownsDoc() || isAdmin();
+      allow create: if creatingOwnDoc();
+      allow update: if ownsDoc() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Lesson & quiz completion records
+    match /progress/{progressId} {
+      allow read:   if ownsDoc() || isAdmin();
+      allow create: if creatingOwnDoc();
+      allow update: if ownsDoc() || isAdmin();
+      allow delete: if ownsDoc() || isAdmin();
+    }
+
+    // User learning path progress
+    match /userLearningProgress/{docId} {
+      allow read:   if ownsDoc() || isAdmin();
+      allow create: if creatingOwnDoc();
+      allow update: if ownsDoc() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Challenge participation records
+    match /user_challenges/{docId} {
+      allow read:   if ownsDoc() || isAdmin();
+      allow create: if creatingOwnDoc();
+      allow update: if ownsDoc() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+
+    // ─────────────────────────────────────────────────────────────
+    // NOTIFICATIONS
+    // Only the recipient can read/update/delete their own notifications.
+    // Any authenticated user can create (so friend requests, badge
+    // awards etc. can write to another user's notifications).
+    // ─────────────────────────────────────────────────────────────
+    match /notifications/{notificationId} {
+      allow read:   if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+
+    // ─────────────────────────────────────────────────────────────
+    // FRIENDSHIPS
+    // Both sender and receiver can read, update, and delete.
+    // Only the sender can create (you can't send a request on
+    // someone else's behalf).
+    // ─────────────────────────────────────────────────────────────
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated() && (
+        resource.data.senderId   == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
+      allow create: if isAuthenticated() &&
+        request.resource.data.senderId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.senderId   == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.senderId   == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
+    }
+
+
+    // ─────────────────────────────────────────────────────────────
+    // SOCIAL ACTIVITY FEED
+    // All authenticated users can read (needed for friend activity feed).
+    // Users can only create/edit/delete their own activity entries.
+    // ─────────────────────────────────────────────────────────────
+    match /activities/{activityId} {
+      allow read:   if isAuthenticated();
+      allow create: if creatingOwnDoc();
+      allow update: if ownsDoc();
+      allow delete: if ownsDoc() || isAdmin();
+    }
+
+  }
+}

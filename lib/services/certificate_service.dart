@@ -1,213 +1,377 @@
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart' show BuildContext;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 
-/// Service to generate PDF certificates for completed categories/lessons
+/// Generates premium PDF certificates for Gestura learners.
+///
+/// Visual approach: deep navy field, arc-sweep decoration drawn via
+/// PdfGraphics (no SVG), colored top stripe signals achievement type,
+/// large Montserrat name as the compositional hero, Cinzel for headings.
 class CertificateService {
-  /// Generate a certificate PDF for category completion or progress
+  // ── Palette ───────────────────────────────────────────────────────
+  static final _bg     = PdfColor.fromHex('#0D0E1C');
+  static final _indigo = PdfColor.fromHex('#6366F1');
+  static final _purple = PdfColor.fromHex('#8B5CF6');
+  static final _gold   = PdfColor.fromHex('#E9A920');
+  static final _white  = PdfColor.fromHex('#F0EDE8');
+  static final _pale   = PdfColor.fromHex('#C2C0D8');
+  static final _muted  = PdfColor.fromHex('#64618A');
+
+  // ── Background layer (drawn via PdfGraphics) ──────────────────────
+  //
+  // Draws:
+  //   • Dark navy fill
+  //   • Concentric arc-sweeps anchored at top-left (indigo, faint)
+  //   • Mirror arc-sweeps at bottom-right (gold, fainter)
+  //   • 3 pt coloured stripe across the very top (accent)
+  //   • Outer rounded-rect border
+  //   • Inner hairline tinted border
+  //
+  // PDF coordinate origin is BOTTOM-LEFT.  Top of the page = y ≈ 595.
+
+  static void _paintBackground(
+    PdfGraphics c,
+    PdfPoint s,
+    PdfColor accent,
+    bool isGold,
+  ) {
+    final w = s.x;
+    final h = s.y;
+
+    // ── Base fill ──────────────────────────────────────────────────
+    c.setFillColor(_bg);
+    c.drawRect(0, 0, w, h);
+    c.fillPath();
+
+    // ── Top-left arcs (indigo sweep) ───────────────────────────────
+    // Circles centered just inside the top-left corner; only the
+    // lower-right quarter-arc is visible on the page.
+    for (var i = 0; i < 7; i++) {
+      final r = 70.0 + i * 52.0;
+      final op = (0.13 - i * 0.016).clamp(0.02, 0.13);
+      c.setStrokeColor(PdfColor(0.388, 0.400, 0.945, op));
+      c.setLineWidth(i == 1 ? 1.2 : 0.65);
+      c.drawEllipse(18, h - 18, r, r);
+      c.strokePath();
+    }
+
+    // ── Bottom-right arcs (gold sweep) ────────────────────────────
+    for (var i = 0; i < 5; i++) {
+      final r = 60.0 + i * 46.0;
+      final op = (0.10 - i * 0.018).clamp(0.01, 0.10);
+      c.setStrokeColor(PdfColor(0.914, 0.663, 0.125, op));
+      c.setLineWidth(0.6);
+      c.drawEllipse(w - 18, 18, r, r);
+      c.strokePath();
+    }
+
+    // ── Top accent stripe ──────────────────────────────────────────
+    if (isGold) {
+      c.setFillColor(PdfColor(0.914, 0.663, 0.125));
+    } else {
+      c.setFillColor(PdfColor(0.388, 0.400, 0.945));
+    }
+    c.drawRect(0, h - 3.5, w, 3.5);
+    c.fillPath();
+
+    // ── Outer border ───────────────────────────────────────────────
+    c.setStrokeColor(PdfColor(0.098, 0.102, 0.220));
+    c.setLineWidth(0.9);
+    c.drawRRect(11, 11, w - 22, h - 22, 14, 14);
+    c.strokePath();
+
+    // ── Inner hairline ─────────────────────────────────────────────
+    c.setStrokeColor(PdfColor(accent.red, accent.green, accent.blue, 0.22));
+    c.setLineWidth(0.4);
+    c.drawRRect(16, 16, w - 32, h - 32, 10, 10);
+    c.strokePath();
+  }
+
+  // ── Stat pill ─────────────────────────────────────────────────────
+
+  static pw.Widget _pill(
+    String value,
+    String label,
+    pw.Font bold,
+    pw.Font body,
+    PdfColor ac,
+  ) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+      decoration: pw.BoxDecoration(
+        color: PdfColor(ac.red, ac.green, ac.blue, 0.11),
+        borderRadius: pw.BorderRadius.circular(32),
+        border: pw.Border.all(
+          color: PdfColor(ac.red, ac.green, ac.blue, 0.34),
+          width: 0.75,
+        ),
+      ),
+      child: pw.RichText(
+        textAlign: pw.TextAlign.center,
+        text: pw.TextSpan(
+          children: [
+            pw.TextSpan(
+              text: value,
+              style: pw.TextStyle(font: bold, fontSize: 15, color: ac),
+            ),
+            pw.TextSpan(
+              text: '\n$label',
+              style: pw.TextStyle(font: body, fontSize: 8, color: _muted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Thin rule ─────────────────────────────────────────────────────
+
+  static pw.Widget _rule() => pw.Container(
+        height: 0.6,
+        decoration: const pw.BoxDecoration(
+          color: PdfColor(0.098, 0.102, 0.220),
+        ),
+      );
+
+  // ── Utilities ─────────────────────────────────────────────────────
+
+  static String _certId() {
+    final t = DateTime.now();
+    return 'GST-${t.year}${t.month.toString().padLeft(2, '0')}'
+        '${t.millisecondsSinceEpoch.toString().substring(8)}';
+  }
+
+  static String _fmt(int xp) =>
+      xp >= 1000 ? '${(xp / 1000).toStringAsFixed(1)}k' : '$xp';
+
+  // ── Category certificate ──────────────────────────────────────────
+
   static Future<Uint8List> generateCategoryCertificate({
     required String userName,
     required String categoryName,
     required int signsLearned,
     required int totalXP,
     required DateTime completionDate,
-    int? totalSigns, // Optional: if provided, shows progress percentage
+    int? totalSigns,
   }) async {
     final pdf = pw.Document();
 
-    // Determine if this is a completion or progress certificate
     final isCompleted = totalSigns == null || signsLearned >= totalSigns;
-    final progressPercent = totalSigns != null && totalSigns > 0
+    final pct = (totalSigns != null && totalSigns > 0)
         ? (signsLearned / totalSigns * 100).toInt()
         : 100;
 
-    // Load fonts from Google Fonts via printing package
-    final fontRegular = await PdfGoogleFonts.poppinsRegular();
-    final fontBold = await PdfGoogleFonts.poppinsBold();
-    final fontItalic = await PdfGoogleFonts.poppinsItalic();
+    final fTitle  = await PdfGoogleFonts.cinzelBold();
+    final fName   = await PdfGoogleFonts.montserratBold();
+    final fBody   = await PdfGoogleFonts.poppinsRegular();
+    final fItalic = await PdfGoogleFonts.poppinsItalic();
+
+    final accent   = isCompleted ? _gold   : _indigo;
+    final accentR  = isCompleted ? 0.914   : 0.388;
+    final accentG  = isCompleted ? 0.663   : 0.400;
+    final accentB  = isCompleted ? 0.125   : 0.945;
+
+    final fmt = PdfPageFormat.a4.landscape;
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.all(40),
-        build: (pw.Context context) {
-          return pw.Container(
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(
-                color: PdfColor.fromHex('#6366F1'),
-                width: 3,
-              ),
-              borderRadius: pw.BorderRadius.circular(20),
-            ),
-            padding: const pw.EdgeInsets.all(40),
+        pageFormat: fmt,
+        margin: pw.EdgeInsets.zero,
+        build: (_) => pw.CustomPaint(
+          size: PdfPoint(fmt.width, fmt.height),
+          painter: (c, s) => _paintBackground(c, s, accent, isCompleted),
+          child: pw.Padding(
+            padding: const pw.EdgeInsets.fromLTRB(80, 28, 80, 22),
             child: pw.Column(
-              mainAxisAlignment: pw.MainAxisAlignment.center,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
               children: [
-                // Top decoration
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.center,
-                  children: [
-                    _buildStar(),
-                    pw.SizedBox(width: 10),
-                    _buildStar(),
-                    pw.SizedBox(width: 10),
-                    _buildStar(),
-                  ],
-                ),
-                pw.SizedBox(height: 20),
-
-                // Certificate title
+                // ── Wordmark ──────────────────────────────────────────
                 pw.Text(
-                  isCompleted 
-                      ? 'CERTIFICATE OF COMPLETION'
-                      : 'CERTIFICATE OF PROGRESS',
+                  'GESTURA',
                   style: pw.TextStyle(
-                    font: fontBold,
-                    fontSize: 28,
-                    color: PdfColor.fromHex(isCompleted ? '#F59E0B' : '#6366F1'),
-                    letterSpacing: 3,
+                    font: fTitle,
+                    fontSize: 12,
+                    color: PdfColor(1, 1, 1, 0.35),
+                    letterSpacing: 7,
                   ),
                 ),
-                pw.SizedBox(height: 10),
+                pw.SizedBox(height: 7),
 
-                // Decorative line
-                pw.Container(
-                  width: 200,
-                  height: 3,
-                  decoration: pw.BoxDecoration(
-                    gradient: pw.LinearGradient(
-                      colors: isCompleted
-                          ? [
-                              PdfColor.fromHex('#F59E0B'),
-                              PdfColor.fromHex('#FBBF24'),
-                              PdfColor.fromHex('#F59E0B'),
-                            ]
-                          : [
-                              PdfColor.fromHex('#6366F1'),
-                              PdfColor.fromHex('#8B5CF6'),
-                              PdfColor.fromHex('#EC4899'),
-                            ],
-                    ),
-                    borderRadius: pw.BorderRadius.circular(2),
+                // ── Certificate type ──────────────────────────────────
+                pw.Text(
+                  isCompleted
+                      ? 'CERTIFICATE  OF  COMPLETION'
+                      : 'CERTIFICATE  OF  PROGRESS',
+                  style: pw.TextStyle(
+                    font: fTitle,
+                    fontSize: 19,
+                    color: accent,
+                    letterSpacing: 1.5,
                   ),
                 ),
-                pw.SizedBox(height: 30),
+                pw.SizedBox(height: 11),
+                _rule(),
+                pw.SizedBox(height: 16),
 
-                // This certifies text
+                // ── "This certifies that" ─────────────────────────────
                 pw.Text(
                   'This certifies that',
                   style: pw.TextStyle(
-                    font: fontItalic,
-                    fontSize: 16,
-                    color: PdfColor.fromHex('#6B7280'),
+                    font: fItalic,
+                    fontSize: 12,
+                    color: _muted,
                   ),
                 ),
-                pw.SizedBox(height: 15),
+                pw.SizedBox(height: 13),
 
-                // User name
+                // ── RECIPIENT NAME — the compositional hero ───────────
                 pw.Text(
                   userName,
                   style: pw.TextStyle(
-                    font: fontBold,
-                    fontSize: 36,
-                    color: PdfColor.fromHex('#1F2937'),
+                    font: fName,
+                    fontSize: 44,
+                    color: _white,
                   ),
+                  textAlign: pw.TextAlign.center,
                 ),
-                pw.SizedBox(height: 15),
+                pw.SizedBox(height: 7),
 
-                // Achievement text
+                // Gold/indigo underline beneath name
+                pw.Container(
+                  width: 260,
+                  height: 1.5,
+                  color: accent,
+                ),
+                pw.SizedBox(height: 14),
+
+                // ── Achievement description ───────────────────────────
                 pw.Text(
                   isCompleted
-                      ? 'has successfully completed the'
-                      : 'is making excellent progress in the',
+                      ? 'has successfully mastered the art of'
+                      : 'is making excellent progress in',
                   style: pw.TextStyle(
-                    font: fontRegular,
-                    fontSize: 16,
-                    color: PdfColor.fromHex('#6B7280'),
+                    font: fBody,
+                    fontSize: 12,
+                    color: _pale,
                   ),
                 ),
                 pw.SizedBox(height: 10),
 
-                // Category name
+                // ── Category pill ─────────────────────────────────────
                 pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                  padding:
+                      const pw.EdgeInsets.symmetric(horizontal: 28, vertical: 8),
                   decoration: pw.BoxDecoration(
-                    color: PdfColor.fromHex('#F3F4F6'),
-                    borderRadius: pw.BorderRadius.circular(10),
+                    color: PdfColor(accentR, accentG, accentB, 0.14),
+                    borderRadius: pw.BorderRadius.circular(32),
+                    border: pw.Border.all(
+                      color: PdfColor(accentR, accentG, accentB, 0.40),
+                      width: 0.8,
+                    ),
                   ),
                   child: pw.Text(
-                    '"$categoryName" Category',
+                    categoryName,
                     style: pw.TextStyle(
-                      font: fontBold,
-                      fontSize: 24,
-                      color: PdfColor.fromHex('#8B5CF6'),
+                      font: fName,
+                      fontSize: 17,
+                      color: isCompleted
+                          ? _gold
+                          : PdfColor.fromHex('#B4ADFF'),
                     ),
                   ),
                 ),
-                pw.SizedBox(height: 20),
+                pw.SizedBox(height: 17),
 
-                // Stats
-                pw.Text(
-                  isCompleted
-                      ? 'Mastering $signsLearned signs and earning $totalXP XP'
-                      : 'Learning $signsLearned signs ($progressPercent% complete) with $totalXP XP earned',
-                  style: pw.TextStyle(
-                    font: fontRegular,
-                    fontSize: 14,
-                    color: PdfColor.fromHex('#6B7280'),
-                  ),
-                ),
-                pw.SizedBox(height: 30),
-
-                // Date
-                pw.Text(
-                  isCompleted
-                      ? 'Completed on ${DateFormat('MMMM d, yyyy').format(completionDate)}'
-                      : 'Progress as of ${DateFormat('MMMM d, yyyy').format(completionDate)}',
-                  style: pw.TextStyle(
-                    font: fontItalic,
-                    fontSize: 12,
-                    color: PdfColor.fromHex('#9CA3AF'),
-                  ),
-                ),
-                pw.SizedBox(height: 30),
-
-                // Bottom decoration
+                // ── Stats row ─────────────────────────────────────────
                 pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
                   children: [
-                    _buildBadge('🤟', 'Gestura'),
-                    _buildBadge(isCompleted ? '🏆' : '📈', isCompleted ? 'Completed' : '$progressPercent%'),
-                    _buildBadge('⭐', '$totalXP XP'),
+                    _pill(
+                      '$signsLearned Signs',
+                      'Mastered',
+                      fName,
+                      fBody,
+                      accent,
+                    ),
+                    pw.SizedBox(width: 14),
+                    _pill(
+                      '${_fmt(totalXP)} XP',
+                      'Earned',
+                      fName,
+                      fBody,
+                      _purple,
+                    ),
+                    if (!isCompleted) ...[
+                      pw.SizedBox(width: 14),
+                      _pill('$pct%', 'Complete', fName, fBody, _indigo),
+                    ],
                   ],
+                ),
+                pw.SizedBox(height: 12),
+
+                // ── Date ──────────────────────────────────────────────
+                pw.Text(
+                  isCompleted
+                      ? 'Awarded with distinction  ·  '
+                          '${DateFormat('MMMM d, yyyy').format(completionDate)}'
+                      : 'Progress recorded  ·  '
+                          '${DateFormat('MMMM d, yyyy').format(completionDate)}',
+                  style: pw.TextStyle(
+                    font: fItalic,
+                    fontSize: 10,
+                    color: _muted,
+                  ),
                 ),
 
                 pw.Spacer(),
 
-                // Footer
-                pw.Text(
-                  'Gestura - Breaking Silence, Building Bridges',
-                  style: pw.TextStyle(
-                    font: fontItalic,
-                    fontSize: 10,
-                    color: PdfColor.fromHex('#9CA3AF'),
-                  ),
+                // ── Footer ────────────────────────────────────────────
+                _rule(),
+                pw.SizedBox(height: 9),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      'ID: ${_certId()}',
+                      style: pw.TextStyle(
+                        font: fBody,
+                        fontSize: 7,
+                        color: PdfColor(0.30, 0.30, 0.46),
+                      ),
+                    ),
+                    pw.Text(
+                      'Breaking Silence, Building Bridges',
+                      style: pw.TextStyle(
+                        font: fItalic,
+                        fontSize: 9,
+                        color: _muted,
+                      ),
+                    ),
+                    pw.Text(
+                      'gestura.app',
+                      style: pw.TextStyle(
+                        font: fBody,
+                        fontSize: 7,
+                        color: PdfColor(0.30, 0.30, 0.46),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
 
     return pdf.save();
   }
 
-  /// Generate a certificate for course/overall completion
+  // ── Course / Excellence certificate ──────────────────────────────
+
   static Future<Uint8List> generateCourseCertificate({
     required String userName,
     required int totalSignsLearned,
@@ -218,271 +382,209 @@ class CertificateService {
   }) async {
     final pdf = pw.Document();
 
-    final fontRegular = await PdfGoogleFonts.poppinsRegular();
-    final fontBold = await PdfGoogleFonts.poppinsBold();
-    final fontItalic = await PdfGoogleFonts.poppinsItalic();
+    final fTitle  = await PdfGoogleFonts.cinzelBold();
+    final fName   = await PdfGoogleFonts.montserratBold();
+    final fBody   = await PdfGoogleFonts.poppinsRegular();
+    final fItalic = await PdfGoogleFonts.poppinsItalic();
+
+    final fmt = PdfPageFormat.a4.landscape;
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.all(40),
-        build: (pw.Context context) {
-          return pw.Container(
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(
-                color: PdfColor.fromHex('#F59E0B'),
-                width: 4,
-              ),
-              borderRadius: pw.BorderRadius.circular(20),
-            ),
-            padding: const pw.EdgeInsets.all(40),
+        pageFormat: fmt,
+        margin: pw.EdgeInsets.zero,
+        build: (_) => pw.CustomPaint(
+          size: PdfPoint(fmt.width, fmt.height),
+          painter: (c, s) => _paintBackground(c, s, _gold, true),
+          child: pw.Padding(
+            padding: const pw.EdgeInsets.fromLTRB(80, 28, 80, 22),
             child: pw.Column(
-              mainAxisAlignment: pw.MainAxisAlignment.center,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
               children: [
-                // Gold stars
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.center,
-                  children: List.generate(5, (_) => pw.Padding(
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 5),
-                    child: _buildGoldStar(),
-                  )),
-                ),
-                pw.SizedBox(height: 20),
-
-                // Title
+                // ── Wordmark ──────────────────────────────────────────
                 pw.Text(
-                  'CERTIFICATE OF EXCELLENCE',
+                  'GESTURA',
                   style: pw.TextStyle(
-                    font: fontBold,
-                    fontSize: 32,
-                    color: PdfColor.fromHex('#F59E0B'),
-                    letterSpacing: 3,
+                    font: fTitle,
+                    fontSize: 12,
+                    color: PdfColor(1, 1, 1, 0.35),
+                    letterSpacing: 7,
+                  ),
+                ),
+                pw.SizedBox(height: 7),
+
+                // ── Title ─────────────────────────────────────────────
+                pw.Text(
+                  'CERTIFICATE  OF  EXCELLENCE',
+                  style: pw.TextStyle(
+                    font: fTitle,
+                    fontSize: 21,
+                    color: _gold,
+                    letterSpacing: 1.5,
                   ),
                 ),
                 pw.SizedBox(height: 5),
                 pw.Text(
-                  'in Sign Language Learning',
+                  'in Sign Language Mastery',
                   style: pw.TextStyle(
-                    font: fontItalic,
-                    fontSize: 14,
-                    color: PdfColor.fromHex('#92400E'),
+                    font: fItalic,
+                    fontSize: 12,
+                    color: _muted,
                   ),
                 ),
-                pw.SizedBox(height: 20),
+                pw.SizedBox(height: 10),
+                _rule(),
+                pw.SizedBox(height: 15),
 
-                // Decorative line
-                pw.Container(
-                  width: 300,
-                  height: 3,
-                  decoration: pw.BoxDecoration(
-                    gradient: pw.LinearGradient(
-                      colors: [
-                        PdfColor.fromHex('#F59E0B'),
-                        PdfColor.fromHex('#FBBF24'),
-                        PdfColor.fromHex('#F59E0B'),
-                      ],
-                    ),
+                // ── "This certifies that" ─────────────────────────────
+                pw.Text(
+                  'This certifies that',
+                  style: pw.TextStyle(
+                    font: fItalic,
+                    fontSize: 12,
+                    color: _muted,
                   ),
                 ),
-                pw.SizedBox(height: 25),
+                pw.SizedBox(height: 12),
 
-                // User name
+                // ── NAME ──────────────────────────────────────────────
                 pw.Text(
                   userName,
                   style: pw.TextStyle(
-                    font: fontBold,
-                    fontSize: 40,
-                    color: PdfColor.fromHex('#1F2937'),
+                    font: fName,
+                    fontSize: 48,
+                    color: _white,
                   ),
+                  textAlign: pw.TextAlign.center,
                 ),
-                pw.SizedBox(height: 15),
+                pw.SizedBox(height: 7),
+                pw.Container(width: 300, height: 1.5, color: _gold),
+                pw.SizedBox(height: 13),
 
+                // ── Description ───────────────────────────────────────
                 pw.Text(
-                  'has demonstrated outstanding dedication to learning sign language',
+                  'has demonstrated outstanding dedication to the art of sign language',
                   style: pw.TextStyle(
-                    font: fontRegular,
-                    fontSize: 14,
-                    color: PdfColor.fromHex('#6B7280'),
+                    font: fBody,
+                    fontSize: 12,
+                    color: _pale,
                   ),
                 ),
-                pw.SizedBox(height: 25),
+                pw.SizedBox(height: 17),
 
-                // Stats row
+                // ── Four-stat row ─────────────────────────────────────
                 pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
                   children: [
-                    _buildStatBox('🤟', '$totalSignsLearned', 'Signs Learned', fontBold, fontRegular),
-                    _buildStatBox('⭐', '$totalXP', 'Total XP', fontBold, fontRegular),
-                    _buildStatBox('🔥', '$streakDays', 'Day Streak', fontBold, fontRegular),
-                    _buildStatBox('📚', '$categoriesCompleted', 'Categories', fontBold, fontRegular),
+                    _pill(
+                      '$totalSignsLearned',
+                      'Signs Learned',
+                      fName,
+                      fBody,
+                      _gold,
+                    ),
+                    pw.SizedBox(width: 12),
+                    _pill(
+                      '${_fmt(totalXP)} XP',
+                      'Total Earned',
+                      fName,
+                      fBody,
+                      _indigo,
+                    ),
+                    pw.SizedBox(width: 12),
+                    _pill(
+                      '$streakDays days',
+                      'Best Streak',
+                      fName,
+                      fBody,
+                      PdfColor.fromHex('#F97316'),
+                    ),
+                    pw.SizedBox(width: 12),
+                    _pill(
+                      '$categoriesCompleted',
+                      'Categories',
+                      fName,
+                      fBody,
+                      PdfColor.fromHex('#10B981'),
+                    ),
                   ],
                 ),
-                pw.SizedBox(height: 25),
+                pw.SizedBox(height: 12),
 
-                // Date
+                // ── Date ──────────────────────────────────────────────
                 pw.Text(
-                  'Awarded on ${DateFormat('MMMM d, yyyy').format(completionDate)}',
+                  'Awarded with distinction  ·  '
+                  '${DateFormat('MMMM d, yyyy').format(completionDate)}',
                   style: pw.TextStyle(
-                    font: fontItalic,
-                    fontSize: 12,
-                    color: PdfColor.fromHex('#9CA3AF'),
+                    font: fItalic,
+                    fontSize: 10,
+                    color: _muted,
                   ),
                 ),
 
                 pw.Spacer(),
 
-                // Footer
+                // ── Footer ────────────────────────────────────────────
+                _rule(),
+                pw.SizedBox(height: 9),
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Text(
-                      'Certificate ID: ${_generateCertId()}',
+                      'ID: ${_certId()}',
                       style: pw.TextStyle(
-                        font: fontRegular,
-                        fontSize: 8,
-                        color: PdfColor.fromHex('#D1D5DB'),
+                        font: fBody,
+                        fontSize: 7,
+                        color: PdfColor(0.30, 0.30, 0.46),
                       ),
                     ),
                     pw.Text(
-                      'Gestura - Breaking Silence, Building Bridges',
+                      'Breaking Silence, Building Bridges',
                       style: pw.TextStyle(
-                        font: fontItalic,
-                        fontSize: 10,
-                        color: PdfColor.fromHex('#9CA3AF'),
+                        font: fItalic,
+                        fontSize: 9,
+                        color: _muted,
+                      ),
+                    ),
+                    pw.Text(
+                      'gestura.app',
+                      style: pw.TextStyle(
+                        font: fBody,
+                        fontSize: 7,
+                        color: PdfColor(0.30, 0.30, 0.46),
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
 
     return pdf.save();
   }
 
-  static pw.Widget _buildStar() {
-    return pw.Container(
-      width: 20,
-      height: 20,
-      child: pw.Center(
-        child: pw.Text(
-          '⭐',
-          style: const pw.TextStyle(fontSize: 16),
-        ),
-      ),
-    );
-  }
+  // ── Display helpers ───────────────────────────────────────────────
 
-  static pw.Widget _buildGoldStar() {
-    return pw.Container(
-      width: 30,
-      height: 30,
-      decoration: pw.BoxDecoration(
-        color: PdfColor.fromHex('#FEF3C7'),
-        shape: pw.BoxShape.circle,
-      ),
-      child: pw.Center(
-        child: pw.Text(
-          '⭐',
-          style: const pw.TextStyle(fontSize: 18),
-        ),
-      ),
-    );
-  }
-
-  static pw.Widget _buildBadge(String emoji, String label) {
-    return pw.Column(
-      children: [
-        pw.Container(
-          width: 50,
-          height: 50,
-          decoration: pw.BoxDecoration(
-            color: PdfColor.fromHex('#F3F4F6'),
-            borderRadius: pw.BorderRadius.circular(12),
-          ),
-          child: pw.Center(
-            child: pw.Text(emoji, style: const pw.TextStyle(fontSize: 24)),
-          ),
-        ),
-        pw.SizedBox(height: 5),
-        pw.Text(
-          label,
-          style: pw.TextStyle(
-            fontSize: 10,
-            color: PdfColor.fromHex('#6B7280'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static pw.Widget _buildStatBox(
-    String emoji,
-    String value,
-    String label,
-    pw.Font fontBold,
-    pw.Font fontRegular,
-  ) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(15),
-      decoration: pw.BoxDecoration(
-        color: PdfColor.fromHex('#FFFBEB'),
-        borderRadius: pw.BorderRadius.circular(12),
-        border: pw.Border.all(color: PdfColor.fromHex('#FDE68A')),
-      ),
-      child: pw.Column(
-        children: [
-          pw.Text(emoji, style: const pw.TextStyle(fontSize: 24)),
-          pw.SizedBox(height: 5),
-          pw.Text(
-            value,
-            style: pw.TextStyle(
-              font: fontBold,
-              fontSize: 20,
-              color: PdfColor.fromHex('#92400E'),
-            ),
-          ),
-          pw.Text(
-            label,
-            style: pw.TextStyle(
-              font: fontRegular,
-              fontSize: 10,
-              color: PdfColor.fromHex('#B45309'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static String _generateCertId() {
-    final now = DateTime.now();
-    return 'GEST-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.millisecondsSinceEpoch.toString().substring(7)}';
-  }
-
-  /// Show print/share dialog for PDF
+  /// Opens the system print / share dialog.
   static Future<void> showCertificate(
     BuildContext context,
     Uint8List pdfBytes,
     String fileName,
   ) async {
     await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdfBytes,
+      onLayout: (_) async => pdfBytes,
       name: fileName,
     );
   }
 
-  /// Share certificate
+  /// Shares via the system share sheet.
   static Future<void> shareCertificate(
     Uint8List pdfBytes,
     String fileName,
   ) async {
-    await Printing.sharePdf(
-      bytes: pdfBytes,
-      filename: fileName,
-    );
+    await Printing.sharePdf(bytes: pdfBytes, filename: fileName);
   }
 }

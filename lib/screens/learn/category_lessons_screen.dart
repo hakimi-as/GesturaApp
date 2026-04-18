@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/category_model.dart';
 import '../../models/lesson_model.dart';
@@ -10,6 +11,7 @@ import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../services/certificate_service.dart';
 import 'lesson_detail_screen.dart';
+import 'certificate_preview_screen.dart';
 
 // --- Phase 2 Integration: Imports ---
 import '../../widgets/offline/download_widgets.dart';
@@ -138,11 +140,16 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
       
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
-      
-      // Share/Save the certificate
-      await CertificateService.shareCertificate(
-        pdfBytes,
-        'Gestura_${widget.category.name.replaceAll(' ', '_')}_Certificate.pdf',
+
+      final fileName = 'Gestura_${widget.category.name.replaceAll(' ', '_')}_Certificate.pdf';
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CertificatePreviewScreen(
+            pdfBytes: pdfBytes,
+            fileName: fileName,
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -397,7 +404,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
     
     debugPrint('🎯 Lesson ${lesson.signName} (${lesson.id}) - Display: $displayName - Completed: $isCompleted');
 
-    return GestureDetector(
+    return TapScale(
       onTap: () async {
         final result = await Navigator.push(
           context,
@@ -408,10 +415,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
             ),
           ),
         );
-
-        if (result == true) {
-          _loadLessons();
-        }
+        if (result == true) _loadLessons();
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
