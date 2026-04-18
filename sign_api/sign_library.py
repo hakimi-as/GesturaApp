@@ -74,34 +74,46 @@ class SignLibrary:
 
         db = firestore.client()
 
-        # Stream docs one-at-a-time so we never hold all 2000 large
-        # holistic documents in RAM simultaneously.
-        # Each doc is processed and its raw data discarded before the next.
-        logger.info("Streaming sign library from Firestore (pose-only, low-RAM mode)…")
+        # Paginated batch loading — avoids .stream() Python 3.13 bug and
+        # never holds more than BATCH_SIZE raw documents in RAM at once.
+        BATCH_SIZE = 100
+        logger.info("Loading sign library from Firestore in batches of %d…", BATCH_SIZE)
 
         loaded = 0
         total = 0
+        last_doc = None
+        collection = db.collection("sign_animations")
 
-        for doc in db.collection("sign_animations").stream():
-            total += 1
-            try:
-                data = doc.to_dict()
-                frames_raw: list[dict[str, Any]] = data.get("data") or []
+        while True:
+            query = collection.order_by("__name__").limit(BATCH_SIZE)
+            if last_doc is not None:
+                query = query.start_after(last_doc)
 
-                if frames_raw:
-                    normalized = _normalize_pose_only(frames_raw)
-                    if normalized:
-                        self._library[doc.id] = normalized
-                        loaded += 1
+            batch = query.get()
+            if not batch:
+                break
 
-                # Explicitly discard raw data and help GC reclaim memory
-                del data, frames_raw
-                if total % 100 == 0:
-                    gc.collect()
-                    logger.info("  … %d processed, %d loaded so far", total, loaded)
+            for doc in batch:
+                total += 1
+                try:
+                    data = doc.to_dict()
+                    frames_raw: list[dict[str, Any]] = data.get("data") or []
+                    if frames_raw:
+                        normalized = _normalize_pose_only(frames_raw)
+                        if normalized:
+                            self._library[doc.id] = normalized
+                            loaded += 1
+                    del data, frames_raw
+                except Exception as exc:
+                    logger.warning("Skipping %s: %s", doc.id, exc)
 
-            except Exception as exc:
-                logger.warning("Skipping %s: %s", doc.id, exc)
+            last_doc = batch[-1]
+            del batch
+            gc.collect()
+            logger.info("  … %d processed, %d loaded so far", total, loaded)
+
+            if total % BATCH_SIZE != 0:
+                break  # last batch was smaller than BATCH_SIZE — we're done
 
         gc.collect()
         self._loaded = True
