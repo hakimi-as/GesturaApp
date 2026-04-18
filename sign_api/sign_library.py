@@ -18,8 +18,10 @@ where each sequence is a list of 96-dim float vectors.
 """
 
 from __future__ import annotations
+import json
 import os
 import logging
+import tempfile
 from typing import Any
 
 import firebase_admin
@@ -52,19 +54,17 @@ class SignLibrary:
         Initialise Firebase (if not already done) and pull all
         sign_animations documents into memory.
 
-        credentials_path: path to serviceAccount.json.
-        Falls back to FIREBASE_CREDENTIALS env var, then to Application
-        Default Credentials (works on Cloud Run / Railway with GCP auth).
+        Credential resolution order:
+          1. FIREBASE_SERVICE_ACCOUNT_JSON env var (full JSON string) — Railway
+          2. credentials_path argument or FIREBASE_CREDENTIALS env var (file path)
+          3. Application Default Credentials (GCP-hosted environments)
         """
         # ── Firebase init ──────────────────────────────────────────────
         if not firebase_admin._apps:
-            cred_path = credentials_path or os.getenv("FIREBASE_CREDENTIALS")
-            if cred_path and os.path.exists(cred_path):
-                cred = credentials.Certificate(cred_path)
+            cred = _resolve_credentials(credentials_path)
+            if cred:
                 firebase_admin.initialize_app(cred)
-                logger.info("Firebase initialised with service account: %s", cred_path)
             else:
-                # Application Default Credentials (Railway / Cloud Run)
                 firebase_admin.initialize_app()
                 logger.info("Firebase initialised with Application Default Credentials")
 
@@ -100,6 +100,30 @@ class SignLibrary:
             loaded,
             total,
         )
+
+
+# ── Credential resolution ─────────────────────────────────────────────────────
+
+def _resolve_credentials(credentials_path: str | None) -> credentials.Certificate | None:
+    # Option 1: full JSON string in env var (Railway / Render / Heroku)
+    json_str = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
+    if json_str:
+        try:
+            service_account_info = json.loads(json_str)
+            cred = credentials.Certificate(service_account_info)
+            logger.info("Firebase initialised from FIREBASE_SERVICE_ACCOUNT_JSON env var")
+            return cred
+        except Exception as exc:
+            logger.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON: %s", exc)
+
+    # Option 2: path to a JSON file
+    cred_path = credentials_path or os.getenv("FIREBASE_CREDENTIALS")
+    if cred_path and os.path.exists(cred_path):
+        cred = credentials.Certificate(cred_path)
+        logger.info("Firebase initialised with service account file: %s", cred_path)
+        return cred
+
+    return None
 
 
 # Module-level singleton
