@@ -17,11 +17,13 @@ import 'providers/challenge_provider.dart';
 
 // --- Phase 2 Integration: New Imports ---
 import 'providers/connectivity_provider.dart'; // Contains ConnectivityService
+import 'providers/locale_provider.dart';
 import 'services/offline_service.dart';        // Handles Hive & Caching
 
 // --- Services ---
 import 'services/notification_service.dart';
 import 'services/haptic_service.dart';
+import 'services/remote_sign_service.dart';
 
 // --- Screens ---
 import 'screens/splash_screen.dart';
@@ -49,6 +51,10 @@ void main() async {
   // Initialize Connectivity Service (Start listening to network status)
   await ConnectivityService.initialize();
   // ------------------------------------------
+
+  // Configure sign recognition API
+  RemoteSignService.serverUrl = 'https://gesturaapp-production.up.railway.app';
+  RemoteSignService.apiKey    = '';
 
   // Check if user has seen onboarding
   final prefs = await SharedPreferences.getInstance();
@@ -90,6 +96,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ConnectivityService.instance),
         
         ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

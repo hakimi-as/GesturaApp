@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; width: 100vw; height: 100vh; overflow: hidden; }
+    canvas { width: 100vw; height: 100vh; object-fit: cover; display: block; }
+    video { display: none; }
+    #status {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6); color: #fff; font-family: sans-serif;
+      font-size: 13px; padding: 6px 14px; border-radius: 20px;
+      pointer-events: none; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" playsinline autoplay muted></video>
+  <canvas id="canvas"></canvas>
+  <div id="status">Loading MediaPipe…</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/holistic.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
+
+  <script>
+    const video  = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx    = canvas.getContext('2d');
+    const status = document.getElementById('status');
+
+    // ── MediaPipe Holistic ──────────────────────────────────────────────────
+    const holistic = new Holistic({
+      locateFile: (f) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/${f}`
+    });
+
+    holistic.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      refineFaceLandmarks: false,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    holistic.onResults((results) => {
+      // ── Draw camera frame ────────────────────────────────────────────────
+      canvas.width  = results.image.width  || canvas.offsetWidth;
+      canvas.height = results.image.height || canvas.offsetHeight;
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+      // ── Draw skeleton ────────────────────────────────────────────────────
+      if (results.poseLandmarks) {
+        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS,
+          { color: 'rgba(0,230,0,0.55)', lineWidth: 2 });
+        drawLandmarks(ctx, results.poseLandmarks,
+          { color: '#00E600', lineWidth: 1, radius: 2 });
+      }
+      if (results.leftHandLandmarks) {
+        drawConnectors(ctx, results.leftHandLandmarks, HAND_CONNECTIONS,
+          { color: 'rgba(255,100,0,0.8)', lineWidth: 2 });
+        drawLandmarks(ctx, results.leftHandLandmarks,
+          { color: '#FF6400', lineWidth: 1, radius: 3 });
+      }
+      if (results.rightHandLandmarks) {
+        drawConnectors(ctx, results.rightHandLandmarks, HAND_CONNECTIONS,
+          { color: 'rgba(50,130,255,0.8)', lineWidth: 2 });
+        drawLandmarks(ctx, results.rightHandLandmarks,
+          { color: '#3282FF', lineWidth: 1, radius: 3 });
+      }
+      ctx.restore();
+
+      // ── Send landmarks to Flutter ────────────────────────────────────────
+      function toLandmarkList(lms) {
+        if (!lms) return null;
+        return lms.map(lm => ({ x: lm.x, y: lm.y, z: lm.z || 0 }));
+      }
+
+      try {
+        window.flutter_inappwebview.callHandler('onLandmarks', {
+          pose:      toLandmarkList(results.poseLandmarks),
+          leftHand:  toLandmarkList(results.leftHandLandmarks),
+          rightHand: toLandmarkList(results.rightHandLandmarks)
+        });
+      } catch(e) {
+        // Flutter bridge not ready yet — ignore
+      }
+    });
+
+    // ── Start camera via direct getUserMedia (more compatible than Camera util) ──
+    holistic.initialize().then(() => {
+      status.textContent = 'Starting camera…';
+
+      const constraints = {
+        video: {
+          facingMode: 'user',
+          width:  { ideal: 640 },
+          height: { ideal: 480 }
+        },
+        audio: false
+      };
+
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+          video.srcObject = stream;
+          video.onloadedmetadata = () => {
+            video.play();
+            status.style.display = 'none';
+            try { window.flutter_inappwebview.callHandler('onReady'); } catch(e) {}
+
+            // Send frames to holistic at ~15fps
+            function sendFrame() {
+              if (video.readyState >= 2) {
+                holistic.send({ image: video });
+              }
+              setTimeout(sendFrame, 66); // ~15fps — enough for sign recognition
+            }
+            sendFrame();
+          };
+        })
+        .catch(err => {
+          status.textContent = 'Camera error: ' + err.name + ': ' + err.message;
+        });
+    }).catch(err => {
+      status.textContent = 'MediaPipe error: ' + err.message;
+    });
+  </script>
+</body>
+</html>
