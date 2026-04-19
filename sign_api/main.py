@@ -146,6 +146,14 @@ def health() -> HealthResponse:
     )
 
 
+@app.get("/words")
+def words(limit: int = 50) -> dict:
+    """Return a sample of available sign words in the library."""
+    lib = get_library()
+    keys = sorted(lib.library.keys())[:limit]
+    return {"words": keys, "total": lib.size}
+
+
 @app.post("/match", response_model=MatchResponse)
 def match(body: MatchRequest, _: None = Security(verify_key)) -> MatchResponse:
     lib = get_library()
