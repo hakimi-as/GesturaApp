@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
@@ -172,7 +173,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          GestureDetector(
+          TapScale(
             onTap: () => Navigator.pop(context),
             child: Container(
               width: 40,
@@ -355,18 +356,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       child: Row(
         children: [
           Expanded(
-            child: GestureDetector(
+            child: TapScale(
               onTap: () => _toggleScope('global'),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: _selectedScope == 'global' 
-                      ? AppColors.primary 
+                  color: _selectedScope == 'global'
+                      ? AppColors.primary
                       : context.bgCard,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _selectedScope == 'global' 
-                        ? AppColors.primary 
+                    color: _selectedScope == 'global'
+                        ? AppColors.primary
                         : context.borderColor,
                   ),
                 ),
@@ -397,18 +398,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: GestureDetector(
+            child: TapScale(
               onTap: () => _toggleScope('friends'),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: _selectedScope == 'friends' 
-                      ? AppColors.primary 
+                  color: _selectedScope == 'friends'
+                      ? AppColors.primary
                       : context.bgCard,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _selectedScope == 'friends' 
-                        ? AppColors.primary 
+                    color: _selectedScope == 'friends'
+                        ? AppColors.primary
                         : context.borderColor,
                   ),
                 ),
@@ -582,7 +583,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final isCurrentUser = user.id == authProvider.userId;
 
-    return GestureDetector(
+    return TapScale(
       onTap: () => _openFriendProfile(user.id),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -700,7 +701,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     final friendUser = friend.friendUser; // Access the UserModel
     final isCurrentUser = friendUser.id == authProvider.userId;
 
-    return GestureDetector(
+    return TapScale(
       onTap: () => _openFriendProfile(friendUser.id),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/theme.dart';
+import '../../config/design_system.dart';
 import '../../models/quiz_model.dart';
 import '../../providers/quiz_provider.dart';
 import '../../services/cloudinary_service.dart';
@@ -208,10 +209,10 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
           const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: total > 0 ? current / total : 0,
-              minHeight: 6,
+              minHeight: 7,
               backgroundColor: context.bgCard,
               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
@@ -312,7 +313,7 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
             ).animate().fadeIn(duration: 400.ms)
           else if (hasImage)
-            GestureDetector(
+            TapScale(
               onTap: () => _showFullscreenImage(context, question.imageUrl!),
               child: Container(
                 width: 200,
@@ -690,44 +691,56 @@ class _QuizScreenState extends State<QuizScreen> {
       textColor = AppColors.primary;
     }
 
-    return GestureDetector(
+    return TapScale(
       onTap: isAnswered ? null : () => _handleOptionSelected(index),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: borderColor,
+            width: isSelected || (isAnswered && isCorrect) ? 2 : 1,
+          ),
+          boxShadow: isSelected && !isAnswered
+              ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.20), blurRadius: 12, offset: const Offset(0, 3))]
+              : isAnswered && isCorrect
+                  ? [BoxShadow(color: AppColors.success.withValues(alpha: 0.18), blurRadius: 10, offset: const Offset(0, 3))]
+                  : null,
         ),
         child: Row(
           children: [
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               width: 36,
               height: 36,
               decoration: BoxDecoration(
                 color: isSelected || (isAnswered && isCorrect)
-                    ? borderColor.withAlpha(51)
+                    ? borderColor.withValues(alpha: 0.18)
                     : context.bgElevated,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isSelected || (isAnswered && isCorrect)
+                      ? borderColor.withValues(alpha: 0.50)
+                      : context.borderColor,
+                ),
               ),
               child: Center(
                 child: isAnswered
                     ? Icon(
-                        isCorrect
-                            ? Icons.check
-                            : (isSelected ? Icons.close : null),
-                        color: isCorrect
-                            ? AppColors.success
-                            : (isSelected ? AppColors.error : null),
+                        isCorrect ? Icons.check_rounded : (isSelected ? Icons.close_rounded : null),
+                        color: isCorrect ? AppColors.success : (isSelected ? AppColors.error : null),
                         size: 20,
                       )
                     : Text(
                         String.fromCharCode(65 + index),
                         style: TextStyle(
                           color: isSelected ? borderColor : context.textMuted,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
                         ),
                       ),
               ),
@@ -736,24 +749,18 @@ class _QuizScreenState extends State<QuizScreen> {
             Expanded(
               child: Text(
                 option,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   color: textColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ),
             if (isSelected && !isAnswered)
-              const Icon(
-                Icons.check_circle,
-                color: AppColors.primary,
-                size: 22,
-              ),
+              Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 22),
           ],
         ),
       ),
-    ).animate().fadeIn(
-      delay: Duration(milliseconds: 100 + (index * 100)),
-    ).slideX(begin: 0.1);
+    ).animate().fadeIn(delay: Duration(milliseconds: 100 + (index * 80))).slideX(begin: 0.08);
   }
 
   /// Build a 2x2 grid of image options for text-to-sign quiz
@@ -796,7 +803,7 @@ class _QuizScreenState extends State<QuizScreen> {
           overlayColor = AppColors.primary.withAlpha(30);
         }
 
-        return GestureDetector(
+        return TapScale(
           onTap: isAnswered ? null : () => _handleOptionSelected(index),
           child: Container(
             decoration: BoxDecoration(
@@ -820,7 +827,7 @@ class _QuizScreenState extends State<QuizScreen> {
               children: [
                 // Option image
                 if (optionImage != null)
-                  GestureDetector(
+                  TapScale(
                     onLongPress: () => _showFullscreenImage(context, optionImage),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
@@ -1120,7 +1127,7 @@ class _QuizScreenState extends State<QuizScreen> {
     showDialog(
       context: context,
       barrierColor: Colors.black87,
-      builder: (_) => GestureDetector(
+      builder: (_) => TapScale(
         onTap: () => Navigator.pop(context),
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -1145,7 +1152,7 @@ class _QuizScreenState extends State<QuizScreen> {
               Positioned(
                 top: 48,
                 right: 16,
-                child: GestureDetector(
+                child: TapScale(
                   onTap: () => Navigator.pop(context),
                   child: Container(
                     padding: const EdgeInsets.all(8),

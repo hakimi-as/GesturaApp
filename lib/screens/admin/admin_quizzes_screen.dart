@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/quiz_model.dart';
 import '../../services/firestore_service.dart';
@@ -84,7 +85,7 @@ class _AdminQuizzesScreenState extends State<AdminQuizzesScreen> {
   }
 
   Widget _buildQuizCard(BuildContext context, QuizModel quiz, int index) {
-    return GestureDetector(
+    return TapScale(
       onTap: () => _showQuizQuestionsScreen(quiz),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -299,7 +300,7 @@ class _AdminQuizzesScreenState extends State<AdminQuizzesScreen> {
                   children: ['easy', 'medium', 'hard'].map((diff) {
                     final isSelected = selectedDifficulty == diff;
                     return Expanded(
-                      child: GestureDetector(
+                      child: TapScale(
                         onTap: () => setDialogState(() => selectedDifficulty = diff),
                         child: Container(
                           margin: const EdgeInsets.only(right: 8),
@@ -353,7 +354,7 @@ class _AdminQuizzesScreenState extends State<AdminQuizzesScreen> {
                 ),
                 if (isEditing) ...[
                   const SizedBox(height: 16),
-                  GestureDetector(
+                  TapScale(
                     onTap: () {
                       Navigator.pop(context);
                       _showQuizQuestionsScreen(quiz);
@@ -1226,7 +1227,7 @@ class _QuestionDialogState extends State<_QuestionDialog> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -1271,7 +1272,7 @@ class _QuestionDialogState extends State<_QuestionDialog> {
     required VoidCallback onTap,
     required VoidCallback onRemove,
   }) {
-    return GestureDetector(
+    return TapScale(
       onTap: isUploading ? null : onTap,
       child: Container(
         height: 100,
@@ -1319,7 +1320,7 @@ class _QuestionDialogState extends State<_QuestionDialog> {
             if (hasMedia && !isUploading)
               Positioned(
                 top: 4, right: 4,
-                child: GestureDetector(
+                child: TapScale(
                   onTap: onRemove,
                   child: Container(
                     padding: const EdgeInsets.all(4),
@@ -1339,7 +1340,7 @@ class _QuestionDialogState extends State<_QuestionDialog> {
     final hasOptionImage = optionImageUrls[optionIndex] != null || selectedOptionBytes[optionIndex] != null;
     final isUploadingOption = isUploadingOptionImage[optionIndex];
 
-    return GestureDetector(
+    return TapScale(
       onTap: () => setState(() => correctAnswerIndex = optionIndex),
       child: Container(
         decoration: BoxDecoration(
@@ -1375,7 +1376,7 @@ class _QuestionDialogState extends State<_QuestionDialog> {
             
             // Option image (for text_to_sign)
             if (quizType == 'text_to_sign') ...[
-              GestureDetector(
+              TapScale(
                 onTap: () => _pickOptionImage(optionIndex),
                 child: Container(
                   width: 70,
@@ -1437,7 +1438,7 @@ class _QuestionDialogState extends State<_QuestionDialog> {
                       if (hasOptionImage && !isUploadingOption)
                         Positioned(
                           top: 2, right: 2,
-                          child: GestureDetector(
+                          child: TapScale(
                             onTap: () => _removeOptionImage(optionIndex),
                             child: Container(
                               padding: const EdgeInsets.all(2),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
@@ -175,7 +176,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   Widget _buildFilterChip(String label, String value) {
     final isSelected = _selectedFilter == value;
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         setState(() => _selectedFilter = value);
         _filterUsers();

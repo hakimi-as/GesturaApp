@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 
 class QuickActionCard extends StatelessWidget {
@@ -19,7 +20,7 @@ class QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),

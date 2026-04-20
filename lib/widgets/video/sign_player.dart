@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart' as http;
 import '../../services/firestore_service.dart';
 import '../common/skeleton_painter.dart';
 import '../../config/theme.dart';
@@ -11,7 +13,9 @@ class SignSegment {
   final String label;
   /// 'bim' = found in database, 'fingerspell' = spelled letter-by-letter
   final String type;
-  const SignSegment({required this.label, required this.type});
+  /// 'BIM' | 'ASL' — only relevant when type == 'bim'
+  final String language;
+  const SignSegment({required this.label, required this.type, this.language = 'BIM'});
 }
 
 class SignPlayer extends StatefulWidget {
@@ -39,8 +43,16 @@ class _SignPlayerState extends State<SignPlayer> {
   // Data
   final List<List<Map<String, dynamic>>> _sequence = [];
   final List<String> _sequenceLabels = [];
-  final List<String> _sequenceTypes = []; // 'bim' | 'fingerspell'
-  
+  final List<String> _sequenceTypes = [];     // 'bim' | 'fingerspell'
+  final List<String> _sequenceLanguages = []; // 'BIM' | 'ASL'
+  final List<String?> _sequenceFsw = [];      // FSW string or null
+
+  // SVG cache: fsw → patched SVG string ready for SvgPicture.string
+  final Map<String, String> _svgCache = {};
+
+  // ValueNotifier for frame — only CustomPaint listens, rest of UI is unaffected
+  final ValueNotifier<Map<String, dynamic>> _frameNotifier = ValueNotifier({});
+
   // State
   int _currentWordIndex = 0;
   int _currentFrame = 0;
@@ -48,7 +60,7 @@ class _SignPlayerState extends State<SignPlayer> {
   bool _isLoading = true;
   String _statusMessage = "Initializing...";
   bool _isPlaying = false;
-  double _playbackSpeed = 1.0; 
+  double _playbackSpeed = 1.0;
   bool _isFinished = false;
 
   @override
@@ -67,58 +79,107 @@ class _SignPlayerState extends State<SignPlayer> {
   }
 
   /// Fetch sign data for a LETTER (e.g., 'a' -> tries 'letter_a' first, then 'a')
-  Future<List<Map<String, dynamic>>?> _fetchLetterData(String letter) async {
+  Future<Map<String, dynamic>?> _fetchLetterData(String letter) async {
     final char = letter.toLowerCase();
-    
-    // Try "letter_x" format first (for Sign Library letters)
-    final letterKey = 'letter_$char';
-    var frames = await _fetchSignDataByKey(letterKey);
-    if (frames != null) return frames;
-    
-    // Fallback to just the character
+    final result = await _fetchSignDataByKey('letter_$char');
+    if (result != null) return result;
     return await _fetchSignDataByKey(char);
   }
 
   /// Fetch sign data for a WORD (e.g., 'i' -> tries 'i' first, then 'word_i')
-  Future<List<Map<String, dynamic>>?> _fetchWordData(String word) async {
+  Future<Map<String, dynamic>?> _fetchWordData(String word) async {
     final key = word.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
-    
-    // Try the word directly first
-    var frames = await _fetchSignDataByKey(key);
-    if (frames != null) return frames;
-    
-    // For single characters that are words (like "I"), try "word_x" format
+    final result = await _fetchSignDataByKey(key);
+    if (result != null) return result;
     if (word.length == 1) {
       return await _fetchSignDataByKey('word_$key');
     }
-    
     return null;
   }
 
-  /// Low-level fetch by exact key
-  Future<List<Map<String, dynamic>>?> _fetchSignDataByKey(String key) async {
-    // Try Firestore (using optimized getSignData that loads from sign_animations)
-    try {
-      final firestoreData = await _firestoreService.getSignData(key);
-      if (firestoreData != null && firestoreData['data'] != null) {
-        return (firestoreData['data'] as List).cast<Map<String, dynamic>>();
-      }
-    } catch (e) {
-      debugPrint('⚠️ Firestore fetch failed for $key: $e');
-    }
+  /// Low-level fetch by exact key. Returns {'frames': List, 'language': String, 'fsw': String?} or null.
+  /// Priority: local assets for animation (faster, offline), Firestore for FSW supplement.
+  Future<Map<String, dynamic>?> _fetchSignDataByKey(String key) async {
+    Map<String, dynamic>? result;
 
-    // Fallback to local assets
+    // 1. Try local assets first (faster, works offline)
     try {
       final jsonString = await rootBundle.loadString('assets/signs/$key.json');
       final data = json.decode(jsonString);
       if (data['data'] != null) {
-        return (data['data'] as List).cast<Map<String, dynamic>>();
+        result = {
+          'frames': (data['data'] as List).cast<Map<String, dynamic>>(),
+          'language': data['language'] as String? ?? 'BIM',
+          'fsw': data['fsw'] as String?,
+        };
       }
-    } catch (e) {
-      // Asset not found - this is expected for many signs
+    } catch (_) {}
+
+    // 2. If no local data, try Firestore for full data
+    if (result == null) {
+      try {
+        final firestoreData = await _firestoreService.getSignAnimationData(key);
+        if (firestoreData != null && firestoreData['data'] != null) {
+          final raw = firestoreData['data'];
+          final List framesList;
+          final String language;
+          if (raw is List) {
+            framesList = raw;
+            language = firestoreData['language'] as String? ?? 'BIM';
+          } else if (raw is Map && raw['data'] is List) {
+            framesList = raw['data'] as List;
+            language = 'BIM';
+          } else {
+            return null;
+          }
+          if (framesList.isEmpty) return null;
+          result = {
+            'frames': framesList.cast<Map<String, dynamic>>(),
+            'language': language,
+            'fsw': firestoreData['fsw'] as String?,
+          };
+        }
+      } catch (e) {
+        debugPrint('⚠️ Firestore fetch failed for $key: $e');
+      }
     }
 
-    return null;
+    // 3. Got local animation but no FSW — check Firestore just for the FSW field
+    if (result != null && result['fsw'] == null) {
+      try {
+        final firestoreData = await _firestoreService.getSignAnimationData(key);
+        final fsw = firestoreData?['fsw'] as String?;
+        if (fsw != null) result['fsw'] = fsw;
+      } catch (_) {}
+    }
+
+    return result;
+  }
+
+  /// signpuddle.net returns nested <svg x="N" y="M"> elements with no dimensions.
+  /// flutter_svg v2 requires viewBox/width/height on every <svg>.
+  /// Fix: replace those nested <svg> elements with <g transform="translate(N,M)">.
+  String _patchSvg(String svg) {
+    return svg.replaceAllMapped(
+      RegExp(r'<svg\s+x="([\d.]+)"\s+y="([\d.]+)"\s*>([\s\S]*?)<\/svg>'),
+      (m) => '<g transform="translate(${m[1]}, ${m[2]})">${m[3]}</g>',
+    );
+  }
+
+  Future<void> _prefetchSvgs() async {
+    final uniqueFsw = _sequenceFsw.whereType<String>().toSet();
+    if (uniqueFsw.isEmpty) return;
+
+    await Future.wait(uniqueFsw.map((fsw) async {
+      if (_svgCache.containsKey(fsw)) return;
+      try {
+        final uri = Uri.parse('https://signpuddle.net/svg/${Uri.encodeComponent(fsw)}');
+        final res = await http.get(uri).timeout(const Duration(seconds: 10));
+        if (res.statusCode == 200 && res.body.contains('<svg')) {
+          _svgCache[fsw] = _patchSvg(res.body);
+        }
+      } catch (_) {}
+    }));
   }
 
   Future<void> _loadSentence() async {
@@ -128,6 +189,8 @@ class _SignPlayerState extends State<SignPlayer> {
       _sequence.clear();
       _sequenceLabels.clear();
       _sequenceTypes.clear();
+      _sequenceLanguages.clear();
+      _sequenceFsw.clear();
       _statusMessage = "Loading signs...";
     });
 
@@ -137,11 +200,16 @@ class _SignPlayerState extends State<SignPlayer> {
       // If in alphabet mode and it's a single character, treat as letter
       if (widget.isAlphabetMode && rawInput.trim().length == 1) {
         final char = rawInput.trim();
-        final frames = await _fetchLetterData(char);
-        if (frames != null && frames.isNotEmpty) {
-          _sequence.add(frames);
-          _sequenceLabels.add('Letter ${char.toUpperCase()}');
-          _sequenceTypes.add('fingerspell');
+        final result = await _fetchLetterData(char);
+        if (result != null) {
+          final frames = result['frames'] as List<Map<String, dynamic>>;
+          if (frames.isNotEmpty) {
+            _sequence.add(frames);
+            _sequenceLabels.add('Letter ${char.toUpperCase()}');
+            _sequenceTypes.add('fingerspell');
+            _sequenceLanguages.add('BIM');
+            _sequenceFsw.add(null);
+          }
         }
         continue;
       }
@@ -151,12 +219,17 @@ class _SignPlayerState extends State<SignPlayer> {
           .replaceAll(RegExp(r'\s+'), '_')
           .replaceAll(RegExp(r'[^a-z0-9_]'), '');
 
-      List<Map<String, dynamic>>? phraseFrames = await _fetchWordData(phraseKey);
+      Map<String, dynamic>? phraseResult = await _fetchWordData(phraseKey);
 
-      if (phraseFrames != null && phraseFrames.isNotEmpty) {
-        _sequence.add(phraseFrames);
-        _sequenceLabels.add(rawInput.toUpperCase());
-        _sequenceTypes.add('bim');
+      if (phraseResult != null) {
+        final frames = phraseResult['frames'] as List<Map<String, dynamic>>;
+        if (frames.isNotEmpty) {
+          _sequence.add(frames);
+          _sequenceLabels.add(rawInput.toUpperCase());
+          _sequenceTypes.add('bim');
+          _sequenceLanguages.add(phraseResult['language'] as String? ?? 'BIM');
+          _sequenceFsw.add(phraseResult['fsw'] as String?);
+        }
       } else {
         // Split into words
         List<String> words = rawInput.trim().split(RegExp(r'\s+'));
@@ -165,28 +238,40 @@ class _SignPlayerState extends State<SignPlayer> {
           String wordKey = word.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
           if (wordKey.isEmpty) continue;
 
-          List<Map<String, dynamic>>? wordFrames = await _fetchWordData(wordKey);
+          Map<String, dynamic>? wordResult = await _fetchWordData(wordKey);
 
-          if (wordFrames != null && wordFrames.isNotEmpty) {
-            _sequence.add(wordFrames);
-            _sequenceLabels.add(word.toUpperCase());
-            _sequenceTypes.add('bim');
+          if (wordResult != null) {
+            final frames = wordResult['frames'] as List<Map<String, dynamic>>;
+            if (frames.isNotEmpty) {
+              _sequence.add(frames);
+              _sequenceLabels.add(word.toUpperCase());
+              _sequenceTypes.add('bim');
+              _sequenceLanguages.add(wordResult['language'] as String? ?? 'BIM');
+              _sequenceFsw.add(wordResult['fsw'] as String?);
+            }
           } else {
             // Fingerspell - split into characters
             List<String> characters = wordKey.split('');
             for (String char in characters) {
               if (char == '_') continue;
-              List<Map<String, dynamic>>? letterFrames = await _fetchLetterData(char);
-              if (letterFrames != null && letterFrames.isNotEmpty) {
-                _sequence.add(letterFrames);
-                _sequenceLabels.add('Letter ${char.toUpperCase()}');
-                _sequenceTypes.add('fingerspell');
+              final letterResult = await _fetchLetterData(char);
+              if (letterResult != null) {
+                final frames = letterResult['frames'] as List<Map<String, dynamic>>;
+                if (frames.isNotEmpty) {
+                  _sequence.add(frames);
+                  _sequenceLabels.add('Letter ${char.toUpperCase()}');
+                  _sequenceTypes.add('fingerspell');
+                  _sequenceLanguages.add('BIM');
+                  _sequenceFsw.add(null);
+                }
               }
             }
           }
         }
       }
     }
+
+    await _prefetchSvgs();
 
     if (mounted) {
       setState(() {
@@ -202,6 +287,7 @@ class _SignPlayerState extends State<SignPlayer> {
         String fsWord = '';
         for (int i = 0; i < _sequenceLabels.length; i++) {
           final type = i < _sequenceTypes.length ? _sequenceTypes[i] : 'bim';
+          final language = i < _sequenceLanguages.length ? _sequenceLanguages[i] : 'BIM';
           if (type == 'fingerspell') {
             final char = _sequenceLabels[i].replaceFirst('Letter ', '');
             fsWord += char;
@@ -210,7 +296,7 @@ class _SignPlayerState extends State<SignPlayer> {
               segments.add(SignSegment(label: fsWord, type: 'fingerspell'));
               fsWord = '';
             }
-            segments.add(SignSegment(label: _sequenceLabels[i], type: 'bim'));
+            segments.add(SignSegment(label: _sequenceLabels[i], type: 'bim', language: language));
           }
         }
         if (fsWord.isNotEmpty) {
@@ -219,8 +305,9 @@ class _SignPlayerState extends State<SignPlayer> {
         widget.onLoadComplete!(segments);
       }
 
-      if (_sequence.isNotEmpty && widget.autoPlay) {
-        _play();
+      if (_sequence.isNotEmpty) {
+        _frameNotifier.value = _sequence[0][0];
+        if (widget.autoPlay) _play();
       }
     }
   }
@@ -228,7 +315,10 @@ class _SignPlayerState extends State<SignPlayer> {
   void _play() {
     if (_sequence.isEmpty) return;
     if (_isFinished) {
-      setState(() { _currentWordIndex = 0; _currentFrame = 0; _isFinished = false; });
+      _currentWordIndex = 0;
+      _currentFrame = 0;
+      setState(() { _isFinished = false; });
+      _frameNotifier.value = _sequence[0][0];
     }
     setState(() => _isPlaying = true);
     _timer?.cancel();
@@ -236,20 +326,22 @@ class _SignPlayerState extends State<SignPlayer> {
 
     _timer = Timer.periodic(Duration(milliseconds: frameDuration), (timer) {
       if (!mounted) return;
-      setState(() {
-        final currentAnim = _sequence[_currentWordIndex];
-        if (_currentFrame < currentAnim.length - 1) {
-          _currentFrame++;
+      final currentAnim = _sequence[_currentWordIndex];
+      if (_currentFrame < currentAnim.length - 1) {
+        _currentFrame++;
+        // Only update the frame notifier — no setState, WebView is untouched
+        _frameNotifier.value = currentAnim[_currentFrame];
+      } else {
+        if (_currentWordIndex < _sequence.length - 1) {
+          final nextIndex = _currentWordIndex + 1;
+          _currentFrame = 0;
+          setState(() { _currentWordIndex = nextIndex; });
+          _frameNotifier.value = _sequence[nextIndex][0];
         } else {
-          if (_currentWordIndex < _sequence.length - 1) {
-            _currentWordIndex++;
-            _currentFrame = 0;
-          } else {
-            _stop();
-            _isFinished = true; 
-          }
+          _stop();
+          setState(() { _isFinished = true; });
         }
-      });
+      }
     });
   }
 
@@ -270,35 +362,33 @@ class _SignPlayerState extends State<SignPlayer> {
   }
 
   void _replay() {
-    setState(() {
-      _currentWordIndex = 0;
-      _currentFrame = 0;
-      _isFinished = false;
-    });
+    _currentWordIndex = 0;
+    _currentFrame = 0;
+    setState(() { _isFinished = false; });
+    if (_sequence.isNotEmpty) _frameNotifier.value = _sequence[0][0];
     _play();
   }
 
   void _next() {
     if (_currentWordIndex < _sequence.length - 1) {
-      setState(() {
-        _currentWordIndex++;
-        _currentFrame = 0;
-      });
+      _currentFrame = 0;
+      setState(() { _currentWordIndex++; });
+      _frameNotifier.value = _sequence[_currentWordIndex][0];
     }
   }
 
   void _prev() {
     if (_currentWordIndex > 0) {
-      setState(() {
-        _currentWordIndex--;
-        _currentFrame = 0;
-      });
+      _currentFrame = 0;
+      setState(() { _currentWordIndex--; });
+      _frameNotifier.value = _sequence[_currentWordIndex][0];
     }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _frameNotifier.dispose();
     super.dispose();
   }
 
@@ -322,99 +412,138 @@ class _SignPlayerState extends State<SignPlayer> {
 
     String currentLabel = "";
     String currentType = 'bim';
+    String currentLanguage = 'BIM';
     if (_currentWordIndex < _sequenceLabels.length) {
       currentLabel = _sequenceLabels[_currentWordIndex];
       currentType = _currentWordIndex < _sequenceTypes.length ? _sequenceTypes[_currentWordIndex] : 'bim';
+      currentLanguage = _currentWordIndex < _sequenceLanguages.length ? _sequenceLanguages[_currentWordIndex] : 'BIM';
     }
     final isBim = currentType == 'bim';
-    final badgeColor = isBim ? Colors.green : Colors.blueAccent;
-    final badgeText = isBim ? 'BIM' : 'A-B-C';
+    final Color badgeColor;
+    final String badgeText;
+    if (!isBim) {
+      badgeColor = Colors.blueAccent;
+      badgeText = 'A-B-C';
+    } else if (currentLanguage == 'ASL') {
+      badgeColor = Colors.orange;
+      badgeText = 'ASL';
+    } else {
+      badgeColor = Colors.green;
+      badgeText = 'BIM';
+    }
+
+    final String? currentFsw = _sequenceFsw.isNotEmpty &&
+        _currentWordIndex < _sequenceFsw.length
+        ? _sequenceFsw[_currentWordIndex]
+        : null;
+    final bool hasFsw = currentFsw != null && _svgCache.containsKey(currentFsw);
 
     return Column(
       children: [
-        // Animation Box
+        // Animation + SignWriting side by side
         Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                children: [
-                  SizedBox.expand(
-                    child: CustomPaint(
-                      painter: SkeletonPainter(
-                        _sequence.isNotEmpty 
-                          ? _sequence[_currentWordIndex][_currentFrame] 
-                          : {}
-                      ),
-                    ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Animation box ──────────────────────────────────────────
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white12),
                   ),
-                  
-                  // Label overlay — sign name + BIM / A-B-C badge
-                  Positioned(
-                    top: 20,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Stack(
+                      children: [
+                        SizedBox.expand(
+                          child: ValueListenableBuilder<Map<String, dynamic>>(
+                            valueListenable: _frameNotifier,
+                            builder: (context, frame, _) => CustomPaint(
+                              painter: SkeletonPainter(frame),
+                            ),
+                          ),
+                        ),
+
+                        // Sequence counter
+                        Positioned(
+                          top: 20,
+                          right: 20,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.black54,
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(color: badgeColor.withValues(alpha: 0.6)),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              currentLabel,
-                              style: const TextStyle(
-                                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22,
-                              ),
+                              "${_currentWordIndex + 1}/${_sequence.length}",
+                              style: const TextStyle(color: Colors.grey, fontSize: 12),
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: badgeColor.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              badgeText,
-                              style: const TextStyle(
-                                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-
-                  // Sequence Counter
-                  Positioned(
-                    top: 20,
-                    right: 20,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        "${_currentWordIndex + 1}/${_sequence.length}",
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+
+              // ── SignWriting side panel ─────────────────────────────────
+              if (hasFsw) ...[
+                const SizedBox(width: 10),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  width: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(
+                      children: [
+                        // SVG pre-fetched + patched — renders instantly from cache
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: SvgPicture.string(
+                              _svgCache[currentFsw]!,
+                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 6,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'SIGNWRITING',
+                                style: TextStyle(
+                                  color: badgeColor,
+                                  fontSize: 7,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
 

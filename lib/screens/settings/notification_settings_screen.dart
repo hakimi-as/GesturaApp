@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../services/notification_service.dart';
 
@@ -117,7 +118,7 @@ class _NotificationSettingsScreenState
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          GestureDetector(
+          TapScale(
             onTap: () => Navigator.pop(context),
             child: Container(
               width: 40,
@@ -386,7 +387,7 @@ class _NotificationSettingsScreenState
           ],
         ),
         const SizedBox(height: 16),
-        GestureDetector(
+        TapScale(
           onTap: isEnabled ? _selectReminderTime : null,
           child: Container(
             padding: const EdgeInsets.all(16),

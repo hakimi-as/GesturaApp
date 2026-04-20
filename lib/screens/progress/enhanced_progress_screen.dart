@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/badge_model.dart';
 import '../../models/category_model.dart';
@@ -150,7 +151,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          GestureDetector(
+          TapScale(
             onTap: () => Navigator.pop(context),
             child: Container(
               width: 40,
@@ -1060,7 +1061,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
       itemCount: badges.length > 8 ? 8 : badges.length,
       itemBuilder: (context, index) {
         final badge = badges[index];
-        return GestureDetector(
+        return TapScale(
           onTap: () {
             Navigator.push(
               context,

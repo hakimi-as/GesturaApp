@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../auth/login_screen.dart';
 
@@ -212,9 +213,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           // Title
           Text(
             page.title,
-            style: const TextStyle(
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
               color: Colors.white,
-              fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -224,9 +224,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           // Subtitle
           Text(
             page.subtitle,
-            style: TextStyle(
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.white.withAlpha(200),
-              fontSize: 16,
               height: 1.5,
             ),
             textAlign: TextAlign.center,

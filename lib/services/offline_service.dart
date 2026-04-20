@@ -321,6 +321,36 @@ class OfflineService {
         });
   }
 
+  // ==================== QUIZ QUEUE ====================
+
+  /// Queue a quiz completion for sync when back online
+  static Future<void> queueQuizComplete({
+    required String userId,
+    required String quizType,
+    required num score,
+    required int xpEarned,
+    required int totalQuestions,
+    required int correctAnswers,
+  }) async {
+    await _ensureInitialized();
+    try {
+      final data = {
+        'userId': userId,
+        'quizType': quizType,
+        'score': score.toDouble(),
+        'xpEarned': xpEarned,
+        'totalQuestions': totalQuestions,
+        'correctAnswers': correctAnswers,
+        'completedAt': DateTime.now().toIso8601String(),
+      };
+      final key = '${userId}_${quizType}_${DateTime.now().millisecondsSinceEpoch}';
+      await _addToPendingSync('quizComplete', key, data);
+      debugPrint('💾 Quiz completion queued for sync: $quizType');
+    } catch (e) {
+      debugPrint('Error queuing quiz completion: $e');
+    }
+  }
+
   // ==================== USER DATA ====================
 
   /// Save user data for offline access

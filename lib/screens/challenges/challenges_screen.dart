@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/challenge_model.dart';
 import '../../providers/auth_provider.dart';
@@ -84,7 +85,7 @@ class _ChallengesScreenState extends State<ChallengesScreen>
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          GestureDetector(
+          TapScale(
             onTap: () => Navigator.pop(context),
             child: Container(
               width: 40,
@@ -297,7 +298,8 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   }
 
   Widget _buildChallengeCard(ChallengeModel challenge, int index) {
-    return Container(
+    return TapScale(
+      child: Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -426,7 +428,7 @@ class _ChallengesScreenState extends State<ChallengesScreen>
                       borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
                         value: challenge.progress,
-                        minHeight: 8,
+                        minHeight: 5,
                         backgroundColor: context.bgElevated,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           challenge.isCompleted
@@ -481,6 +483,7 @@ class _ChallengesScreenState extends State<ChallengesScreen>
           ),
         ],
       ),
+    ),
     ).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideX(begin: 0.1);
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
@@ -310,7 +311,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                GestureDetector(
+                TapScale(
                   onTap: () {
                     Clipboard.setData(ClipboardData(text: friendCode));
                     HapticService.lightTap();
@@ -584,7 +585,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
         gradientColors = [const Color(0xFF6366F1), const Color(0xFF8B5CF6)];
     }
 
-    return GestureDetector(
+    return TapScale(
       onTap: isEnabled ? _handleFriendAction : null,
       child: Container(
         height: 52,

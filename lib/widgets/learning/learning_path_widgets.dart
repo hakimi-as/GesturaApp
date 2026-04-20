@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math' as math;
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../services/haptic_service.dart';
 import '../../models/learning_path_model.dart';
@@ -27,7 +28,7 @@ class LearningPathMiniCard extends StatelessWidget {
     final isCompleted = progress?.isCompleted ?? false;
     final pathColor = Color(path.difficultyColor);
 
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         HapticService.buttonTap();
         onTap?.call();
@@ -261,7 +262,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
     final pathColor = Color(_currentPath!.difficultyColor);
     final nextStep = _getNextStep();
 
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         HapticService.buttonTap();
         widget.onTap?.call();
@@ -497,7 +498,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
   }
 
   Widget _buildStartPathCard(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         HapticService.buttonTap();
         widget.onTap?.call();
@@ -595,7 +596,7 @@ class LearningPathStepItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: isLocked
           ? null
           : () {
@@ -760,7 +761,7 @@ class LearningPathCard extends StatelessWidget {
     final progressPercent = progress?.progressPercent(path.steps.length) ?? 0.0;
     final pathColor = Color(path.difficultyColor);
 
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         HapticService.buttonTap();
         onTap?.call();

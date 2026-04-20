@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../config/theme.dart';
+import '../../config/design_system.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/badge_provider.dart';
 import '../../providers/challenge_provider.dart';
@@ -416,7 +417,7 @@ class _LearnScreenState extends State<LearnScreen> {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: context.bgCard,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: context.borderColor),
       ),
       child: Row(
@@ -433,34 +434,25 @@ class _LearnScreenState extends State<LearnScreen> {
   Widget _buildTabItem(int index, String emoji, String label) {
     final isSelected = _selectedTabIndex == index;
 
-    Color getTabColor() {
-      if (!isSelected) return Colors.transparent;
-      switch (index) {
-        case 0:
-          return AppColors.primary;
-        case 1:
-          return AppColors.primary;
-        case 2:
-          return AppColors.primary;
-        case 3:
-          return AppColors.primary;
-        default:
-          return AppColors.primary;
-      }
-    }
-
     return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedTabIndex = index;
-          });
-        },
-        child: Container(
+      child: TapScale(
+        onTap: () => setState(() => _selectedTabIndex = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: getTabColor(),
-            borderRadius: BorderRadius.circular(10),
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [AppColors.primary, AppColors.secondary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected
+                ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.30), blurRadius: 8, offset: const Offset(0, 2))]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -618,18 +610,7 @@ class _LearnScreenState extends State<LearnScreen> {
   Widget _buildSectionTitle(String emoji, String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-      child: Row(
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-        ],
-      ),
+      child: SectionHeader(title: title, emoji: emoji),
     ).animate().fadeIn(delay: 300.ms);
   }
 
@@ -638,14 +619,15 @@ class _LearnScreenState extends State<LearnScreen> {
     final completedCount = _completedLessonCounts[category.id] ?? 0;
     final progress = actualLessonCount > 0 ? completedCount / actualLessonCount : 0.0;
     final percentage = (progress * 100).toInt();
+    final catColor = _getCategoryColor(index);
+    final isDone = percentage == 100 && actualLessonCount > 0;
+    final activeColor = isDone ? AppColors.success : catColor;
 
-    return GestureDetector(
+    return TapScale(
       onTap: () async {
         await Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => CategoryLessonsScreen(category: category),
-          ),
+          MaterialPageRoute(builder: (_) => CategoryLessonsScreen(category: category)),
         );
         _loadData();
       },
@@ -653,13 +635,20 @@ class _LearnScreenState extends State<LearnScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.bgCard,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: percentage == 100 && actualLessonCount > 0
-                ? AppColors.success.withAlpha(128)
+            color: isDone
+                ? AppColors.success.withValues(alpha: 0.45)
                 : context.borderColor,
-            width: percentage == 100 && actualLessonCount > 0 ? 2 : 1,
+            width: isDone ? 1.5 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: context.isDarkMode ? 0.20 : 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,45 +657,42 @@ class _LearnScreenState extends State<LearnScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: _getCategoryColor(index).withAlpha(30),
+                gradient: LinearGradient(
+                  colors: [
+                    catColor.withValues(alpha: 0.28),
+                    catColor.withValues(alpha: 0.12),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: catColor.withValues(alpha: 0.18)),
               ),
               child: category.hasCustomImage
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(13),
                       child: Image.network(
                         CloudinaryService.getOptimizedImage(category.imageUrl!, width: 96),
                         width: 48,
                         height: 48,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stack) => Center(
-                          child: Text(category.icon, style: const TextStyle(fontSize: 24)),
-                        ),
+                        errorBuilder: (_, __, ___) =>
+                            Center(child: Text(category.icon, style: const TextStyle(fontSize: 24))),
                       ),
                     )
-                  : Center(
-                      child: Text(
-                        category.icon,
-                        style: const TextStyle(fontSize: 24),
-                      ),
-                    ),
+                  : Center(child: Text(category.icon, style: const TextStyle(fontSize: 24))),
             ),
             const SizedBox(height: 12),
             Text(
               category.name,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
             Text(
               category.description,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textMuted,
-                    fontSize: 11,
-                  ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textMuted, fontSize: 11),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -716,43 +702,35 @@ class _LearnScreenState extends State<LearnScreen> {
               children: [
                 Text(
                   '$actualLessonCount+ ${AppLocalizations.of(context).signsLabel}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.textMuted,
-                        fontSize: 11,
-                      ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textMuted, fontSize: 10),
                 ),
-                Text(
-                  '$percentage%',
-                  style: TextStyle(
-                    color: percentage == 100 && actualLessonCount > 0
-                        ? AppColors.success
-                        : _getCategoryColor(index),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: activeColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '$percentage%',
+                    style: TextStyle(color: activeColor, fontWeight: FontWeight.w700, fontSize: 11),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 5,
                 backgroundColor: context.bgElevated,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  percentage == 100 && actualLessonCount > 0
-                      ? AppColors.success
-                      : _getCategoryColor(index),
-                ),
+                valueColor: AlwaysStoppedAnimation<Color>(activeColor),
               ),
             ),
           ],
         ),
       ),
-    ).animate().fadeIn(
-          delay: Duration(milliseconds: 350 + (index * 50)),
-        ).slideY(begin: 0.1);
+    ).animate().fadeIn(delay: Duration(milliseconds: 350 + (index * 50))).slideY(begin: 0.08);
   }
 
   Widget _buildDailyGoalsSection() {
@@ -805,7 +783,7 @@ class _LearnScreenState extends State<LearnScreen> {
                       ),
                     ],
                   ),
-                  GestureDetector(
+                  TapScale(
                     onTap: () {
                       Navigator.push(
                         context,
@@ -877,7 +855,7 @@ class _LearnScreenState extends State<LearnScreen> {
   // ==================== LEARNING PATHS CARD ====================
   
   Widget _buildLearningPathsCard() {
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         HapticService.buttonTap();
         Navigator.push(
@@ -1182,7 +1160,7 @@ class _LearnScreenState extends State<LearnScreen> {
     required VoidCallback onTap,
     int bestScore = 0,
   }) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -1622,7 +1600,7 @@ class _LearnScreenState extends State<LearnScreen> {
                         ],
                       ),
                     ),
-                    GestureDetector(
+                    TapScale(
                       onTap: () {
                         Navigator.push(
                           context,
@@ -1695,7 +1673,7 @@ class _LearnScreenState extends State<LearnScreen> {
               if (lockedBadges.length > 5)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: GestureDetector(
+                  child: TapScale(
                     onTap: () {
                       Navigator.push(
                         context,

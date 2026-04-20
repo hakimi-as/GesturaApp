@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/quiz_model.dart';
 import '../../services/firestore_service.dart';
@@ -126,7 +127,7 @@ class _QuizListScreenState extends State<QuizListScreen> {
   }
 
   Widget _buildQuizCard(QuizModel quiz, int index) {
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         Navigator.push(
           context,

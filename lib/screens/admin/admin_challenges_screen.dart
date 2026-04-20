@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/challenge_model.dart';
 import '../../providers/challenge_provider.dart';

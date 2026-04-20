@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
@@ -535,7 +536,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                         ),
                       ),
                       const SizedBox(width: 12),
-                      GestureDetector(
+                      TapScale(
                         onTap: () {
                           Clipboard.setData(ClipboardData(text: userId));
                           HapticService.lightTap();
@@ -698,7 +699,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
           const SizedBox(height: 24),
           
           // Search Button
-          GestureDetector(
+          TapScale(
             onTap: _isLoading ? null : () => _searchByCode(),
             child: Container(
               width: double.infinity,

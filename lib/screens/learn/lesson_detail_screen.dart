@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/lesson_model.dart';
 import '../../models/category_model.dart';
@@ -534,10 +535,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
               borderRadius: BorderRadius.circular(16),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
-                // Replaced VideoPlayerWidget with CachedVideoPlayer
                 child: CachedVideoPlayer(
                   videoUrl: widget.lesson.videoUrl!,
-                  autoPlay: true, // Auto-play for better engagement
+                  autoPlay: true,
                   looping: true,
                   showControls: true,
                   placeholder: Container(

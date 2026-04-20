@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -39,19 +40,22 @@ class _TranslateScreenState extends State<TranslateScreen>
   bool _isCameraActive = false;
   bool _isTranslating = false;
   String _translationOutput = '';
-  List<String> _sentenceWords = [];          // accumulated sentence words
-  String _currentDetected = '';              // word currently being detected
-  bool _isMatching = false;                  // server call in flight
+  List<String> _sentenceWords = [];
+  String _currentDetected = '';
+  bool _isMatching = false;
 
-  // Frame buffer & pause detection
+  // Frame buffer — rolling window
   final List<Map<String, dynamic>> _frameBuffer = [];
-  static const int _minFrames  = 12;         // minimum frames before matching (~0.8s at 15fps)
-  static const int _pauseFrames = 10;        // still frames before triggering (~0.67s)
+  static const int _minFrames = 12;
+  static const int _maxFrames = 30; // ~2 seconds at 15fps
   int _stillFrameCount = 0;
   List<double>? _prevWristPos;
+  bool _isReady = false; // true once buffer has enough frames
 
-  // WebView
-  InAppWebViewController? _webViewController;
+  // Camera & ML Kit
+  CameraController? _cameraController;
+  PoseDetector? _poseDetector;
+  bool _isProcessingFrame = false;
 
   // ── Text-to-Sign state ──────────────────────────────────────────────────
   List<String> _currentSentence = [];
@@ -67,6 +71,8 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   @override
   void dispose() {
+    _cameraController?.dispose();
+    _poseDetector?.close();
     _tabController.dispose();
     _textController.dispose();
     _flutterTts.stop();
@@ -308,43 +314,28 @@ class _TranslateScreenState extends State<TranslateScreen>
   }
 
   Widget _buildWebCameraView() {
+    final controller = _cameraController;
+    if (controller == null || !controller.value.isInitialized) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
     return Stack(
+      fit: StackFit.expand,
       children: [
-        // ── MediaPipe WebView ──────────────────────────────────────────
-        InAppWebView(
-          initialData: InAppWebViewInitialData(
-            data: _holisicHtml(),
-            mimeType: 'text/html',
-            encoding: 'utf-8',
-            baseUrl: WebUri('https://localhost'),
+        // ── Native camera preview ──────────────────────────────────────
+        ClipRRect(
+          child: OverflowBox(
+            alignment: Alignment.center,
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: controller.value.previewSize!.height,
+                height: controller.value.previewSize!.width,
+                child: CameraPreview(controller),
+              ),
+            ),
           ),
-          initialSettings: InAppWebViewSettings(
-            mediaPlaybackRequiresUserGesture: false,
-            allowsInlineMediaPlayback: true,
-            javaScriptEnabled: true,
-            useOnLoadResource: true,
-          ),
-          onWebViewCreated: (controller) {
-            _webViewController = controller;
-
-            // Called every frame by holistic_camera.html
-            controller.addJavaScriptHandler(
-              handlerName: 'onLandmarks',
-              callback: (args) {
-                if (args.isEmpty) return;
-                final frame = Map<String, dynamic>.from(args[0] as Map);
-                _onFrame(frame);
-              },
-            );
-
-            // Called once MediaPipe is ready
-            controller.addJavaScriptHandler(
-              handlerName: 'onReady',
-              callback: (_) {
-                if (mounted) setState(() {});
-              },
-            );
-          },
         ),
 
         // ── Recording indicator ────────────────────────────────────────
@@ -354,33 +345,110 @@ class _TranslateScreenState extends State<TranslateScreen>
           child: _buildRecordingPill(),
         ),
 
-        // ── Stop button ────────────────────────────────────────────────
+        // ── Ready indicator ────────────────────────────────────────────
+        Positioned(
+          top: 14,
+          right: 14,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _isReady && !_isMatching
+                ? Container(
+                    key: const ValueKey('ready'),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.white, size: 13),
+                        SizedBox(width: 4),
+                        Text('Ready', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  )
+                : Container(
+                    key: const ValueKey('loading'),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Hold sign… ${_frameBuffer.length}/$_minFrames',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ),
+          ),
+        ),
+
+        // ── Bottom controls: Capture + Stop ───────────────────────────
         Positioned(
           bottom: 16,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: TapScale(
-              onTap: _stopCamera,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.error,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.stop, color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context).stopCamera,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
-                  ],
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TapScale(
+                onTap: _isMatching ? null : _captureSign,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: _isMatching
+                        ? AppColors.primary.withValues(alpha: 0.7)
+                        : AppColors.primary,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.4),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _isMatching
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('👋', style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 10),
+                      Text(
+                        _isMatching ? 'Matching…' : 'Capture Sign',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 12),
+              TapScale(
+                onTap: _stopCamera,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: const Icon(Icons.stop, color: Colors.white, size: 20),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -434,7 +502,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                 border: Border.all(color: context.borderColor),
               ),
               child: Text(
-                'Perform a sign then pause…',
+                'Sign a word, then tap Capture Sign',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: context.textMuted, fontSize: 14),
               ),
@@ -893,19 +961,17 @@ class _TranslateScreenState extends State<TranslateScreen>
   // SIGN RECOGNITION LOGIC
   // ════════════════════════════════════════════════════════════════════════
 
-  /// Called for every MediaPipe frame (~15fps).
+  /// Called for every camera frame with server-ready landmark data.
   void _onFrame(Map<String, dynamic> frame) {
     final pose = frame['pose'] as List?;
     if (pose == null || pose.isEmpty) {
-      // No person detected — count as still
       _onStillFrame();
       return;
     }
 
-    // Extract wrist positions (pose indices 15=left wrist, 16=right wrist)
-    final lw = pose.length > 15 ? pose[15] : null;
-    final rw = pose.length > 16 ? pose[16] : null;
-
+    // Track wrist movement for still-frame counting (wrists at indices 15 & 16)
+    final lw = pose.length > 15 ? pose[15] as Map? : null;
+    final rw = pose.length > 16 ? pose[16] as Map? : null;
     final currentPos = [
       lw != null ? (lw['x'] as num).toDouble() : 0.0,
       lw != null ? (lw['y'] as num).toDouble() : 0.0,
@@ -913,35 +979,38 @@ class _TranslateScreenState extends State<TranslateScreen>
       rw != null ? (rw['y'] as num).toDouble() : 0.0,
     ];
 
-    // Convert frame keys to match server expectation
-    final serverFrame = {
-      'pose':       _toXYList(frame['pose']),
-      'left_hand':  _toXYList(frame['leftHand']),
-      'right_hand': _toXYList(frame['rightHand']),
-    };
+    _frameBuffer.add(frame);
+    if (_frameBuffer.length > _maxFrames) _frameBuffer.removeAt(0);
 
     if (_prevWristPos != null) {
       final movement = _wristMovement(currentPos, _prevWristPos!);
-      if (movement < 0.015) {
-        _frameBuffer.add(serverFrame);
-        _onStillFrame();
-      } else {
-        // Active signing — collect frame, reset still counter
-        _frameBuffer.add(serverFrame);
-        _stillFrameCount = 0;
-      }
-    } else {
-      _frameBuffer.add(serverFrame);
+      if (movement < 0.015) { _onStillFrame(); } else { _stillFrameCount = 0; }
     }
 
     _prevWristPos = currentPos;
+
+    final nowReady = _frameBuffer.length >= _minFrames;
+    if (nowReady != _isReady && mounted) setState(() => _isReady = nowReady);
   }
 
   void _onStillFrame() {
     _stillFrameCount++;
-    if (_stillFrameCount >= _pauseFrames && _frameBuffer.length >= _minFrames && !_isMatching) {
-      _triggerMatch();
+    // No auto-trigger — user taps "Capture Sign" manually.
+  }
+
+  void _captureSign() {
+    if (_frameBuffer.length < _minFrames) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Hold your sign for a moment first'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.black87,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
     }
+    _triggerMatch();
   }
 
   Future<void> _triggerMatch() async {
@@ -952,7 +1021,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     _stillFrameCount = 0;
     _prevWristPos = null;
 
-    if (mounted) setState(() => _isMatching = true);
+    if (mounted) setState(() { _isMatching = true; _isReady = false; });
 
     try {
       final matches = await RemoteSignService.instance.match(framesToMatch, topK: 3);
@@ -986,17 +1055,6 @@ class _TranslateScreenState extends State<TranslateScreen>
     return sum / a.length;
   }
 
-  List<Map<String, dynamic>>? _toXYList(dynamic lms) {
-    if (lms == null) return null;
-    if (lms is List) {
-      return lms.map((lm) {
-        final m = lm as Map;
-        return {'x': (m['x'] as num).toDouble(), 'y': (m['y'] as num).toDouble()};
-      }).toList();
-    }
-    return null;
-  }
-
   String _capitalize(String s) {
     if (s.isEmpty) return s;
     return s[0].toUpperCase() + s.substring(1).toLowerCase();
@@ -1006,22 +1064,113 @@ class _TranslateScreenState extends State<TranslateScreen>
   // ACTIONS
   // ════════════════════════════════════════════════════════════════════════
 
-  void _startCamera() {
+  Future<void> _startCamera() async {
     _frameBuffer.clear();
     _stillFrameCount = 0;
     _prevWristPos = null;
     _currentDetected = '';
+    _isReady = false;
+
+    _poseDetector = PoseDetector(
+      options: PoseDetectorOptions(mode: PoseDetectionMode.stream),
+    );
+
+    final cameras = await availableCameras();
+    final camera = cameras.firstWhere(
+      (c) => c.lensDirection == CameraLensDirection.front,
+      orElse: () => cameras.first,
+    );
+
+    final controller = CameraController(
+      camera,
+      ResolutionPreset.medium,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.nv21,
+    );
+
+    await controller.initialize();
+
+    if (!mounted) {
+      controller.dispose();
+      return;
+    }
+
+    _cameraController = controller;
     setState(() => _isCameraActive = true);
+
+    controller.startImageStream((CameraImage image) async {
+      if (_isProcessingFrame) return;
+      _isProcessingFrame = true;
+      try {
+        final inputImage = _toInputImage(image, camera);
+        if (inputImage == null) return;
+
+        final poses = await _poseDetector!.processImage(inputImage);
+        if (!mounted) return;
+
+        if (poses.isEmpty) {
+          _onStillFrame();
+        } else {
+          _onPoseDetected(poses.first, image.width, image.height);
+        }
+      } catch (e) {
+        debugPrint('Pose detection error: $e');
+      } finally {
+        _isProcessingFrame = false;
+      }
+    });
   }
 
   void _stopCamera() {
-    _webViewController = null;
+    _cameraController?.stopImageStream().catchError((_) {});
+    _cameraController?.dispose();
+    _cameraController = null;
+    _poseDetector?.close();
+    _poseDetector = null;
+    _isProcessingFrame = false;
     _frameBuffer.clear();
     setState(() {
       _isCameraActive = false;
       _isMatching = false;
+      _isReady = false;
       _currentDetected = '';
     });
+  }
+
+  // ── ML Kit helpers ───────────────────────────────────────────────────────
+
+  void _onPoseDetected(Pose pose, int imgW, int imgH) {
+    // Build a 33-element list sorted by landmark type index
+    final poseLandmarks = List<Map<String, dynamic>>.filled(33, {'x': 0.0, 'y': 0.0});
+    for (final entry in pose.landmarks.entries) {
+      final idx = entry.key.index;
+      if (idx < 33) {
+        poseLandmarks[idx] = {
+          'x': entry.value.x / imgW,
+          'y': entry.value.y / imgH,
+        };
+      }
+    }
+
+    _onFrame({'pose': poseLandmarks, 'left_hand': null, 'right_hand': null});
+  }
+
+  InputImage? _toInputImage(CameraImage image, CameraDescription camera) {
+    final rotation = InputImageRotationValue.fromRawValue(camera.sensorOrientation);
+    if (rotation == null) return null;
+    final format = InputImageFormatValue.fromRawValue(image.format.raw);
+    if (format == null) return null;
+
+    final plane = image.planes.first;
+    return InputImage.fromBytes(
+      bytes: plane.bytes,
+      metadata: InputImageMetadata(
+        size: Size(image.width.toDouble(), image.height.toDouble()),
+        rotation: rotation,
+        format: format,
+        bytesPerRow: plane.bytesPerRow,
+      ),
+    );
   }
 
   void _undoLastWord() {
@@ -1153,98 +1302,4 @@ class _TranslateScreenState extends State<TranslateScreen>
     );
   }
 
-  // ── Inline HTML for MediaPipe WebView ───────────────────────────────────
-
-  String _holisicHtml() => '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; width: 100vw; height: 100vh; overflow: hidden; }
-    canvas { width: 100vw; height: 100vh; object-fit: cover; display: block; }
-    video { display: none; }
-  </style>
-</head>
-<body>
-  <video id="video" playsinline autoplay muted></video>
-  <canvas id="canvas"></canvas>
-
-  <script src="https://cdn.jsdelivr.net/npm/\@mediapipe/holistic\@0.5.1675471629/holistic.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/\@mediapipe/drawing_utils\@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
-
-  <script>
-    const video  = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx    = canvas.getContext('2d');
-
-    const holistic = new Holistic({
-      locateFile: f => \`https://cdn.jsdelivr.net/npm/\@mediapipe/holistic\@0.5.1675471629/\${f}\`
-    });
-
-    holistic.setOptions({
-      modelComplexity: 1,
-      smoothLandmarks: true,
-      enableSegmentation: false,
-      refineFaceLandmarks: false,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
-    });
-
-    holistic.onResults(results => {
-      canvas.width  = results.image.width  || canvas.offsetWidth;
-      canvas.height = results.image.height || canvas.offsetHeight;
-      ctx.save();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
-
-      if (results.poseLandmarks) {
-        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: 'rgba(0,230,0,0.55)', lineWidth: 2 });
-        drawLandmarks(ctx, results.poseLandmarks, { color: '#00E600', lineWidth: 1, radius: 2 });
-      }
-      if (results.leftHandLandmarks) {
-        drawConnectors(ctx, results.leftHandLandmarks, HAND_CONNECTIONS, { color: 'rgba(255,100,0,0.8)', lineWidth: 2 });
-        drawLandmarks(ctx, results.leftHandLandmarks, { color: '#FF6400', lineWidth: 1, radius: 3 });
-      }
-      if (results.rightHandLandmarks) {
-        drawConnectors(ctx, results.rightHandLandmarks, HAND_CONNECTIONS, { color: 'rgba(50,130,255,0.8)', lineWidth: 2 });
-        drawLandmarks(ctx, results.rightHandLandmarks, { color: '#3282FF', lineWidth: 1, radius: 3 });
-      }
-      ctx.restore();
-
-      function toLandmarkList(lms) {
-        if (!lms) return null;
-        return lms.map(lm => ({ x: lm.x, y: lm.y, z: lm.z || 0 }));
-      }
-
-      try {
-        window.flutter_inappwebview.callHandler('onLandmarks', {
-          pose:      toLandmarkList(results.poseLandmarks),
-          leftHand:  toLandmarkList(results.leftHandLandmarks),
-          rightHand: toLandmarkList(results.rightHandLandmarks)
-        });
-      } catch(e) {}
-    });
-
-    holistic.initialize().then(() => {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
-        .then(stream => {
-          video.srcObject = stream;
-          video.onloadedmetadata = () => {
-            video.play();
-            try { window.flutter_inappwebview.callHandler('onReady'); } catch(e) {}
-            function sendFrame() {
-              if (video.readyState >= 2) holistic.send({ image: video });
-              setTimeout(sendFrame, 66);
-            }
-            sendFrame();
-          };
-        })
-        .catch(err => console.error('Camera error:', err));
-    });
-  </script>
-</body>
-</html>
-''';
 }

@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math' as math;
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
@@ -338,7 +339,7 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
 
             return Padding(
               padding: EdgeInsets.only(right: index < _filters.length - 1 ? 10 : 0),
-              child: GestureDetector(
+              child: TapScale(
                 onTap: () {
                   HapticService.lightTap();
                   setState(() => _selectedFilter = index);
@@ -510,7 +511,7 @@ class _LearningPathCard extends StatelessWidget {
     final completedSteps = progress?.completedStepIds.length ?? 0;
     final pathColor = Color(path.difficultyColor);
 
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         HapticService.buttonTap();
         onTap?.call();
@@ -1583,7 +1584,7 @@ class _JourneyStepItem extends StatelessWidget {
 
           // Content Card
           Expanded(
-            child: GestureDetector(
+            child: TapScale(
               onTap: isLocked
                   ? null
                   : () {

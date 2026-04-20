@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/haptic_service.dart';
@@ -355,7 +356,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
   Widget _buildFriendCard(FriendWithUser friendWithUser) {
     final user = friendWithUser.friendUser;
 
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         HapticService.buttonTap();
         Navigator.push(
@@ -581,7 +582,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           Row(
             children: [
               Expanded(
-                child: GestureDetector(
+                child: TapScale(
                   onTap: () => _declineRequest(request.friendship.id),
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -603,7 +604,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: GestureDetector(
+                child: TapScale(
                   onTap: () => _acceptRequest(request.friendship.id),
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -724,7 +725,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           style: TextStyle(color: context.textMuted),
         ),
         const SizedBox(height: 24),
-        GestureDetector(
+        TapScale(
           onTap: () {
             HapticService.buttonTap();
             Navigator.push(
@@ -766,7 +767,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
       builder: (context, snapshot) {
         final status = snapshot.data ?? 'none';
 
-        return GestureDetector(
+        return TapScale(
           onTap: () {
             HapticService.buttonTap();
             Navigator.push(
@@ -901,7 +902,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           ),
         );
       case 'received':
-        return GestureDetector(
+        return TapScale(
           onTap: () => _tabController.animateTo(1),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -922,7 +923,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           ),
         );
       default:
-        return GestureDetector(
+        return TapScale(
           onTap: () => _sendRequest(userId),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -981,7 +982,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
             ),
             if (actionText != null && onAction != null) ...[
               const SizedBox(height: 24),
-              GestureDetector(
+              TapScale(
                 onTap: onAction,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

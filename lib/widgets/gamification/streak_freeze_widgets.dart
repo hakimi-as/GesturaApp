@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../services/haptic_service.dart';
 
@@ -28,7 +29,7 @@ class StreakFreezeWidget extends StatelessWidget {
   }
 
   Widget _buildCompact(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -63,7 +64,7 @@ class StreakFreezeWidget extends StatelessWidget {
   }
 
   Widget _buildFull(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),

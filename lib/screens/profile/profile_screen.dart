@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../config/constants.dart';
 import '../../l10n/app_localizations.dart';
@@ -413,7 +414,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildTypeChip(String label, String value) {
     final isSelected = _selectedUserType == value;
-    return GestureDetector(
+    return TapScale(
       onTap: () => setState(() => _selectedUserType = value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -564,7 +565,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       spacing: 8,
       children: AppConstants.supportedSignLanguages.map((lang) {
         final isSelected = _selectedSignLanguage == lang['code'];
-        return GestureDetector(
+        return TapScale(
           onTap: () => setState(() => _selectedSignLanguage = lang['code']!),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

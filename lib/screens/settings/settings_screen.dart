@@ -12,6 +12,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../config/theme.dart';
+import '../../config/design_system.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/cloudinary_service.dart';
 import '../../services/firestore_service.dart';
@@ -297,7 +298,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -479,14 +480,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return Container(
           margin: const EdgeInsets.all(20),
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: context.bgCard,
+          decoration: AppDecorations.glowCard(context).copyWith(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: context.borderColor),
           ),
           child: Row(
             children: [
-              GestureDetector(
+              TapScale(
                 onTap: _showImagePickerOptions,
                 child: Stack(
                   children: [
@@ -631,7 +630,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    GestureDetector(
+                    TapScale(
                       onTap: () {
                         HapticService.buttonTap();
                         Navigator.push(
@@ -1170,12 +1169,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       child: Text(
-        title,
+        title.toUpperCase(),
         style: TextStyle(
           color: context.textMuted,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
         ),
       ),
     );
@@ -1189,19 +1188,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback? onTap,
     Color? textColor,
   }) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
           children: [
             Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: iconColor.withAlpha(30),
-                borderRadius: BorderRadius.circular(10),
+                gradient: LinearGradient(
+                  colors: [iconColor.withValues(alpha: 0.22), iconColor.withValues(alpha: 0.10)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: iconColor.withValues(alpha: 0.18)),
               ),
               child: Icon(icon, color: iconColor, size: 20),
             ),

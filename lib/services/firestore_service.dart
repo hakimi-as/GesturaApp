@@ -1839,13 +1839,13 @@ class FirestoreService {
       final animDoc = await _firestore.collection('sign_animations').doc(docId).get();
       if (animDoc.exists && animDoc.data()?['data'] != null) {
         debugPrint("✅ Loaded animation from sign_animations: $docId");
-        return animDoc.data()!['data'] as Map<String, dynamic>;
+        return animDoc.data();
       }
-      
+
       final signDoc = await _firestore.collection('signs').doc(docId).get();
       if (signDoc.exists && signDoc.data()?['data'] != null) {
         debugPrint("✅ Loaded animation from signs (legacy): $docId");
-        return signDoc.data()!['data'] as Map<String, dynamic>;
+        return signDoc.data();
       }
       
       debugPrint("⚠️ No animation data found for: $docId");

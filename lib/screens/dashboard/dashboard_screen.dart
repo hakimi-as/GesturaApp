@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../config/theme.dart';
+import '../../config/design_system.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../providers/challenge_provider.dart';
@@ -223,7 +224,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 10),
                 
-                GestureDetector(
+                TapScale(
                   onTap: () {
                     HapticService.buttonTap();
                     Navigator.push(
@@ -246,7 +247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                GestureDetector(
+                TapScale(
                   onTap: () {
                     HapticService.buttonTap();
                     Navigator.push(
@@ -310,7 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                GestureDetector(
+                TapScale(
                   onTap: () async {
                     HapticService.buttonTap();
                     await Navigator.push(
@@ -540,18 +541,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text('⚡', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              'Quick Actions',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
+        const SectionHeader(title: 'Quick Actions', emoji: '⚡'),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -649,14 +639,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: context.borderColor),
+        decoration: AppDecorations.card(context).copyWith(
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,23 +653,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: iconBgColor.withAlpha(30),
+                gradient: LinearGradient(
+                  colors: [
+                    iconBgColor.withValues(alpha: 0.25),
+                    iconBgColor.withValues(alpha: 0.12),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: iconBgColor.withValues(alpha: 0.20)),
               ),
-              child: Icon(
-                icon,
-                color: iconBgColor,
-                size: 24,
-              ),
+              child: Icon(icon, color: iconBgColor, size: 22),
             ),
             const SizedBox(height: 14),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
               subtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -699,24 +691,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text('🏅', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              'Compete & Connect',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
+        const SectionHeader(title: 'Compete & Connect', emoji: '🏅'),
         const SizedBox(height: 16),
         Row(
           children: [
             // Leaderboard Card
             Expanded(
-              child: GestureDetector(
+              child: TapScale(
                 onTap: () {
                   HapticService.buttonTap();
                   Navigator.push(
@@ -763,7 +744,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(width: 12),
             // NEW: Friends Card
             Expanded(
-              child: GestureDetector(
+              child: TapScale(
                 onTap: () {
                   HapticService.buttonTap();
                   Navigator.push(
@@ -841,7 +822,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.1),
         const SizedBox(height: 12),
         // Challenges Card (full width)
-        GestureDetector(
+        TapScale(
           onTap: () {
             HapticService.buttonTap();
             Navigator.push(
@@ -920,35 +901,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const Text('📋', style: TextStyle(fontSize: 20)),
-                const SizedBox(width: 8),
-                Text(
-                  'Recent Activity',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            TextButton(
-              onPressed: () {
-                HapticService.buttonTap();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProgressScreen()),
-                );
-              },
-              child: const Text(
-                'View All',
-                style: TextStyle(color: AppColors.primary),
-              ),
-            ),
-          ],
+        SectionHeader(
+          title: 'Recent Activity',
+          emoji: '📋',
+          trailing: TextButton(
+            onPressed: () {
+              HapticService.buttonTap();
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProgressScreen()));
+            },
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+            child: Text('View All', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+          ),
         ),
         const SizedBox(height: 12),
         Consumer<ProgressProvider>(
@@ -1043,10 +1006,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.borderColor),
+      decoration: AppDecorations.card(context).copyWith(
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
@@ -1118,25 +1079,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Text('🎯', style: TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Daily Challenges',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
-              ),
+              const SectionHeader(title: 'Daily Challenges', emoji: '🎯'),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: context.bgCard,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: context.borderColor),
+                decoration: AppDecorations.card(context).copyWith(
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: ShimmerWidgets.challengesLoading(),
               ),
@@ -1147,49 +1095,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Text('🎯', style: TextStyle(fontSize: 20)),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Daily Challenges',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ],
-                ),
-                GestureDetector(
-                  onTap: () {
-                    HapticService.buttonTap();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ChallengesScreen(),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'View All',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+            SectionHeader(
+              title: 'Daily Challenges',
+              emoji: '🎯',
+              trailing: TextButton(
+                onPressed: () {
+                  HapticService.buttonTap();
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengesScreen()));
+                },
+                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+                child: Text('View All', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+              ),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: context.bgCard,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: context.borderColor),
+              decoration: AppDecorations.card(context).copyWith(
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 children: [

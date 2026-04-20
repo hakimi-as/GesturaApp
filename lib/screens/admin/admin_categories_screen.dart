@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/category_model.dart';
@@ -270,7 +271,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: GestureDetector(
+                        child: TapScale(
                           onTap: () => setDialogState(() => useImage = false),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -298,7 +299,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: GestureDetector(
+                        child: TapScale(
                           onTap: () => setDialogState(() => useImage = true),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -396,7 +397,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                         itemBuilder: (context, index) {
                           final categoryName = emojiCategories.keys.elementAt(index);
                           final isSelected = selectedEmojiCategory == index;
-                          return GestureDetector(
+                          return TapScale(
                             onTap: () => setDialogState(() => selectedEmojiCategory = index),
                             child: Container(
                               margin: const EdgeInsets.only(right: 8),
@@ -443,7 +444,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                         itemBuilder: (context, index) {
                           final emoji = emojiCategories.values.elementAt(selectedEmojiCategory)[index];
                           final isSelected = selectedIcon == emoji;
-                          return GestureDetector(
+                          return TapScale(
                             onTap: () => setDialogState(() => selectedIcon = emoji),
                             child: Container(
                               decoration: BoxDecoration(
@@ -464,7 +465,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                     ),
                   ] else ...[
                     // Image Upload
-                    GestureDetector(
+                    TapScale(
                       onTap: () async {
                         final picker = ImagePicker();
                         final pickedFile = await picker.pickImage(
@@ -530,7 +531,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                                       Positioned(
                                         top: 8,
                                         right: 8,
-                                        child: GestureDetector(
+                                        child: TapScale(
                                           onTap: () => setDialogState(() => uploadedImageUrl = null),
                                           child: Container(
                                             padding: const EdgeInsets.all(6),

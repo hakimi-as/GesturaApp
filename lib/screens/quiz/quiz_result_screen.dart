@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/badge_model.dart';
 import '../../models/challenge_model.dart';
@@ -1010,19 +1011,9 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   Widget _buildButtons(BuildContext context) {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.refresh),
-            label: Text(AppLocalizations.of(context).tryAgain),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-            ),
-          ),
+        GradientButton(
+          label: AppLocalizations.of(context).tryAgain,
+          onTap: () => Navigator.pop(context),
         ),
         const SizedBox(height: 12),
         SizedBox(

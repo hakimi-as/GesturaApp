@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/badge_model.dart';
 
@@ -29,7 +30,7 @@ class BadgeCard extends StatelessWidget {
   }
 
   Widget _buildCompactCard(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap,
       child: Container(
         width: 80,
@@ -98,7 +99,7 @@ class BadgeCard extends StatelessWidget {
   }
 
   Widget _buildFullCard(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: onTap ?? () => _showBadgeDetails(context),
       child: Container(
         padding: const EdgeInsets.all(16),

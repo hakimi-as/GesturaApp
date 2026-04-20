@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/category_model.dart';
@@ -123,7 +124,7 @@ class _AdminLessonsScreenState extends State<AdminLessonsScreen> {
                       ),
                 ),
                 const Spacer(),
-                GestureDetector(
+                TapScale(
                   onTap: () => setState(() => _sortAlphabetically = !_sortAlphabetically),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -185,7 +186,7 @@ class _AdminLessonsScreenState extends State<AdminLessonsScreen> {
 
   Widget _buildFilterChip(String label, String? categoryId) {
     final isSelected = _selectedCategoryId == categoryId;
-    return GestureDetector(
+    return TapScale(
       onTap: () => setState(() => _selectedCategoryId = categoryId),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -783,7 +784,7 @@ class _LessonDialogState extends State<_LessonDialog> {
     required VoidCallback onTap,
     required VoidCallback onRemove,
   }) {
-    return GestureDetector(
+    return TapScale(
       onTap: isUploading ? null : onTap,
       child: Container(
         height: 100,
@@ -834,7 +835,7 @@ class _LessonDialogState extends State<_LessonDialog> {
             if (hasMedia && !isUploading)
               Positioned(
                 top: 4, right: 4,
-                child: GestureDetector(
+                child: TapScale(
                   onTap: onRemove,
                   child: Container(
                     padding: const EdgeInsets.all(4),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import '../../config/theme.dart';
 import '../../l10n/app_localizations.dart';
 
 class BottomNavBar extends StatelessWidget {
@@ -14,133 +14,71 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Container(
-          height: 68,
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF060D0D).withValues(alpha:0.90)
-                : Colors.white.withValues(alpha:0.92),
-            borderRadius: BorderRadius.circular(100),
-            border: Border.all(
-              color: Colors.white.withValues(alpha:isDark ? 0.08 : 0.60),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF14B8A6).withValues(alpha:0.15),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
+    final loc = AppLocalizations.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        border: Border(
+          top: BorderSide(color: context.borderColor, width: 1),
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _NavItem(
-                index: 0,
-                currentIndex: currentIndex,
-                onTap: onTap,
-                label: AppLocalizations.of(context).navHome,
-                painter: _HomeIconPainter(),
-              ),
-              _NavItem(
-                index: 1,
-                currentIndex: currentIndex,
-                onTap: onTap,
-                label: AppLocalizations.of(context).navTranslate,
-                painter: _SignIconPainter(),
-              ),
-              _NavItem(
-                index: 2,
-                currentIndex: currentIndex,
-                onTap: onTap,
-                label: AppLocalizations.of(context).navLearn,
-                painter: _LearnIconPainter(),
-              ),
-              _NavItem(
-                index: 3,
-                currentIndex: currentIndex,
-                onTap: onTap,
-                label: AppLocalizations.of(context).navSettings,
-                painter: _MeIconPainter(),
-              ),
+              _buildNavItem(context: context, index: 0, label: loc.navHome,      painter: _HomeIconPainter()),
+              _buildNavItem(context: context, index: 1, label: loc.navTranslate, painter: _SignIconPainter()),
+              _buildNavItem(context: context, index: 2, label: loc.navLearn,     painter: _LearnIconPainter()),
+              _buildNavItem(context: context, index: 3, label: loc.navSettings,  painter: _MeIconPainter()),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-class _NavItem extends StatelessWidget {
-  final int index;
-  final int currentIndex;
-  final Function(int) onTap;
-  final String label;
-  final CustomPainter painter;
-
-  const _NavItem({
-    required this.index,
-    required this.currentIndex,
-    required this.onTap,
-    required this.label,
-    required this.painter,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildNavItem({
+    required BuildContext context,
+    required int index,
+    required String label,
+    required CustomPainter painter,
+  }) {
     final isActive = currentIndex == index;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () => onTap(index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        // 44dp minimum touch target (polish skill: touch targets ≥ 44×44px)
-        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          gradient: isActive
-              ? const LinearGradient(
-                  colors: [Color(0xFF2DD4BF), Color(0xFF0D9488)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          borderRadius: BorderRadius.circular(16),
+          color: isActive ? AppColors.primary.withAlpha(30) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 26,
-              height: 26,
+              width: 24,
+              height: 24,
               child: CustomPaint(
-                painter: _GradientIconPainter(
+                painter: _ThemedIconPainter(
                   delegate: painter,
-                  isActive: isActive,
-                  isDark: isDark,
+                  color: isActive ? AppColors.primary : context.textMuted,
                 ),
               ),
-            )
-                .animate(key: ValueKey('icon_${index}_$isActive'))
-                .scale(
-                  begin: isActive
-                      ? const Offset(0.75, 0.75)
-                      : const Offset(1.0, 1.0),
-                  end: isActive
-                      ? const Offset(1.0, 1.0)
-                      : const Offset(0.75, 0.75),
-                  duration: 250.ms,
-                  curve: Curves.easeOutBack,
-                )
-                .fadeIn(duration: 150.ms),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? AppColors.primary : context.textMuted,
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
           ],
         ),
       ),
@@ -148,50 +86,29 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-// ─── Gradient colour wrapper ─────────────────────────────────────────────────
+// ─── Solid colour wrapper ────────────────────────────────────────────────────
 
-class _GradientIconPainter extends CustomPainter {
+class _ThemedIconPainter extends CustomPainter {
   final CustomPainter delegate;
-  final bool isActive;
-  final bool isDark;
+  final Color color;
 
-  _GradientIconPainter({
-    required this.delegate,
-    required this.isActive,
-    required this.isDark,
-  });
+  _ThemedIconPainter({required this.delegate, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final gradient = isActive
-        ? const LinearGradient(
-            colors: [Colors.white, Color(0xFFCCFBF1)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          )
-        : LinearGradient(
-            colors: [
-              (isDark ? Colors.white : const Color(0xFF0D9488))
-                  .withValues(alpha:0.38),
-              (isDark ? Colors.white : const Color(0xFF0D9488))
-                  .withValues(alpha:0.38),
-            ],
-          );
-
     final shaderPaint = Paint()
-      ..shader = gradient.createShader(Offset.zero & size)
+      ..color = color
       ..style = PaintingStyle.fill;
 
     canvas.saveLayer(Offset.zero & size, Paint());
     delegate.paint(canvas, size);
-    canvas.drawRect(
-        Offset.zero & size, shaderPaint..blendMode = BlendMode.srcIn);
+    canvas.drawRect(Offset.zero & size, shaderPaint..blendMode = BlendMode.srcIn);
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_GradientIconPainter old) =>
-      old.isActive != isActive || old.isDark != isDark;
+  bool shouldRepaint(_ThemedIconPainter old) =>
+      old.color != color || old.delegate != delegate;
 }
 
 // ─── Icon painters ────────────────────────────────────────────────────────────
@@ -282,20 +199,14 @@ class _LearnIconPainter extends CustomPainter {
     final s = size.width / 40;
     const r = Radius.circular(3.5);
 
-    // Top-left + bottom-right — full opacity (handled by gradient wrapper)
     canvas.drawRRect(
-        RRect.fromRectAndRadius(Rect.fromLTWH(4*s, 4*s, 14*s, 14*s), r), p);
+        RRect.fromRectAndRadius(Rect.fromLTWH(4 * s, 4 * s, 14 * s, 14 * s), r), p);
     canvas.drawRRect(
-        RRect.fromRectAndRadius(Rect.fromLTWH(22*s, 22*s, 14*s, 14*s), r), p);
-
-    // Top-right + bottom-left — dim 45% (paint with reduced alpha directly)
-    final dim = Paint()
-      ..style = PaintingStyle.fill
-      ..color = Colors.white.withValues(alpha:0.45);
+        RRect.fromRectAndRadius(Rect.fromLTWH(22 * s, 22 * s, 14 * s, 14 * s), r), p);
     canvas.drawRRect(
-        RRect.fromRectAndRadius(Rect.fromLTWH(22*s, 4*s, 14*s, 14*s), r), dim);
+        RRect.fromRectAndRadius(Rect.fromLTWH(22 * s, 4 * s, 14 * s, 14 * s), r), p);
     canvas.drawRRect(
-        RRect.fromRectAndRadius(Rect.fromLTWH(4*s, 22*s, 14*s, 14*s), r), dim);
+        RRect.fromRectAndRadius(Rect.fromLTWH(4 * s, 22 * s, 14 * s, 14 * s), r), p);
   }
 
   @override
@@ -317,12 +228,7 @@ class _MeIconPainter extends CustomPainter {
       ..quadraticBezierTo(6 * s, 22 * s, 20 * s, 22 * s)
       ..quadraticBezierTo(34 * s, 22 * s, 34 * s, 38 * s)
       ..close();
-    canvas.drawPath(
-      shoulders,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = Colors.white.withValues(alpha:0.60),
-    );
+    canvas.drawPath(shoulders, p);
   }
 
   @override

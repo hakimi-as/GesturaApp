@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/notification_model.dart';
 import '../../providers/auth_provider.dart';
@@ -298,7 +299,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       onDismissed: (_) => _deleteNotification(notification),
-      child: GestureDetector(
+      child: TapScale(
         onTap: () => _handleNotificationTap(notification),
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),

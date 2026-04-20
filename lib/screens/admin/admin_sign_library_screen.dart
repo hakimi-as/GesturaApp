@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/design_system.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/firestore_service.dart';
 import 'admin_upload_sign_screen.dart';
@@ -557,7 +558,7 @@ class _SignListByCategoryState extends State<SignListByCategory> with AutomaticK
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 const Spacer(),
-                GestureDetector(
+                TapScale(
                   onTap: _toggleSort,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

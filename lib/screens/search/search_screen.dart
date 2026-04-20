@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/lesson_model.dart';
 import '../../models/category_model.dart';
@@ -226,7 +227,7 @@ class _SearchScreenState extends State<SearchScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          GestureDetector(
+          TapScale(
             onTap: () => Navigator.pop(context),
             child: Container(
               width: 40,
@@ -332,7 +333,7 @@ class _SearchScreenState extends State<SearchScreen> {
           final isSelected = _selectedFilter == filter['id'];
           return Padding(
             padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
+            child: TapScale(
               onTap: () => setState(() => _selectedFilter = filter['id']!),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -408,7 +409,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildCategoryResult(CategoryModel category) {
-    return GestureDetector(
+    return TapScale(
       onTap: () => _onCategoryTap(category),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -474,8 +475,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildLessonResult(LessonModel lesson) {
     final category = _categoryMap[lesson.categoryId];
-    
-    return GestureDetector(
+
+    return TapScale(
       onTap: () => _onLessonTap(lesson),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -701,7 +702,7 @@ class _SearchScreenState extends State<SearchScreen> {
               spacing: 10,
               runSpacing: 10,
               children: _recentSearches.map((query) {
-                return GestureDetector(
+                return TapScale(
                   onTap: () {
                     _searchController.text = query;
                     _performSearch(query);
@@ -752,7 +753,7 @@ class _SearchScreenState extends State<SearchScreen> {
             itemCount: _allCategories.length,
             itemBuilder: (context, index) {
               final category = _allCategories[index];
-              return GestureDetector(
+              return TapScale(
                 onTap: () => _onCategoryTap(category),
                 child: Container(
                   decoration: BoxDecoration(

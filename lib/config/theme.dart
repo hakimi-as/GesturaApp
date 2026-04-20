@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ============ DARK THEME COLORS ============
 class AppColorsDark {
@@ -102,6 +103,23 @@ class AppColors {
 
 // ============ THEME DATA ============
 class AppTheme {
+  // Body font: Lexend (accessibility-first humanist sans)
+  // Display font: Familjen Grotesk (warm geometric, for headings)
+  static TextTheme _applyFont(TextTheme base) {
+    final body = GoogleFonts.lexendTextTheme(base);
+    return body.copyWith(
+      headlineLarge: GoogleFonts.familjenGrotesk(textStyle: body.headlineLarge),
+      headlineMedium: GoogleFonts.familjenGrotesk(textStyle: body.headlineMedium),
+      headlineSmall: GoogleFonts.familjenGrotesk(textStyle: body.headlineSmall),
+      titleLarge: GoogleFonts.familjenGrotesk(textStyle: body.titleLarge),
+      titleMedium: GoogleFonts.familjenGrotesk(textStyle: body.titleMedium),
+      titleSmall: GoogleFonts.familjenGrotesk(textStyle: body.titleSmall),
+      labelLarge: GoogleFonts.familjenGrotesk(textStyle: body.labelLarge),
+      labelMedium: GoogleFonts.familjenGrotesk(textStyle: body.labelMedium),
+      labelSmall: GoogleFonts.familjenGrotesk(textStyle: body.labelSmall),
+    );
+  }
+
   // Dark Theme
   static ThemeData get darkTheme {
     return ThemeData(
@@ -197,51 +215,19 @@ class AppTheme {
         color: AppColorsDark.divider,
         thickness: 1,
       ),
-      
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: AppColorsDark.textPrimary,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: AppColorsDark.textPrimary,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: AppColorsDark.textPrimary,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: AppColorsDark.textPrimary,
-        ),
-        titleMedium: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: AppColorsDark.textPrimary,
-        ),
-        titleSmall: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppColorsDark.textPrimary,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          color: AppColorsDark.textSecondary,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          color: AppColorsDark.textSecondary,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          color: AppColorsDark.textMuted,
-        ),
-      ),
+
+      textTheme: _applyFont(const TextTheme(
+        headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary, letterSpacing: -0.5),
+        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary, letterSpacing: -0.5),
+        headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary, letterSpacing: -0.3),
+        titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary, letterSpacing: -0.2),
+        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColorsDark.textPrimary),
+        titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColorsDark.textPrimary),
+        bodyLarge: TextStyle(fontSize: 16, color: AppColorsDark.textSecondary, height: 1.5),
+        bodyMedium: TextStyle(fontSize: 14, color: AppColorsDark.textSecondary, height: 1.5),
+        bodySmall: TextStyle(fontSize: 12, color: AppColorsDark.textMuted, height: 1.4),
+        labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsDark.textSecondary, letterSpacing: 0.1),
+      )),
     );
   }
 
@@ -340,51 +326,19 @@ class AppTheme {
         color: AppColorsLight.divider,
         thickness: 1,
       ),
-      
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: AppColorsLight.textPrimary,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: AppColorsLight.textPrimary,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: AppColorsLight.textPrimary,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: AppColorsLight.textPrimary,
-        ),
-        titleMedium: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: AppColorsLight.textPrimary,
-        ),
-        titleSmall: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppColorsLight.textPrimary,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          color: AppColorsLight.textSecondary,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          color: AppColorsLight.textSecondary,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          color: AppColorsLight.textMuted,
-        ),
-      ),
+
+      textTheme: _applyFont(const TextTheme(
+        headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary, letterSpacing: -0.5),
+        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary, letterSpacing: -0.5),
+        headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary, letterSpacing: -0.3),
+        titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary, letterSpacing: -0.2),
+        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColorsLight.textPrimary),
+        titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColorsLight.textPrimary),
+        bodyLarge: TextStyle(fontSize: 16, color: AppColorsLight.textSecondary, height: 1.5),
+        bodyMedium: TextStyle(fontSize: 14, color: AppColorsLight.textSecondary, height: 1.5),
+        bodySmall: TextStyle(fontSize: 12, color: AppColorsLight.textMuted, height: 1.4),
+        labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsLight.textSecondary, letterSpacing: 0.1),
+      )),
     );
   }
 }

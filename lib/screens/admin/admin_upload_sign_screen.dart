@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../../config/design_system.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/firestore_service.dart';
 import '../../services/video_processing_service.dart';
@@ -912,7 +913,7 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
         const SizedBox(height: 14),
 
         // Video picker
-        GestureDetector(
+        TapScale(
           onTap: (_processingStatus == ProcessingStatus.uploading ||
                   _processingStatus == ProcessingStatus.processing)
               ? null

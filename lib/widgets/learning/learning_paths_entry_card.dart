@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../services/haptic_service.dart';
 import '../../screens/learn/learning_paths_screen.dart';
@@ -11,7 +12,7 @@ class LearningPathsEntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapScale(
       onTap: () {
         HapticService.buttonTap();
         Navigator.push(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../auth/register_screen.dart';
 
@@ -65,7 +66,7 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  GestureDetector(
+                  TapScale(
                     onTap: () => Navigator.pop(context),
                     child: Container(
                       width: 40,
@@ -176,7 +177,7 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
     return Column(
       children: _languages.map((lang) {
         final isSelected = _selectedLanguage == lang['code'];
-        return GestureDetector(
+        return TapScale(
           onTap: () => setState(() => _selectedLanguage = lang['code']),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -243,7 +244,7 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
       children: _goals.map((goal) {
         final isSelected = _selectedGoal == goal['id'];
         return Expanded(
-          child: GestureDetector(
+          child: TapScale(
             onTap: () => setState(() => _selectedGoal = goal['id']),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -293,7 +294,7 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
     return Column(
       children: _experiences.map((exp) {
         final isSelected = _selectedExperience == exp['id'];
-        return GestureDetector(
+        return TapScale(
           onTap: () => setState(() => _selectedExperience = exp['id']),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
