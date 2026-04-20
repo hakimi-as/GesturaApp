@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/theme.dart';
 import '../../config/design_system.dart';
@@ -54,6 +55,9 @@ class _LearnScreenState extends State<LearnScreen> {
   double _averageQuizAccuracy = 0.0;
   Map<String, int> _bestScoresByType = {};
 
+  // Onboarding preference
+  String? _experienceLevel; // 'beginner' | 'some' | 'intermediate'
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +67,9 @@ class _LearnScreenState extends State<LearnScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
+
+    final prefs = await SharedPreferences.getInstance();
+    _experienceLevel = prefs.getString('experienceLevel');
 
     try {
       final categories = await _firestoreService.getCategories();
@@ -571,6 +578,8 @@ class _LearnScreenState extends State<LearnScreen> {
           ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
 
           const SizedBox(height: 20),
+          if (_experienceLevel != null) _buildRecommendedBanner(),
+          if (_experienceLevel != null) const SizedBox(height: 12),
           _buildLearningPathsCard(),
 
           // Section Title
@@ -852,8 +861,71 @@ class _LearnScreenState extends State<LearnScreen> {
       },
     );
   }
+  // ==================== RECOMMENDED BANNER ====================
+
+  Widget _buildRecommendedBanner() {
+    final Map<String, Map<String, String>> config = {
+      'beginner':     {'emoji': '🌱', 'label': 'Start with the Beginner path',     'sub': 'Perfect for complete beginners',        'difficulty': 'beginner'},
+      'some':         {'emoji': '🌿', 'label': 'Try the Elementary path',           'sub': 'You already know some signs — keep going', 'difficulty': 'beginner'},
+      'intermediate': {'emoji': '🌳', 'label': 'Jump into the Intermediate path',   'sub': 'Challenge yourself with harder signs',   'difficulty': 'intermediate'},
+    };
+    final c = config[_experienceLevel] ?? config['beginner']!;
+
+    return TapScale(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LearningPathsScreen()),
+      ),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.secondary.withValues(alpha: 0.1)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Text(c['emoji']!, style: const TextStyle(fontSize: 28)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Recommended for you',
+                          style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(c['label']!, style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(c['sub']!, style: TextStyle(color: context.textMuted, fontSize: 12)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 14, color: context.textMuted),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 150.ms).slideX(begin: -0.05);
+  }
+
   // ==================== LEARNING PATHS CARD ====================
-  
+
   Widget _buildLearningPathsCard() {
     return TapScale(
       onTap: () {

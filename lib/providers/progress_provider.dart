@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/firestore_service.dart';
 import '../models/progress_model.dart';
 import '../models/achievement_model.dart';
@@ -218,8 +219,13 @@ class ProgressProvider with ChangeNotifier {
   }
 
   // Update daily goals with actual progress
-  void refreshDailyGoals(int lessonsCompletedToday) {
-    _dailyGoals = DailyGoalModel.getTodaysGoals(currentProgress: lessonsCompletedToday);
+  Future<void> refreshDailyGoals(int lessonsCompletedToday) async {
+    final prefs = await SharedPreferences.getInstance();
+    final learningGoal = prefs.getString('learningGoal');
+    _dailyGoals = DailyGoalModel.getTodaysGoals(
+      currentProgress: lessonsCompletedToday,
+      learningGoal: learningGoal,
+    );
     notifyListeners();
   }
 

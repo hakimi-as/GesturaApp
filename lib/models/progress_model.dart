@@ -259,21 +259,41 @@ class DailyGoalModel {
     {'title': 'Learn cultural deaf signs', 'description': 'Deaf community vocabulary', 'target': 3, 'xp': 45, 'type': 'lessons'},
   ];
 
-  /// Get today's goals (3-4 random goals based on date)
-  static List<DailyGoalModel> getTodaysGoals({int currentProgress = 0}) {
+  /// Max lesson target per learningGoal preference.
+  static int maxTargetForGoal(String? goal) {
+    switch (goal) {
+      case 'casual':    return 2;
+      case 'intensive': return 100; // no cap
+      default:          return 5;   // 'regular'
+    }
+  }
+
+  /// Get today's goals (3-4 random goals based on date), filtered by learningGoal.
+  static List<DailyGoalModel> getTodaysGoals({int currentProgress = 0, String? learningGoal}) {
     final now = DateTime.now();
     final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
-    
+
+    // Filter pool by goal difficulty
+    final maxTarget = maxTargetForGoal(learningGoal);
+    final pool = _allGoals.asMap().entries.where((e) {
+      final type = e.value['type'] as String;
+      final target = e.value['target'] as int;
+      if (type == 'lessons') return target <= maxTarget;
+      return true; // streak/quiz goals always included
+    }).map((e) => e.key).toList();
+
+    final candidatePool = pool.isEmpty ? List.generate(_allGoals.length, (i) => i) : pool;
+
     // Determine number of goals (3 or 4, alternates by day)
     final numberOfGoals = (dayOfYear % 2 == 0) ? 3 : 4;
-    
+
     // Use day of year as seed for consistent daily selection
     final selectedIndices = <int>[];
     int seed = dayOfYear;
-    
+
     while (selectedIndices.length < numberOfGoals) {
       seed = (seed * 1103515245 + 12345) % (1 << 31);
-      final index = seed % _allGoals.length;
+      final index = candidatePool[seed.abs() % candidatePool.length];
       
       if (!selectedIndices.contains(index)) {
         selectedIndices.add(index);
