@@ -32,14 +32,15 @@ The app is paired with a cloud-hosted **Sign Recognition API** (FastAPI on Railw
 ### Learning System
 - **Structured Lessons** — Category-based BIM sign lessons with video demonstrations
 - **Learning Paths** — Guided Beginner → Intermediate → Advanced progression
-- **Quizzes** — Standard and timed quizzes with multiple-choice questions
+- **Onboarding Preferences** — Learning goal and experience level collected at onboarding; filters daily goals and surfaces a recommended learning path banner on the Learn screen
+- **Quizzes** — Five quiz modes: Sign-to-Text, Text-to-Sign, Timed Challenge, Spelling, and **Fill in the Blank** (type the sign name from an image)
 - **Certificates** — Auto-generated PDF completion certificates per category
 
 ### Gamification
 - **XP & Levelling** — Earn experience points for completing lessons and quizzes
 - **Streak System** — Daily learning streaks with freeze protection
 - **Badges & Achievements** — Unlock badges for milestones reached
-- **Challenges** — Daily, weekly, and special event challenges
+- **Challenges** — Daily, weekly, and special challenges — including **personalised daily challenges** auto-generated from the user's weakest categories (marked ✨ For You)
 
 ### Social & Community
 - **Friends System** — Add friends, send/accept requests, view profiles
@@ -49,6 +50,11 @@ The app is paired with a cloud-hosted **Sign Recognition API** (FastAPI on Railw
 ### Sign Translation
 - **Sign-to-Text** — Live camera feed with on-device ML Kit pose detection. User signs a word, taps **Capture Sign**, and the app sends pose landmark frames to the recognition API for DTW matching. Detected words build a sentence word-by-word.
 - **Text-to-Sign** — Convert typed or spoken text into BIM sign animations with a skeleton-based sign player.
+
+### Analytics
+- **Learning Velocity** — 4-week XP earned comparison chart
+- **Accuracy by Category** — Per-category accuracy breakdown from lesson completion history
+- **Signs to Practice** — Auto-identified weak signs (below 70% accuracy), sorted by lowest accuracy first
 
 ### Technical Highlights
 - **Offline Support** — Full lesson caching with Hive; syncs when back online
@@ -282,14 +288,15 @@ RemoteSignService.apiKey    = 'your_secret_key'; // if API_KEY is set
 
 | Screen | Description |
 |---|---|
-| Onboarding | 4-page introduction with learning preference selection |
+| Onboarding | 4-page introduction with learning goal + experience level preference selection |
 | Dashboard | XP stats, daily streak, quick actions, learning path entry card |
-| Learn | Browse categories, lessons by category, learning path progression |
+| Learn | Browse categories, lessons by category, recommended path banner based on experience level |
 | Lesson Detail | Video demonstration with controls and completion tracking |
-| Quiz | Standard and timed quiz modes with multiple-choice questions |
-| Quiz Results | Score breakdown, XP earned, retry option |
-| Challenges | Daily / weekly / special event challenges with progress tracking |
-| Progress | XP history chart, streak stats, time-on-app analytics |
+| Quiz | 5 modes: Sign-to-Text, Text-to-Sign, Timed Challenge, Spelling, Fill in the Blank |
+| Quiz Results | Score breakdown, XP earned, wrong-answer review, retry option |
+| Challenges | Daily / weekly / special challenges + ✨ personalised challenges from weak spots |
+| Progress | Overview, Activity, Badges, and Analytics tabs |
+| Analytics | 4-week XP velocity chart, accuracy per category, weak signs list |
 | Translate | Sign-to-text (live camera + DTW matching) and text-to-sign animation |
 | Leaderboard | Global and friends-only XP rankings |
 | Social | Friends list, friend requests, friend profiles, activity feed |

@@ -357,6 +357,24 @@ class _ChallengesScreenState extends State<ChallengesScreen>
                             ),
                           ),
                         ),
+                        if (challenge.isPersonalized) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6366F1).withAlpha(30),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              '✨ For You',
+                              style: TextStyle(
+                                color: Color(0xFF6366F1),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                         const Spacer(),
                         Text(
                           challenge.remainingTimeText,

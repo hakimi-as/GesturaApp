@@ -208,6 +208,15 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
         questionCount: 10,
         xp: 50,
       ),
+      _QuizCardData(
+        icon: '✏️',
+        title: l10n.fillInBlank,
+        description: l10n.fillInBlankFullDesc,
+        color: const Color(0xFF8B5CF6),
+        quizType: 'fill_in_blank',
+        questionCount: 10,
+        xp: 60,
+      ),
     ];
 
     final bestScores = _bestScoreByType;
@@ -505,6 +514,8 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
         return l10n.timedChallenge;
       case 'spelling':
         return l10n.spellingQuiz;
+      case 'fill_in_blank':
+        return l10n.fillInBlank;
       default:
         return l10n.quizTitle;
     }

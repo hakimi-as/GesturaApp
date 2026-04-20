@@ -89,6 +89,9 @@ class AppLocalizations {
       'timedChallengeDesc': 'Beat the clock',
       'spellingQuiz': 'Spelling Quiz',
       'spellingQuizDesc': 'Finger-spell words',
+      'fillInBlank': 'Fill in the Blank',
+      'fillInBlankDesc': 'Type the answer',
+      'typeYourAnswer': 'Type your answer...',
       'questions': 'questions',
       'notPlayedYet': 'Not played yet',
       'bestScore': 'Best',
@@ -337,6 +340,7 @@ class AppLocalizations {
       'textToSignFullDesc': 'Read a word and pick the correct sign',
       'timedChallengeFullDesc': 'Race against the clock, 10s per sign',
       'spellingQuizFullDesc': 'Decode fingerspelled words letter by letter',
+      'fillInBlankFullDesc': 'See a sign image and type the word it represents',
       'bonusXP': '+50 Bonus XP',
 
       // Admin panel
@@ -723,6 +727,9 @@ class AppLocalizations {
       'timedChallengeDesc': 'Kalahkan jam',
       'spellingQuiz': 'Kuiz Ejaan',
       'spellingQuizDesc': 'Ejakan perkataan',
+      'fillInBlank': 'Isi Tempat Kosong',
+      'fillInBlankDesc': 'Taip jawapan',
+      'typeYourAnswer': 'Taip jawapan anda...',
       'questions': 'soalan',
       'notPlayedYet': 'Belum dimainkan',
       'bestScore': 'Terbaik',
@@ -971,6 +978,7 @@ class AppLocalizations {
       'textToSignFullDesc': 'Baca perkataan dan pilih isyarat yang betul',
       'timedChallengeFullDesc': 'Lumba menentang jam, 10s setiap isyarat',
       'spellingQuizFullDesc': 'Nyahkod perkataan ejaan jari huruf demi huruf',
+      'fillInBlankFullDesc': 'Lihat gambar isyarat dan taip perkataan yang diwakilinya',
       'bonusXP': '+50 XP Bonus',
 
       // Admin panel
@@ -1362,6 +1370,9 @@ class AppLocalizations {
   String get timedChallengeDesc => _t('timedChallengeDesc');
   String get spellingQuiz => _t('spellingQuiz');
   String get spellingQuizDesc => _t('spellingQuizDesc');
+  String get fillInBlank => _t('fillInBlank');
+  String get fillInBlankDesc => _t('fillInBlankDesc');
+  String get typeYourAnswer => _t('typeYourAnswer');
   String get questions => _t('questions');
   String get notPlayedYet => _t('notPlayedYet');
   String get bestScore => _t('bestScore');
@@ -1610,6 +1621,7 @@ class AppLocalizations {
   String get textToSignFullDesc => _t('textToSignFullDesc');
   String get timedChallengeFullDesc => _t('timedChallengeFullDesc');
   String get spellingQuizFullDesc => _t('spellingQuizFullDesc');
+  String get fillInBlankFullDesc => _t('fillInBlankFullDesc');
   String get bonusXP => _t('bonusXP');
 
   // Admin panel

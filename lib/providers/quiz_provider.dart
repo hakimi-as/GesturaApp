@@ -12,6 +12,7 @@ class QuizProvider with ChangeNotifier {
   int _score = 0;
   int _correctAnswers = 0;
   int? _selectedOptionIndex;
+  String _typedAnswer = '';
   bool _isAnswered = false;
   bool _isLoading = false;
   bool _isTimedOut = false;
@@ -36,6 +37,7 @@ class QuizProvider with ChangeNotifier {
   int get score => _score;
   int get correctAnswers => _correctAnswers;
   int? get selectedOptionIndex => _selectedOptionIndex;
+  String get typedAnswer => _typedAnswer;
   bool get isAnswered => _isAnswered;
   bool get isTimedOut => _isTimedOut;
   bool get isLoading => _isLoading;
@@ -259,6 +261,37 @@ class QuizProvider with ChangeNotifier {
     }
   }
 
+  // ── Fill in the Blank ─────────────────────────────────────────────────────
+
+  Future<void> startFillInBlankQuiz({String? categoryId}) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+      _resetState();
+
+      final questions = await _firestoreService.generateSignToTextQuestions(
+        categoryId: categoryId,
+        count: 10,
+      );
+
+      if (questions.isEmpty) {
+        _error = 'Not enough lessons with images to generate a quiz.';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      _currentQuestions = questions;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
   // ── startQuiz dispatcher ─────────────────────────────────────────────────
 
   Future<void> startQuiz(String quizType, {String? quizId}) async {
@@ -277,6 +310,11 @@ class QuizProvider with ChangeNotifier {
 
     if (quizType == 'spelling') {
       await startSpellingQuiz();
+      return;
+    }
+
+    if (quizType == 'fill_in_blank') {
+      await startFillInBlankQuiz();
       return;
     }
 
@@ -352,6 +390,30 @@ class QuizProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void submitTextAnswer(String text) {
+    if (_isAnswered) return;
+    _typedAnswer = text.trim();
+    _isAnswered = true;
+
+    final correct = _typedAnswer.toLowerCase() == currentQuestion!.correctAnswer.toLowerCase();
+    if (correct) {
+      _correctAnswers++;
+      _score += currentQuestion!.points;
+    } else {
+      _wrongAnswers.add({
+        'question': currentQuestion!,
+        'selectedIndex': -1,
+        'selectedAnswer': _typedAnswer.isEmpty ? '(no answer)' : _typedAnswer,
+      });
+    }
+    notifyListeners();
+  }
+
+  bool get isTextAnswerCorrect {
+    if (!_isAnswered || currentQuestion == null) return false;
+    return _typedAnswer.toLowerCase() == currentQuestion!.correctAnswer.toLowerCase();
+  }
+
   /// Points based on how fast the answer was given (timed challenge only).
   int _speedPoints() {
     final elapsed = _questionTimerDuration - _questionTimeLeft;
@@ -364,6 +426,7 @@ class QuizProvider with ChangeNotifier {
     if (_currentQuestionIndex < _currentQuestions.length - 1) {
       _currentQuestionIndex++;
       _selectedOptionIndex = null;
+      _typedAnswer = '';
       _isAnswered = false;
       _isTimedOut = false;
       if (isTimedChallenge) {
@@ -395,6 +458,7 @@ class QuizProvider with ChangeNotifier {
     _score = 0;
     _correctAnswers = 0;
     _selectedOptionIndex = null;
+    _typedAnswer = '';
     _isAnswered = false;
     _isTimedOut = false;
     _timeLeft = 60;

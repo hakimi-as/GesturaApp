@@ -56,6 +56,7 @@ class _QuizScreenState extends State<QuizScreen> {
     final quizProvider = Provider.of<QuizProvider>(context, listen: false);
 
     if (!quizProvider.isAnswered) {
+      if (widget.quizType == 'fill_in_blank') return; // text field handles submission
       quizProvider.submitAnswer(isTimedChallenge: _isTimed);
     } else {
       if (quizProvider.currentQuestionIndex < quizProvider.totalQuestions - 1) {
@@ -96,7 +97,9 @@ class _QuizScreenState extends State<QuizScreen> {
                         ? l10n.timedChallenge
                         : widget.quizType == 'spelling'
                             ? l10n.spellingQuiz
-                            : l10n.quizTitle,
+                            : widget.quizType == 'fill_in_blank'
+                                ? l10n.fillInBlank
+                                : l10n.quizTitle,
             style: const TextStyle(fontSize: 16),
           );
         }),
@@ -134,17 +137,19 @@ class _QuizScreenState extends State<QuizScreen> {
                     children: [
                       _buildQuestionCard(context, quizProvider),
                       const SizedBox(height: 24),
-                      if (question.hasOptionImages)
-                        _buildImageOptionsGrid(context, quizProvider, question)
-                      else
-                        ...question.options.asMap().entries.map((entry) {
-                          return _buildOptionCard(
-                            context,
-                            quizProvider,
-                            entry.key,
-                            entry.value,
-                          );
-                        }),
+                      if (widget.quizType != 'fill_in_blank') ...[
+                        if (question.hasOptionImages)
+                          _buildImageOptionsGrid(context, quizProvider, question)
+                        else
+                          ...question.options.asMap().entries.map((entry) {
+                            return _buildOptionCard(
+                              context,
+                              quizProvider,
+                              entry.key,
+                              entry.value,
+                            );
+                          }),
+                      ],
                     ],
                   ),
                 ),
@@ -283,6 +288,11 @@ class _QuizScreenState extends State<QuizScreen> {
     // Text to Sign: the word IS the question — show it as a styled word card
     if (widget.quizType == 'text_to_sign') {
       return _buildTextToSignQuestionCard(context, question);
+    }
+
+    // Fill in the Blank: show sign image, user types the answer
+    if (widget.quizType == 'fill_in_blank') {
+      return _buildFillInBlankQuestionCard(context, question);
     }
 
     final hasImage = question.imageUrl != null;
@@ -427,6 +437,116 @@ class _QuizScreenState extends State<QuizScreen> {
 
   /// Question card for Spelling Quiz — shows a horizontal row of fingerspelling
   /// sign images (one per letter). User picks which word is being spelled.
+  Widget _buildFillInBlankQuestionCard(BuildContext context, QuizQuestionModel question) {
+    final quizProvider = Provider.of<QuizProvider>(context, listen: false);
+    final textController = TextEditingController();
+
+    return StatefulBuilder(builder: (context, setLocal) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: context.bgCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: context.borderColor),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('✏️', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Text(
+                  AppLocalizations.of(context).whatSignIsThis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Sign image or emoji
+            if (question.imageUrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  CloudinaryService.getOptimizedImage(question.imageUrl!, width: 400, height: 400),
+                  width: 180,
+                  height: 180,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Text(question.signEmoji, style: const TextStyle(fontSize: 72)),
+                ),
+              )
+            else
+              Text(question.signEmoji, style: const TextStyle(fontSize: 72)),
+
+            const SizedBox(height: 20),
+
+            // Feedback after answering
+            Consumer<QuizProvider>(builder: (context, qp, _) {
+              if (!qp.isAnswered) return const SizedBox.shrink();
+              final correct = qp.isTextAnswerCorrect;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: correct ? AppColors.success.withAlpha(30) : AppColors.error.withAlpha(30),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(correct ? '✅' : '❌', style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8),
+                    Text(
+                      correct ? 'Correct!' : 'Answer: ${question.correctAnswer}',
+                      style: TextStyle(
+                        color: correct ? AppColors.success : AppColors.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+            const SizedBox(height: 16),
+
+            // Text input — disabled after answering
+            Consumer<QuizProvider>(builder: (context, qp, _) {
+              return TextField(
+                controller: textController,
+                enabled: !qp.isAnswered,
+                textCapitalization: TextCapitalization.none,
+                autofocus: false,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context).typeYourAnswer,
+                  filled: true,
+                  fillColor: context.bgElevated,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  suffixIcon: qp.isAnswered ? null : IconButton(
+                    icon: const Icon(Icons.send_rounded),
+                    color: AppColors.primary,
+                    onPressed: () => quizProvider.submitTextAnswer(textController.text),
+                  ),
+                ),
+                onSubmitted: (val) => quizProvider.submitTextAnswer(val),
+              );
+            }),
+          ],
+        ),
+      );
+    });
+  }
+
   Widget _buildSpellingQuestionCard(
       BuildContext context, QuizQuestionModel question) {
     final letters = question.letterImages ?? [];

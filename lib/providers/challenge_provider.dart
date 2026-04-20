@@ -135,13 +135,15 @@ class ChallengeProvider extends ChangeNotifier {
       final monthKey = 'monthly_${now.year}_${now.month}';
 
       // Load or select challenges for each type
-      _dailyChallenges = await _loadOrSelectChallenges(
+      final regularDaily = await _loadOrSelectChallenges(
         userId: userId,
         user: user,
         periodKey: '${todayKey}_type0',
         type: ChallengeType.daily,
         count: 3,
       );
+      final personalized = await _generatePersonalizedChallenges(userId, user);
+      _dailyChallenges = [...personalized, ...regularDaily];
 
       _weeklyChallenges = await _loadOrSelectChallenges(
         userId: userId,
@@ -166,6 +168,90 @@ class ChallengeProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<List<ChallengeModel>> _generatePersonalizedChallenges(String userId, UserModel user) async {
+    try {
+      final categoriesSnap = await _firestore.collection('categories').orderBy('order').get();
+      if (categoriesSnap.docs.isEmpty) return [];
+
+      final progressSnap = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('categoryProgress')
+          .get();
+      final progressMap = {for (final doc in progressSnap.docs) doc.id: doc.data()};
+
+      // Score each category by lessons completed (lower = weaker)
+      final scored = categoriesSnap.docs.map((cat) {
+        final lessonsCompleted = (progressMap[cat.id]?['lessonsCompleted'] as int?) ?? 0;
+        return {'id': cat.id, 'name': cat.data()['name'] as String? ?? 'Unknown', 'lessonsCompleted': lessonsCompleted};
+      }).toList()
+        ..sort((a, b) => (a['lessonsCompleted'] as int).compareTo(b['lessonsCompleted'] as int));
+
+      final now = DateTime.now();
+      final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+      final todayKey = _getTodayKey();
+
+      final todayDoc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('challengeProgress')
+          .doc(todayKey)
+          .get();
+      final todayData = todayDoc.exists ? todayDoc.data() ?? {} : <String, dynamic>{};
+
+      final List<ChallengeModel> challenges = [];
+      for (final cat in scored) {
+        if (challenges.length >= 2) break;
+        final catId = cat['id'] as String;
+        final catName = cat['name'] as String;
+        final lessonsCompleted = cat['lessonsCompleted'] as int;
+        final todayProgress = (todayData['lessonsToday_$catId'] as int?) ?? 0;
+
+        String title, description, emoji;
+        int target, xpReward;
+        if (lessonsCompleted == 0) {
+          title = 'Explore $catName';
+          description = 'Start your first lesson in $catName';
+          emoji = '🌟';
+          target = 1;
+          xpReward = 50;
+        } else if (lessonsCompleted < 3) {
+          title = 'Strengthen $catName';
+          description = 'Complete 2 lessons in $catName today';
+          emoji = '💪';
+          target = 2;
+          xpReward = 65;
+        } else {
+          title = 'Master $catName';
+          description = 'Complete 3 lessons in $catName today';
+          emoji = '🎯';
+          target = 3;
+          xpReward = 80;
+        }
+
+        challenges.add(ChallengeModel(
+          id: 'personalized_${catId}_$todayKey',
+          title: title,
+          description: description,
+          emoji: emoji,
+          type: ChallengeType.daily,
+          targetValue: target,
+          currentValue: todayProgress,
+          xpReward: xpReward,
+          startDate: now,
+          endDate: endOfDay,
+          trackingField: 'lessonsInCategoryToday',
+          categoryId: catId,
+          isPersonalized: true,
+        ));
+      }
+      return challenges;
+    } catch (e) {
+      debugPrint('Error generating personalized challenges: $e');
+      return [];
+    }
   }
 
   Future<List<ChallengeModel>> _loadOrSelectChallenges({

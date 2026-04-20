@@ -26,7 +26,8 @@ class ChallengeModel {
   final DateTime endDate;
   final ChallengeStatus status;
   final String trackingField;
-  final String? categoryId; // Optional: specific category to track
+  final String? categoryId;
+  final bool isPersonalized;
 
   const ChallengeModel({
     required this.id,
@@ -42,6 +43,7 @@ class ChallengeModel {
     this.status = ChallengeStatus.active,
     this.trackingField = 'lessonsToday',
     this.categoryId,
+    this.isPersonalized = false,
   });
 
   double get progress => (currentValue / targetValue).clamp(0.0, 1.0);
@@ -131,6 +133,7 @@ class ChallengeModel {
     ChallengeStatus? status,
     String? trackingField,
     String? categoryId,
+    bool? isPersonalized,
   }) {
     return ChallengeModel(
       id: id ?? this.id,
@@ -146,6 +149,7 @@ class ChallengeModel {
       status: status ?? this.status,
       trackingField: trackingField ?? this.trackingField,
       categoryId: categoryId ?? this.categoryId,
+      isPersonalized: isPersonalized ?? this.isPersonalized,
     );
   }
 }

@@ -5,7 +5,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/badge_model.dart';
-import '../../models/category_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/badge_provider.dart';
 import '../../providers/progress_provider.dart';
@@ -31,7 +30,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadData();
   }
 
@@ -137,6 +136,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                   _buildOverviewTab(),
                   _buildActivityTab(),
                   _buildAchievementsTab(),
+                  _buildAnalyticsTab(),
                 ],
               ),
             ),
@@ -322,7 +322,8 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
         tabs: const [
           Tab(text: 'Overview'),
           Tab(text: 'Activity'),
-          Tab(text: 'Achievements'),
+          Tab(text: 'Badges'),
+          Tab(text: 'Analytics'),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms);
@@ -1159,5 +1160,303 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
     } else {
       return '${difference.inDays} days ago';
     }
+  }
+
+  // ── Analytics Tab ──────────────────────────────────────────────────────────
+
+  Widget _buildAnalyticsTab() {
+    return Consumer<ProgressProvider>(
+      builder: (context, progressProvider, _) {
+        final progressList = progressProvider.progressList
+            .where((p) => p.type != 'quiz')
+            .toList();
+
+        // Accuracy per category
+        final Map<String, List<double>> catAccMap = {};
+        for (final p in progressList) {
+          if (p.bestAccuracy > 0 && p.categoryName.isNotEmpty) {
+            catAccMap.putIfAbsent(p.categoryName, () => []).add(p.bestAccuracy);
+          }
+        }
+        final catAccuracy = catAccMap.map((k, v) =>
+            MapEntry(k, v.reduce((a, b) => a + b) / v.length));
+        final sortedCats = catAccuracy.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+        // Weak signs (accuracy > 0 but < 70%)
+        final weakSigns = progressList
+            .where((p) => p.bestAccuracy > 0 && p.bestAccuracy < 0.7 && p.lessonName.isNotEmpty)
+            .toList()
+          ..sort((a, b) => a.bestAccuracy.compareTo(b.bestAccuracy));
+
+        // Learning velocity — XP per week for last 4 weeks
+        final now = DateTime.now();
+        final weeklyXP = List.filled(4, 0);
+        for (final p in progressProvider.progressList) {
+          if (p.completedAt != null && p.xpEarned > 0) {
+            final weeksAgo = now.difference(p.completedAt!).inDays ~/ 7;
+            if (weeksAgo < 4) weeklyXP[weeksAgo] += p.xpEarned;
+          }
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildVelocityChart(weeklyXP),
+              const SizedBox(height: 24),
+              _buildCategoryAccuracy(sortedCats),
+              const SizedBox(height: 24),
+              _buildWeakSigns(weakSigns),
+              const SizedBox(height: 100),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildVelocityChart(List<int> weeklyXP) {
+    final maxXP = weeklyXP.reduce((a, b) => a > b ? a : b).clamp(1, 9999);
+    final labels = ['3w ago', '2w ago', 'Last wk', 'This wk'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          const Text('⚡', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          Text('Learning Velocity',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        ]),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: context.bgCard,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: context.borderColor),
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 130,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(4, (i) {
+                    final xp = weeklyXP[3 - i]; // oldest first
+                    final height = (xp / maxXP) * 90;
+                    final isThisWeek = i == 3;
+                    return SizedBox(
+                      width: 56,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('$xp XP',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: isThisWeek ? AppColors.primary : context.textMuted,
+                              )),
+                          const SizedBox(height: 4),
+                          AnimatedContainer(
+                            duration: Duration(milliseconds: 600 + i * 100),
+                            width: 40,
+                            height: height.clamp(8, 90).toDouble(),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: isThisWeek
+                                    ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
+                                    : [const Color(0xFF10B981).withAlpha(120), const Color(0xFF10B981)],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(labels[i],
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isThisWeek ? AppColors.primary : context.textMuted,
+                                fontWeight: isThisWeek ? FontWeight.bold : FontWeight.normal,
+                              )),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+                _buildChartStat('This Week', '${weeklyXP[0]}', 'XP'),
+                _buildChartStat('Last Week', '${weeklyXP[1]}', 'XP'),
+                _buildChartStat('4-Wk Total', '${weeklyXP.reduce((a, b) => a + b)}', 'XP'),
+              ]),
+            ],
+          ),
+        ),
+      ],
+    ).animate().fadeIn(duration: 400.ms);
+  }
+
+  Widget _buildCategoryAccuracy(List<MapEntry<String, double>> sortedCats) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          const Text('🎯', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          Text('Accuracy by Category',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        ]),
+        const SizedBox(height: 12),
+        if (sortedCats.isEmpty)
+          _buildEmptyState('📊', 'No accuracy data yet', 'Complete some lessons to see your accuracy breakdown')
+        else
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: context.bgCard,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.borderColor),
+            ),
+            child: Column(
+              children: sortedCats.asMap().entries.map((entry) {
+                final i = entry.key;
+                final cat = entry.value;
+                final pct = (cat.value * 100).round();
+                final color = pct >= 80
+                    ? AppColors.success
+                    : pct >= 60
+                        ? AppColors.warning
+                        : AppColors.error;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(cat.key,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                          Text('$pct%',
+                              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: cat.value,
+                          minHeight: 7,
+                          backgroundColor: context.bgElevated,
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: Duration(milliseconds: 80 * i)).slideX(begin: 0.05);
+              }).toList(),
+            ),
+          ),
+      ],
+    ).animate().fadeIn(delay: 150.ms);
+  }
+
+  Widget _buildWeakSigns(List weakSigns) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          const Text('💡', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          Text('Signs to Practice',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        ]),
+        const SizedBox(height: 4),
+        Text('Signs you got right less than 70% of the time',
+            style: TextStyle(color: context.textMuted, fontSize: 12)),
+        const SizedBox(height: 12),
+        if (weakSigns.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: context.bgCard,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.borderColor),
+            ),
+            child: const Row(children: [
+              Text('🎉', style: TextStyle(fontSize: 28)),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text('Great job! No weak signs found.\nKeep practicing to maintain your accuracy.',
+                    style: TextStyle(fontSize: 13)),
+              ),
+            ]),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: context.bgCard,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.borderColor),
+            ),
+            child: Column(
+              children: weakSigns.take(6).toList().asMap().entries.map((entry) {
+                final i = entry.key;
+                final p = entry.value;
+                final pct = (p.bestAccuracy * 100).round();
+                final isLast = i == (weakSigns.length > 6 ? 5 : weakSigns.length - 1);
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withAlpha(25),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Center(
+                              child: Text('$pct%',
+                                  style: const TextStyle(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  )),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(p.lessonName,
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                                Text(p.categoryName,
+                                    style: TextStyle(color: context.textMuted, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, size: 18),
+                        ],
+                      ),
+                    ),
+                    if (!isLast) Divider(height: 1, color: context.borderColor, indent: 68),
+                  ],
+                ).animate().fadeIn(delay: Duration(milliseconds: 60 * i));
+              }).toList(),
+            ),
+          ),
+      ],
+    ).animate().fadeIn(delay: 300.ms);
   }
 }
