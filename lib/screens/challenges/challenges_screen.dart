@@ -129,13 +129,8 @@ class _ChallengesScreenState extends State<ChallengesScreen>
 
     return Container(
       margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+      padding: const EdgeInsets.all(18),
+      decoration: AppDecorations.card(context).copyWith(
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -148,38 +143,35 @@ class _ChallengesScreenState extends State<ChallengesScreen>
                   children: [
                     Text(
                       'Active Challenges',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(180),
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(fontSize: 12, color: context.textMuted),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '$totalCompleted Completed',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(50),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.primary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.primary.withAlpha(50)),
                 ),
                 child: Row(
                   children: [
-                    const Text('⭐', style: TextStyle(fontSize: 18)),
+                    const Text('⭐', style: TextStyle(fontSize: 16)),
                     const SizedBox(width: 6),
                     Text(
                       '$totalXpAvailable XP',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppColors.primary,
                         fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -187,13 +179,13 @@ class _ChallengesScreenState extends State<ChallengesScreen>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Row(
             children: [
               _buildMiniStat('Daily', '$completedDaily/${dailyChallenges.length}'),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               _buildMiniStat('Weekly', '$completedWeekly/${weeklyChallenges.length}'),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               _buildMiniStat('Special', '$completedSpecial/${specialChallenges.length}'),
             ],
           ),
@@ -207,23 +199,22 @@ class _ChallengesScreenState extends State<ChallengesScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(30),
+          color: context.bgElevated,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: context.borderColor),
         ),
         child: Column(
           children: [
             Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withAlpha(180),
+                color: context.textMuted,
                 fontSize: 11,
               ),
             ),

@@ -217,20 +217,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         return Container(
           margin: const EdgeInsets.all(20),
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+          decoration: AppDecorations.card(context).copyWith(
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6366F1).withAlpha(50),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
           ),
           child: Row(
             children: [
@@ -239,14 +227,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(50),
+                  color: AppColors.primary.withAlpha(20),
                   shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primary.withAlpha(60)),
                 ),
                 child: Center(
                   child: Text(
                     rank > 0 ? '#$rank' : '-',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -259,9 +248,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(50),
+                  color: context.bgElevated,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withAlpha(100), width: 2),
+                  border: Border.all(color: context.borderColor, width: 1.5),
                 ),
                 child: user.photoUrl != null && user.photoUrl!.isNotEmpty
                     ? ClipRRect(
@@ -275,8 +264,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                             return Center(
                               child: Text(
                                 user.initials,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: context.textPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
@@ -288,8 +277,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     : Center(
                         child: Text(
                           user.initials,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -304,19 +293,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   children: [
                     Text(
                       _selectedScope == 'global' ? AppLocalizations.of(context).globalRanking : AppLocalizations.of(context).friendsRanking,
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(180),
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(fontSize: 12, color: context.textMuted),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       user.fullName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
@@ -335,11 +319,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                         : _tabController.index == 1
                             ? '${user.lessonsCompleted} ${AppLocalizations.of(context).lessonsLabel}'
                             : '${user.totalXP} XP',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ],
               ),

@@ -190,12 +190,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
         return Container(
           margin: const EdgeInsets.all(20),
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+          decoration: AppDecorations.card(context).copyWith(
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
@@ -207,14 +202,15 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(50),
+                      color: AppColors.primary.withAlpha(20),
                       shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primary.withAlpha(60), width: 1.5),
                     ),
                     child: Center(
                       child: Text(
                         '${user?.level ?? 1}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.primary,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
@@ -228,19 +224,14 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                       children: [
                         Text(
                           'Level ${user?.level ?? 1}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${user?.xpToNextLevel ?? 100} XP to next level',
-                          style: TextStyle(
-                            color: Colors.white.withAlpha(180),
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(fontSize: 12, color: context.textMuted),
                         ),
                         const SizedBox(height: 8),
                         ClipRRect(
@@ -248,8 +239,8 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                           child: LinearProgressIndicator(
                             value: user?.levelProgress ?? 0,
                             minHeight: 8,
-                            backgroundColor: Colors.white.withAlpha(50),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                            backgroundColor: context.borderColor,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                           ),
                         ),
                       ],
@@ -283,7 +274,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
           Text(
             value,
             style: const TextStyle(
-              color: Colors.white,
+              color: context.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -291,7 +282,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withAlpha(180),
+              color: context.textMuted,
               fontSize: 10,
             ),
           ),

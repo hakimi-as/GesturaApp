@@ -868,31 +868,32 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+      decoration: AppDecorations.card(context).copyWith(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('⭐', style: TextStyle(fontSize: 32)),
-          const SizedBox(width: 12),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(20),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primary.withAlpha(60)),
+            ),
+            child: const Center(child: Text('⭐', style: TextStyle(fontSize: 26))),
+          ),
+          const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(AppLocalizations.of(context).xpEarned,
-                  style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                  style: TextStyle(fontSize: 13, color: context.textMuted)),
               Text(
                 '+$xpEarned XP',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: AppColors.primary,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),

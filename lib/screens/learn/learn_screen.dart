@@ -186,12 +186,12 @@ class _LearnScreenState extends State<LearnScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
+                      color: AppColors.primary.withAlpha(25),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.menu_book,
-                      color: Colors.white,
+                      color: AppColors.primary,
                       size: 20,
                     ),
                   ),
@@ -346,29 +346,12 @@ class _LearnScreenState extends State<LearnScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6),
-                  borderRadius: BorderRadius.circular(12),
+          Text(
+            'Learn BIM',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.4,
                 ),
-                child: const Icon(
-                  Icons.menu_book,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Learn',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ],
           ),
           _buildHeaderStats(),
         ],
@@ -449,17 +432,8 @@ class _LearnScreenState extends State<LearnScreen> {
           curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            gradient: isSelected
-                ? const LinearGradient(
-                    colors: [AppColors.primary, AppColors.secondary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
+            color: isSelected ? AppColors.primary : null,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: isSelected
-                ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.30), blurRadius: 8, offset: const Offset(0, 2))]
-                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -506,72 +480,51 @@ class _LearnScreenState extends State<LearnScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome Card
+          // Overall progress strip
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            decoration: AppDecorations.card(context).copyWith(
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
-                  children: [
-                    Text(
-                      'Welcome back, Learner! ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text('👋', style: TextStyle(fontSize: 18)),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "You're making great progress! Keep it up.",
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(200),
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: Colors.white.withAlpha(50),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Overall Progress',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(180),
-                        fontSize: 12,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                     Text(
                       '$_totalCompletedLessons / $_totalLessons signs',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: context.borderColor,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  progress >= 1.0
+                      ? 'All signs mastered!'
+                      : '${(progress * 100).toInt()}% complete — keep going!',
+                  style: TextStyle(fontSize: 11, color: context.textMuted),
                 ),
               ],
             ),
@@ -591,19 +544,28 @@ class _LearnScreenState extends State<LearnScreen> {
           else
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 14,
-                  crossAxisSpacing: 14,
-                  childAspectRatio: 0.95,
-                ),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  return _buildCategoryCard(_categories[index], index);
-                },
+              child: Column(
+                children: [
+                  // First category featured full-width
+                  _buildFeaturedCategoryCard(_categories[0], 0),
+                  const SizedBox(height: 14),
+                  // Remaining in 2-column grid
+                  if (_categories.length > 1)
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 14,
+                        crossAxisSpacing: 14,
+                        childAspectRatio: 0.95,
+                      ),
+                      itemCount: _categories.length - 1,
+                      itemBuilder: (context, index) {
+                        return _buildCategoryCard(_categories[index + 1], index + 1);
+                      },
+                    ),
+                ],
               ),
             ),
 
@@ -621,6 +583,114 @@ class _LearnScreenState extends State<LearnScreen> {
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
       child: SectionHeader(title: title, emoji: emoji),
     ).animate().fadeIn(delay: 300.ms);
+  }
+
+  Widget _buildFeaturedCategoryCard(CategoryModel category, int index) {
+    final actualLessonCount = _actualLessonCounts[category.id] ?? 0;
+    final completedCount = _completedLessonCounts[category.id] ?? 0;
+    final progress = actualLessonCount > 0 ? completedCount / actualLessonCount : 0.0;
+    final percentage = (progress * 100).toInt();
+    final catColor = _getCategoryColor(index);
+    final isDone = percentage == 100 && actualLessonCount > 0;
+    final activeColor = isDone ? AppColors.success : catColor;
+
+    return TapScale(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => CategoryLessonsScreen(category: category)),
+        );
+        _loadData();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: context.bgCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDone ? AppColors.success.withAlpha(115) : context.borderColor,
+            width: isDone ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: catColor.withAlpha(30),
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(color: catColor.withAlpha(50)),
+              ),
+              child: category.hasCustomImage
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        CloudinaryService.getOptimizedImage(category.imageUrl!, width: 116),
+                        width: 58,
+                        height: 58,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Center(child: Text(category.icon, style: const TextStyle(fontSize: 28))),
+                      ),
+                    )
+                  : Center(child: Text(category.icon, style: const TextStyle(fontSize: 28))),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    category.description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textMuted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 5,
+                            backgroundColor: context.bgElevated,
+                            valueColor: AlwaysStoppedAnimation<Color>(activeColor),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '$percentage%',
+                        style: TextStyle(
+                          color: activeColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$completedCount / $actualLessonCount signs',
+                    style: TextStyle(fontSize: 10, color: context.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.08);
   }
 
   Widget _buildCategoryCard(CategoryModel category, int index) {
@@ -647,17 +717,10 @@ class _LearnScreenState extends State<LearnScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isDone
-                ? AppColors.success.withValues(alpha: 0.45)
+                ? AppColors.success.withAlpha(115)
                 : context.borderColor,
             width: isDone ? 1.5 : 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: context.isDarkMode ? 0.20 : 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,16 +729,9 @@ class _LearnScreenState extends State<LearnScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    catColor.withValues(alpha: 0.28),
-                    catColor.withValues(alpha: 0.12),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: catColor.withAlpha(30),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: catColor.withValues(alpha: 0.18)),
+                border: Border.all(color: catColor.withAlpha(50)),
               ),
               child: category.hasCustomImage
                   ? ClipRRect(
@@ -938,20 +994,8 @@ class _LearnScreenState extends State<LearnScreen> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF10B981), Color(0xFF059669)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+        decoration: AppDecorations.card(context).copyWith(
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF10B981).withAlpha(50),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Row(
           children: [
@@ -959,8 +1003,9 @@ class _LearnScreenState extends State<LearnScreen> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(50),
+                color: AppColors.success.withAlpha(25),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.success.withAlpha(60)),
               ),
               child: const Center(
                 child: Text('🎯', style: TextStyle(fontSize: 28)),
@@ -971,21 +1016,16 @@ class _LearnScreenState extends State<LearnScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Learning Paths',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Structured courses for all levels',
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(200),
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(fontSize: 13, color: context.textMuted),
                   ),
                 ],
               ),
@@ -994,12 +1034,12 @@ class _LearnScreenState extends State<LearnScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(50),
+                color: context.bgElevated,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_forward_ios,
-                color: Colors.white,
+                color: context.textMuted,
                 size: 16,
               ),
             ),
@@ -1109,44 +1149,40 @@ class _LearnScreenState extends State<LearnScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome Card
+          // Quiz banner
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            decoration: AppDecorations.card(context).copyWith(
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withAlpha(25),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.accent.withAlpha(60)),
+                  ),
+                  child: const Center(child: Text('🎯', style: TextStyle(fontSize: 22))),
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
-                        children: [
-                          Text(
-                            'Test Your Knowledge ',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                      Text(
+                        'Test Your Knowledge',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
-                          ),
-                          Text('🎯', style: TextStyle(fontSize: 18)),
-                        ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         'Challenge yourself and earn XP!',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(200),
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(fontSize: 12, color: context.textMuted),
                       ),
                     ],
                   ),
@@ -1633,41 +1669,37 @@ class _LearnScreenState extends State<LearnScreen> {
               // Badge Summary Card
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                decoration: AppDecorations.card(context).copyWith(
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withAlpha(25),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFF59E0B).withAlpha(60)),
+                      ),
+                      child: const Center(child: Text('🏆', style: TextStyle(fontSize: 22))),
+                    ),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
-                            children: [
-                              Text(
-                                'Your Achievements ',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                          Text(
+                            'Your Achievements',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
                                 ),
-                              ),
-                              Text('🏆', style: TextStyle(fontSize: 18)),
-                            ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             '$unlockedCount of $totalBadges badges earned',
-                            style: TextStyle(
-                              color: Colors.white.withAlpha(220),
-                              fontSize: 13,
-                            ),
+                            style: TextStyle(fontSize: 12, color: context.textMuted),
                           ),
                         ],
                       ),
@@ -1682,13 +1714,14 @@ class _LearnScreenState extends State<LearnScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(50),
+                          color: AppColors.primary.withAlpha(20),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.primary.withAlpha(50)),
                         ),
-                        child: const Text(
+                        child: Text(
                           'View All',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
