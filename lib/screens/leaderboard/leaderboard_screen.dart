@@ -75,9 +75,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   /// Returns the Firestore sort field and display label for the current tab
   String _getSortField(int tabIndex) {
     switch (tabIndex) {
-      case 0: return 'currentStreak';   // Weekly → streak
-      case 1: return 'lessonsCompleted'; // Monthly → lessons
-      default: return 'totalXP';         // All-time → XP
+      case 0: return 'currentStreak';
+      case 1: return 'lessonsCompleted';
+      default: return 'totalXP';
     }
   }
 
@@ -463,8 +463,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         dividerColor: Colors.transparent,
         tabs: [
-          Tab(text: AppLocalizations.of(context).weekly),
-          Tab(text: AppLocalizations.of(context).monthly),
+          Tab(text: AppLocalizations.of(context).streak),
+          Tab(text: AppLocalizations.of(context).lessonsLabel),
           Tab(text: AppLocalizations.of(context).allTime),
         ],
       ),

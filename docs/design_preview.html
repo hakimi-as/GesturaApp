@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestura — Design Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary:    oklch(12% 0.025 270);
+    --bg-secondary:  oklch(16% 0.028 270);
+    --bg-card:       oklch(14% 0.027 270);
+    --bg-elevated:   oklch(18% 0.030 270);
+    --border:        oklch(22% 0.030 270);
+
+    --indigo:        oklch(57% 0.20 270);
+    --indigo-dim:    oklch(57% 0.20 270 / 0.15);
+    --indigo-soft:   oklch(57% 0.20 270 / 0.08);
+    --purple:        oklch(55% 0.22 295);
+    --purple-dim:    oklch(55% 0.22 295 / 0.15);
+    --pink:          oklch(62% 0.22 340);
+
+    --success:       oklch(65% 0.18 162);
+    --warning:       oklch(72% 0.17  70);
+
+    --text-primary:  oklch(97% 0.008 250);
+    --text-secondary:oklch(80% 0.015 250);
+    --text-muted:    oklch(52% 0.020 250);
+
+    --font-display: 'Familjen Grotesk', sans-serif;
+    --font-body:    'Lexend', sans-serif;
+
+    --r-sm: 10px;
+    --r-md: 16px;
+    --r-lg: 22px;
+    --r-xl: 28px;
+  }
+
+  body {
+    background: oklch(9% 0.018 270);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 48px 24px 64px;
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    gap: 48px;
+  }
+
+  /* ─── Page header ─── */
+  .page-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .page-header h1 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    color: var(--text-primary);
+  }
+  .page-header p {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--indigo-dim);
+    color: var(--indigo);
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+    border: 1px solid oklch(57% 0.20 270 / 0.25);
+  }
+
+  /* ─── Grid of screens ─── */
+  .screens-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 32px;
+    width: 100%;
+    max-width: 1160px;
+  }
+
+  /* ─── Phone frame ─── */
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .screen-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .phone {
+    width: 340px;
+    background: var(--bg-primary);
+    border-radius: 40px;
+    border: 2px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 32px 80px oklch(0% 0 0 / 0.5), 0 0 0 1px oklch(100% 0 0 / 0.04);
+    position: relative;
+  }
+  .phone-notch {
+    width: 100px;
+    height: 28px;
+    background: oklch(10% 0.02 270);
+    border-radius: 0 0 18px 18px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    z-index: 10;
+  }
+  .phone-notch .cam { width: 10px; height: 10px; border-radius: 50%; background: oklch(18% 0.03 270); }
+  .phone-screen { padding: 0; overflow: hidden; }
+
+  /* ─── Status bar ─── */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-family: var(--font-display);
+  }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 14px; height: 14px; }
+
+  /* ─── DASHBOARD SCREEN ─── */
+  .dash-header {
+    padding: 12px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dash-greeting {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .dash-greeting .hello {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+  }
+  .dash-greeting .name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+  }
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--indigo), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  /* XP hero strip */
+  .xp-strip {
+    margin: 16px 20px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .xp-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 180px 80px at 90% 50%, var(--purple-dim), transparent);
+    pointer-events: none;
+  }
+  .xp-circle {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--indigo-soft);
+    border: 2px solid var(--indigo-dim);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .xp-circle .num {
+    font-family: var(--font-display);
+    font-size: 16px; font-weight: 700;
+    color: var(--indigo);
+    line-height: 1;
+  }
+  .xp-circle .lbl {
+    font-size: 9px; font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .xp-info { flex: 1; }
+  .xp-info .level {
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .progress-track {
+    height: 5px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--indigo), var(--purple));
+    width: 62%;
+  }
+  .xp-info .xp-caption {
+    font-size: 10px; color: var(--text-muted);
+    margin-top: 5px;
+  }
+  .streak-pill {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 2px;
+    flex-shrink: 0;
+  }
+  .streak-pill .fire { font-size: 20px; }
+  .streak-pill .days {
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 700;
+    color: var(--warning);
+    line-height: 1;
+  }
+  .streak-pill .streak-lbl {
+    font-size: 9px; color: var(--text-muted); text-transform: uppercase;
+  }
+
+  /* section heading */
+  .sect-head {
+    padding: 20px 20px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sect-head h2 {
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+  .sect-head a {
+    font-size: 12px; font-weight: 500;
+    color: var(--indigo); text-decoration: none;
+  }
+
+  /* quick action row */
+  .quick-actions {
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .qa-btn {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+    padding: 12px 4px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .qa-icon {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+  }
+  .qa-btn span {
+    font-family: var(--font-display);
+    font-size: 10px; font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center; line-height: 1.2;
+  }
+
+  /* challenge card */
+  .challenge-card {
+    margin: 6px 20px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    display: flex; align-items: center; gap: 14px;
+    position: relative; overflow: hidden;
+  }
+  .challenge-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 140px 60px at 0% 60%, var(--indigo-dim), transparent);
+    pointer-events: none;
+  }
+  .challenge-icon {
+    width: 46px; height: 46px;
+    border-radius: var(--r-sm);
+    background: var(--indigo-soft);
+    border: 1px solid var(--indigo-dim);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .challenge-body { flex: 1; }
+  .challenge-body h3 {
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.1px; margin-bottom: 3px;
+  }
+  .challenge-body p {
+    font-size: 11px; color: var(--text-muted);
+    font-weight: 400; line-height: 1.4;
+  }
+  .xp-tag {
+    font-family: var(--font-display);
+    font-size: 11px; font-weight: 700;
+    color: var(--indigo);
+    background: var(--indigo-soft);
+    border: 1px solid var(--indigo-dim);
+    padding: 4px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  /* bottom nav */
+  .bottom-nav {
+    display: flex;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    padding: 10px 0 20px;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+    padding: 6px 0;
+    cursor: pointer;
+    position: relative;
+  }
+  .nav-icon {
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-icon svg { width: 20px; height: 20px; }
+  .nav-item.active .nav-icon svg { color: var(--indigo); }
+  .nav-item:not(.active) .nav-icon svg { color: var(--text-muted); }
+  .nav-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--indigo);
+    position: absolute;
+    bottom: 2px;
+  }
+  .nav-lbl {
+    font-family: var(--font-display);
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .nav-item.active .nav-lbl { color: var(--indigo); }
+  .nav-item:not(.active) .nav-lbl { color: var(--text-muted); }
+
+  /* ─── LEARN SCREEN ─── */
+  .learn-appbar {
+    padding: 12px 20px 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .learn-title {
+    font-family: var(--font-display);
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.4px;
+    color: var(--text-primary);
+  }
+  .search-btn {
+    width: 36px; height: 36px;
+    border-radius: 11px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .search-btn svg { width: 16px; height: 16px; color: var(--text-secondary); }
+
+  /* tab row */
+  .tab-row {
+    padding: 14px 20px 0;
+    display: flex; gap: 8px;
+  }
+  .tab-pill {
+    padding: 7px 14px;
+    border-radius: 100px;
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab-pill.active {
+    background: var(--indigo);
+    color: white;
+  }
+  .tab-pill:not(.active) {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  /* category cards */
+  .cat-grid {
+    padding: 14px 20px 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .cat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    cursor: pointer; position: relative; overflow: hidden;
+  }
+  .cat-card.featured {
+    grid-column: span 2;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+  .cat-card.featured::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 200px 100px at 100% 50%, var(--purple-dim), transparent);
+    pointer-events: none;
+  }
+  .cat-emoji-bg {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .cat-card.featured .cat-emoji-bg {
+    width: 56px; height: 56px;
+    border-radius: 17px;
+    font-size: 26px;
+  }
+  .cat-info h3 {
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.1px; margin-bottom: 3px;
+  }
+  .cat-card.featured .cat-info h3 { font-size: 15px; margin-bottom: 4px; }
+  .cat-info p {
+    font-size: 10px; color: var(--text-muted); font-weight: 400; line-height: 1.4;
+  }
+  .cat-card.featured .cat-info p { font-size: 11px; }
+  .cat-progress {
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .cat-progress-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .cat-progress-row span {
+    font-size: 9px; color: var(--text-muted);
+  }
+  .cat-progress-row .pct {
+    font-family: var(--font-display);
+    font-weight: 600; font-size: 10px;
+    color: var(--indigo);
+  }
+  .cat-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .cat-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--indigo), var(--purple));
+  }
+
+  /* ─── QUIZ SCREEN ─── */
+  .quiz-header {
+    padding: 12px 20px 0;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .back-btn {
+    width: 34px; height: 34px;
+    border-radius: 11px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .quiz-progress-bar {
+    flex: 1; height: 5px;
+    background: var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .quiz-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--indigo), var(--purple));
+    width: 45%;
+    border-radius: 10px;
+  }
+  .quiz-counter {
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 600;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .quiz-question-area {
+    padding: 20px 20px 0;
+  }
+  .quiz-category-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-display);
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--purple);
+    background: var(--purple-dim);
+    border: 1px solid oklch(55% 0.22 295 / 0.2);
+    padding: 4px 10px; border-radius: 100px;
+    margin-bottom: 12px;
+  }
+  .quiz-q-text {
+    font-family: var(--font-display);
+    font-size: 17px; font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.3px; line-height: 1.35;
+    margin-bottom: 16px;
+  }
+  .quiz-sign-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    height: 110px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px;
+    margin-bottom: 18px;
+    position: relative; overflow: hidden;
+  }
+  .quiz-sign-box::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 150px 80px at 50% 50%, var(--indigo-dim), transparent);
+    pointer-events: none;
+  }
+
+  .options-list {
+    padding: 0 20px;
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .option-card {
+    display: flex; align-items: center; gap: 13px;
+    padding: 13px 15px;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    cursor: pointer;
+  }
+  .option-card.selected {
+    border-color: var(--indigo);
+    background: var(--indigo-soft);
+  }
+  .option-card.correct {
+    border-color: var(--success);
+    background: oklch(65% 0.18 162 / 0.08);
+  }
+  .option-letter {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .option-card .option-letter { background: var(--bg-elevated); color: var(--text-muted); }
+  .option-card.selected .option-letter { background: var(--indigo); color: white; }
+  .option-card.correct .option-letter { background: var(--success); color: white; }
+  .option-text {
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+  .option-card.selected .option-text { color: var(--text-primary); }
+
+  /* ─── type specimens section ─── */
+  .type-demo {
+    width: 100%; max-width: 1160px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: 40px 48px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
+  }
+  .type-col h3 {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+  .type-specimen { display: flex; flex-direction: column; gap: 16px; }
+  .ts-row { display: flex; flex-direction: column; gap: 2px; }
+  .ts-meta { font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px; }
+  .ts-sample.display-hero {
+    font-family: var(--font-display);
+    font-size: 36px; font-weight: 700;
+    color: var(--text-primary); letter-spacing: -0.8px; line-height: 1.1;
+  }
+  .ts-sample.display-lg {
+    font-family: var(--font-display);
+    font-size: 24px; font-weight: 700;
+    color: var(--text-primary); letter-spacing: -0.4px;
+  }
+  .ts-sample.display-md {
+    font-family: var(--font-display);
+    font-size: 17px; font-weight: 700;
+    color: var(--text-primary); letter-spacing: -0.2px;
+  }
+  .ts-sample.display-sm {
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 600;
+    color: var(--text-secondary); letter-spacing: 0;
+  }
+  .ts-sample.body-lg {
+    font-family: var(--font-body);
+    font-size: 15px; font-weight: 400;
+    color: var(--text-secondary); line-height: 1.6;
+  }
+  .ts-sample.body-md {
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 400;
+    color: var(--text-secondary); line-height: 1.6;
+  }
+  .ts-sample.body-label {
+    font-family: var(--font-body);
+    font-size: 11px; font-weight: 500;
+    color: var(--text-muted); letter-spacing: 0.2px;
+  }
+  .ts-sample.body-caption {
+    font-family: var(--font-body);
+    font-size: 10px; font-weight: 400;
+    color: var(--text-muted); letter-spacing: 0.1px;
+  }
+
+  /* color swatches */
+  .color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .swatch {
+    display: flex; flex-direction: column; gap: 6px;
+    align-items: center;
+  }
+  .swatch-box {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    border: 1px solid oklch(100% 0 0 / 0.06);
+  }
+  .swatch-lbl {
+    font-size: 9px; color: var(--text-muted);
+    text-align: center; font-family: var(--font-display); letter-spacing: 0.3px;
+  }
+
+  @media (max-width: 720px) {
+    .screens-grid { grid-template-columns: 1fr; align-items: center; }
+    .type-demo { grid-template-columns: 1fr; gap: 32px; padding: 28px 24px; }
+    body { padding: 32px 16px 48px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <span class="badge">Design Preview</span>
+  <h1>Gestura</h1>
+  <p>Familjen Grotesk · Lexend · Dark navy / Indigo / Purple</p>
+</div>
+
+<!-- ── SCREENS ── -->
+<div class="screens-grid">
+
+  <!-- DASHBOARD -->
+  <div class="phone-wrap">
+    <span class="screen-label">Dashboard</span>
+    <div class="phone">
+      <div class="phone-notch"><div class="cam"></div></div>
+      <div class="phone-screen">
+
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1.5 8.5a13 13 0 0 1 21 0M5 12a10 10 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0M12 19h.01"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+          </div>
+        </div>
+
+        <div class="dash-header">
+          <div class="dash-greeting">
+            <span class="hello">Good morning 👋</span>
+            <span class="name">Ahmad</span>
+          </div>
+          <div class="avatar">A</div>
+        </div>
+
+        <div class="xp-strip">
+          <div class="xp-circle">
+            <span class="num">12</span>
+            <span class="lbl">Level</span>
+          </div>
+          <div class="xp-info">
+            <div class="level">Rising Signer</div>
+            <div class="progress-track"><div class="progress-fill"></div></div>
+            <div class="xp-caption">620 / 1,000 XP to Level 13</div>
+          </div>
+          <div class="streak-pill">
+            <span class="fire">🔥</span>
+            <span class="days">14</span>
+            <span class="streak-lbl">Streak</span>
+          </div>
+        </div>
+
+        <div class="sect-head">
+          <h2>Quick Actions</h2>
+        </div>
+        <div class="quick-actions">
+          <div class="qa-btn">
+            <div class="qa-icon" style="background: oklch(57% 0.20 270 / 0.12);">📚</div>
+            <span>Learn</span>
+          </div>
+          <div class="qa-btn">
+            <div class="qa-icon" style="background: oklch(55% 0.22 295 / 0.12);">🧠</div>
+            <span>Quiz</span>
+          </div>
+          <div class="qa-btn">
+            <div class="qa-icon" style="background: oklch(62% 0.22 340 / 0.12);">📷</div>
+            <span>Translate</span>
+          </div>
+          <div class="qa-btn">
+            <div class="qa-icon" style="background: oklch(65% 0.18 162 / 0.12);">👥</div>
+            <span>Social</span>
+          </div>
+        </div>
+
+        <div class="sect-head" style="padding-top:16px;">
+          <h2>Today's Challenge</h2>
+          <a href="#">See all</a>
+        </div>
+        <div class="challenge-card">
+          <div class="challenge-icon">✋</div>
+          <div class="challenge-body">
+            <h3>Complete 3 Greetings signs</h3>
+            <p>Sign HELLO, THANK YOU, and PLEASE correctly</p>
+          </div>
+          <span class="xp-tag">+50 XP</span>
+        </div>
+
+        <div style="height:14px;"></div>
+
+        <div class="bottom-nav">
+          <div class="nav-item active">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+            <span class="nav-lbl">Home</span>
+            <div class="nav-dot"></div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+            <span class="nav-lbl">Learn</span>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></div>
+            <span class="nav-lbl">Quiz</span>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <span class="nav-lbl">Social</span>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div>
+            <span class="nav-lbl">Me</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- LEARN -->
+  <div class="phone-wrap">
+    <span class="screen-label">Learn</span>
+    <div class="phone">
+      <div class="phone-notch"><div class="cam"></div></div>
+      <div class="phone-screen">
+
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+          </div>
+        </div>
+
+        <div class="learn-appbar">
+          <span class="learn-title">Learn BIM</span>
+          <div class="search-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+        </div>
+
+        <div class="tab-row">
+          <div class="tab-pill active">Categories</div>
+          <div class="tab-pill">Learning Path</div>
+          <div class="tab-pill">Saved</div>
+        </div>
+
+        <div class="cat-grid">
+          <!-- featured -->
+          <div class="cat-card featured">
+            <div class="cat-emoji-bg" style="background: oklch(57% 0.20 270 / 0.12); border: 1px solid oklch(57% 0.20 270 / 0.2);">👋</div>
+            <div class="cat-info" style="flex:1;">
+              <h3>Greetings & Everyday</h3>
+              <p>Master daily conversations and polite expressions</p>
+              <div style="margin-top:10px;">
+                <div class="cat-progress-row">
+                  <span>24 / 30 signs</span>
+                  <span class="pct">80%</span>
+                </div>
+                <div class="cat-track" style="margin-top:5px;"><div class="cat-fill" style="width:80%"></div></div>
+              </div>
+            </div>
+          </div>
+          <!-- grid items -->
+          <div class="cat-card">
+            <div class="cat-emoji-bg" style="background: oklch(55% 0.22 295 / 0.12); border: 1px solid oklch(55% 0.22 295 / 0.2); width:44px;height:44px;border-radius:13px;font-size:20px;">🔢</div>
+            <div class="cat-info">
+              <h3>Numbers</h3>
+              <p>0 to 100 and beyond</p>
+            </div>
+            <div class="cat-progress">
+              <div class="cat-progress-row">
+                <span>8 / 20</span><span class="pct">40%</span>
+              </div>
+              <div class="cat-track"><div class="cat-fill" style="width:40%"></div></div>
+            </div>
+          </div>
+          <div class="cat-card">
+            <div class="cat-emoji-bg" style="background: oklch(62% 0.22 340 / 0.12); border: 1px solid oklch(62% 0.22 340 / 0.2); width:44px;height:44px;border-radius:13px;font-size:20px;">👨‍👩‍👧</div>
+            <div class="cat-info">
+              <h3>Family</h3>
+              <p>Relatives and relations</p>
+            </div>
+            <div class="cat-progress">
+              <div class="cat-progress-row">
+                <span>0 / 18</span><span class="pct" style="color:var(--text-muted)">0%</span>
+              </div>
+              <div class="cat-track"><div class="cat-fill" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="cat-card">
+            <div class="cat-emoji-bg" style="background: oklch(65% 0.18 162 / 0.12); border: 1px solid oklch(65% 0.18 162 / 0.2); width:44px;height:44px;border-radius:13px;font-size:20px;">🍎</div>
+            <div class="cat-info">
+              <h3>Food & Drink</h3>
+              <p>Meals, tastes and hunger</p>
+            </div>
+            <div class="cat-progress">
+              <div class="cat-progress-row">
+                <span>3 / 22</span><span class="pct">14%</span>
+              </div>
+              <div class="cat-track"><div class="cat-fill" style="width:14%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 14px;"></div>
+
+        <div class="bottom-nav">
+          <div class="nav-item">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+            <span class="nav-lbl">Home</span>
+          </div>
+          <div class="nav-item active">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+            <span class="nav-lbl">Learn</span>
+            <div class="nav-dot"></div>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+            <span class="nav-lbl">Quiz</span>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+            <span class="nav-lbl">Social</span>
+          </div>
+          <div class="nav-item">
+            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div>
+            <span class="nav-lbl">Me</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="phone-wrap">
+    <span class="screen-label">Quiz</span>
+    <div class="phone">
+      <div class="phone-notch"><div class="cam"></div></div>
+      <div class="phone-screen">
+
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+          </div>
+        </div>
+
+        <div class="quiz-header">
+          <div class="back-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </div>
+          <div class="quiz-progress-bar"><div class="quiz-progress-fill"></div></div>
+          <span class="quiz-counter">4 / 8</span>
+        </div>
+
+        <div class="quiz-question-area">
+          <div class="quiz-category-tag">Greetings</div>
+          <div class="quiz-q-text">Which sign means<br>"Thank You"?</div>
+          <div class="quiz-sign-box">🤝</div>
+        </div>
+
+        <div class="options-list">
+          <div class="option-card">
+            <div class="option-letter">A</div>
+            <span class="option-text">Hello</span>
+          </div>
+          <div class="option-card correct">
+            <div class="option-letter">B</div>
+            <span class="option-text">Thank You</span>
+          </div>
+          <div class="option-card selected">
+            <div class="option-letter">C</div>
+            <span class="option-text">Please</span>
+          </div>
+          <div class="option-card">
+            <div class="option-letter">D</div>
+            <span class="option-text">Goodbye</span>
+          </div>
+        </div>
+
+        <div style="height: 60px;"></div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── TYPOGRAPHY & COLOR REFERENCE ── -->
+<div class="type-demo">
+  <div class="type-col">
+    <h3>Familjen Grotesk — Display & Headings</h3>
+    <div class="type-specimen">
+      <div class="ts-row">
+        <span class="ts-meta">Hero · 36px · 700</span>
+        <span class="ts-sample display-hero">Break Silence,<br>Build Bridges.</span>
+      </div>
+      <div class="ts-row">
+        <span class="ts-meta">Heading · 24px · 700</span>
+        <span class="ts-sample display-lg">Learn BIM</span>
+      </div>
+      <div class="ts-row">
+        <span class="ts-meta">Title · 17px · 700</span>
+        <span class="ts-sample display-md">Greetings & Everyday</span>
+      </div>
+      <div class="ts-row">
+        <span class="ts-meta">Label · 13px · 600</span>
+        <span class="ts-sample display-sm">Today's Challenge · 24 / 30 signs</span>
+      </div>
+    </div>
+  </div>
+  <div class="type-col">
+    <h3>Lexend — Body & Supporting Text</h3>
+    <div class="type-specimen">
+      <div class="ts-row">
+        <span class="ts-meta">Body · 15px · 400</span>
+        <span class="ts-sample body-lg">Master daily conversations and polite expressions in Bahasa Isyarat Malaysia.</span>
+      </div>
+      <div class="ts-row">
+        <span class="ts-meta">Body · 13px · 400</span>
+        <span class="ts-sample body-md">Sign HELLO, THANK YOU, and PLEASE correctly to complete the challenge.</span>
+      </div>
+      <div class="ts-row">
+        <span class="ts-meta">Label · 11px · 500</span>
+        <span class="ts-sample body-label">8 / 20 signs · Learning Path · Beginner</span>
+      </div>
+      <div class="ts-row">
+        <span class="ts-meta">Caption · 10px · 400</span>
+        <span class="ts-sample body-caption">620 / 1,000 XP to Level 13 · 14-day streak</span>
+      </div>
+    </div>
+    <div style="margin-top: 28px;">
+      <h3 style="margin-bottom:16px;">Palette</h3>
+      <div class="color-row">
+        <div class="swatch"><div class="swatch-box" style="background: oklch(57% 0.20 270);"></div><span class="swatch-lbl">Indigo</span></div>
+        <div class="swatch"><div class="swatch-box" style="background: oklch(55% 0.22 295);"></div><span class="swatch-lbl">Purple</span></div>
+        <div class="swatch"><div class="swatch-box" style="background: oklch(62% 0.22 340);"></div><span class="swatch-lbl">Pink</span></div>
+        <div class="swatch"><div class="swatch-box" style="background: oklch(65% 0.18 162);"></div><span class="swatch-lbl">Success</span></div>
+        <div class="swatch"><div class="swatch-box" style="background: oklch(12% 0.025 270);"></div><span class="swatch-lbl">BG</span></div>
+        <div class="swatch"><div class="swatch-box" style="background: oklch(14% 0.027 270);"></div><span class="swatch-lbl">Card</span></div>
+        <div class="swatch"><div class="swatch-box" style="background: oklch(22% 0.030 270);"></div><span class="swatch-lbl">Border</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

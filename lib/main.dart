@@ -21,6 +21,7 @@ import 'providers/locale_provider.dart';
 import 'services/offline_service.dart';        // Handles Hive & Caching
 
 // --- Services ---
+import 'services/navigation_service.dart';
 import 'services/notification_service.dart';
 import 'services/haptic_service.dart';
 import 'services/remote_sign_service.dart';
@@ -103,10 +104,11 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'Gestura',
             debugShowCheckedModeBanner: false,
+            navigatorKey: NavigationService.navigatorKey,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.flutterThemeMode,
-            home: hasSeenOnboarding 
+            home: hasSeenOnboarding
                 ? const SplashScreen()  // Shows splash, then goes to MainNavigator or Login
                 : const OnboardingScreen(),
           );

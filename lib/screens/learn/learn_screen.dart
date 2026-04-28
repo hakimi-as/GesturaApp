@@ -1899,18 +1899,6 @@ class _LearnScreenState extends State<LearnScreen> {
                     color: context.textMuted,
                   ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () async {
-                await _firestoreService.seedInitialData();
-                _loadData();
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Seed Demo Data'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-            ),
           ],
         ),
       ),

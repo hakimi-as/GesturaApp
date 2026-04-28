@@ -27,6 +27,8 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> {
+  final _fillInBlankController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +43,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   void dispose() {
+    _fillInBlankController.dispose();
     Provider.of<QuizProvider>(context, listen: false).resetQuiz();
     super.dispose();
   }
@@ -439,7 +442,6 @@ class _QuizScreenState extends State<QuizScreen> {
   /// sign images (one per letter). User picks which word is being spelled.
   Widget _buildFillInBlankQuestionCard(BuildContext context, QuizQuestionModel question) {
     final quizProvider = Provider.of<QuizProvider>(context, listen: false);
-    final textController = TextEditingController();
 
     return StatefulBuilder(builder: (context, setLocal) {
       return Container(
@@ -515,7 +517,7 @@ class _QuizScreenState extends State<QuizScreen> {
             // Text input — disabled after answering
             Consumer<QuizProvider>(builder: (context, qp, _) {
               return TextField(
-                controller: textController,
+                controller: _fillInBlankController,
                 enabled: !qp.isAnswered,
                 textCapitalization: TextCapitalization.none,
                 autofocus: false,
@@ -535,7 +537,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   suffixIcon: qp.isAnswered ? null : IconButton(
                     icon: const Icon(Icons.send_rounded),
                     color: AppColors.primary,
-                    onPressed: () => quizProvider.submitTextAnswer(textController.text),
+                    onPressed: () => quizProvider.submitTextAnswer(_fillInBlankController.text),
                   ),
                 ),
                 onSubmitted: (val) => quizProvider.submitTextAnswer(val),

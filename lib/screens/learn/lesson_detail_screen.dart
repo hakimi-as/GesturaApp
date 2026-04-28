@@ -74,6 +74,28 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         .any((p) => p.lessonId == widget.lesson.id && p.isCompleted);
   }
 
+  Future<void> _confirmAndComplete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as Complete?'),
+        content: const Text('This will record your progress and award XP. You cannot undo this.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not yet'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Mark Complete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) _completeLesson();
+  }
+
   Future<void> _completeLesson() async {
     if (_isCompleting || _isCompleted) return;
 
@@ -147,8 +169,8 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       setState(() => _isCompleting = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
+          const SnackBar(
+            content: Text('Could not save progress. Please check your connection and try again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -698,7 +720,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: _isCompleted ? null : _completeLesson,
+            onPressed: _isCompleted ? null : _confirmAndComplete,
             style: ElevatedButton.styleFrom(
               backgroundColor: _isCompleted ? AppColors.success : AppColors.primary,
               disabledBackgroundColor: AppColors.success,

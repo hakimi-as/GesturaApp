@@ -112,17 +112,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Good Morning,';
-    } else if (hour < 17) {
-      return 'Good Afternoon,';
-    } else {
-      return 'Good Evening,';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -407,78 +396,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
+        final level = user?.level ?? 1;
+        final progress = user?.levelProgress ?? 0.0;
+        final xpToNext = user?.xpToNextLevel ?? 100;
+        final xpForNext = user?.xpForNextLevel ?? 100;
+        final streak = user?.currentStreak ?? 0;
+        final levelTitle = _levelTitle(level);
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
+          padding: const EdgeInsets.all(18),
+          decoration: AppDecorations.card(context).copyWith(
+            borderRadius: BorderRadius.circular(22),
           ),
-          child: Stack(
+          child: Row(
             children: [
+              // Level circle
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(20),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primary.withAlpha(60), width: 1.5),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$level',
+                      style: TextStyle(
+                        fontFamily: 'FamiljenGrotesk',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                        height: 1,
+                      ),
+                    ),
+                    Text(
+                      'LVL',
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w600,
+                        color: context.textMuted,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              // XP progress
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      levelTitle,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 5,
+                        backgroundColor: context.borderColor,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${_formatNumber(xpForNext - xpToNext)} / ${_formatNumber(xpForNext)} XP',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: context.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Streak pill
               Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text('🔥', style: TextStyle(fontSize: 22)),
+                  const SizedBox(height: 2),
                   Text(
-                    _getGreeting(),
+                    '$streak',
                     style: TextStyle(
-                      color: Colors.white.withAlpha(200),
-                      fontSize: 14,
+                      fontFamily: 'FamiljenGrotesk',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFF59E0B),
+                      height: 1,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  const Row(
-                    children: [
-                      Text(
-                        'Welcome back! ',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text('👋', style: TextStyle(fontSize: 24)),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      _buildWelcomeStatChip(
-                        '🔥',
-                        '${user?.currentStreak ?? 0}',
-                        'Day Streak',
-                      ),
-                      const SizedBox(width: 12),
-                      _buildWelcomeStatChip(
-                        '⭐',
-                        _formatNumber(user?.totalXP ?? 0),
-                        'Total XP',
-                      ),
-                      const SizedBox(width: 12),
-                      _buildWelcomeStatChip(
-                        '🤟',
-                        '${user?.signsLearned ?? 0}',
-                        'Signs',
-                      ),
-                    ],
+                  Text(
+                    'STREAK',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w600,
+                      color: context.textMuted,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ],
-              ),
-              const Positioned(
-                right: -20,
-                top: -20,
-                child: Opacity(
-                  opacity: 0.15,
-                  child: Text(
-                    '🤟',
-                    style: TextStyle(fontSize: 100),
-                  ),
-                ),
               ),
             ],
           ),
@@ -487,47 +512,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWelcomeStatChip(String emoji, String value, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(38),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(180),
-                      fontSize: 10,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _levelTitle(int level) {
+    const titles = [
+      'Newcomer', 'Beginner', 'Explorer', 'Practitioner',
+      'Communicator', 'Fluent Signer', 'Rising Signer',
+      'Advanced Signer', 'Expert', 'Master Signer',
+    ];
+    if (level <= 0) return 'Newcomer';
+    if (level <= titles.length) return titles[level - 1];
+    return 'Grand Master';
   }
 
   String _formatNumber(int number) {
@@ -653,16 +646,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    iconBgColor.withValues(alpha: 0.25),
-                    iconBgColor.withValues(alpha: 0.12),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: iconBgColor.withAlpha(30),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: iconBgColor.withValues(alpha: 0.20)),
               ),
               child: Icon(icon, color: iconBgColor, size: 22),
             ),
@@ -707,34 +692,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+                  decoration: AppDecorations.card(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('🏆', style: TextStyle(fontSize: 28)),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Leaderboard',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withAlpha(30),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        child: const Center(child: Text('🏆', style: TextStyle(fontSize: 22))),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Leaderboard',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Compete globally',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(180),
-                          fontSize: 12,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textMuted),
                       ),
                     ],
                   ),
@@ -754,22 +733,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFEC4899), Color(0xFF8B5CF6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+                  decoration: AppDecorations.card(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Text('👥', style: TextStyle(fontSize: 28)),
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withAlpha(30),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Center(child: Text('👥', style: TextStyle(fontSize: 22))),
+                          ),
                           const Spacer(),
-                          // Pending requests badge
                           FutureBuilder<int>(
                             future: FriendService.getPendingRequestCount(
                               Provider.of<AuthProvider>(context, listen: false).userId ?? '',
@@ -780,13 +759,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(50),
+                                  color: AppColors.accent.withAlpha(26),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   '$count NEW',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: AppColors.accent,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -797,21 +776,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'Friends',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Connect & compare',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(180),
-                          fontSize: 12,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textMuted),
                       ),
                     ],
                   ),

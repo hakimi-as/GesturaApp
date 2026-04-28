@@ -297,8 +297,106 @@ class _ChallengesScreenState extends State<ChallengesScreen>
     );
   }
 
+  void _showChallengeDetail(ChallengeModel challenge) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.borderColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Text(challenge.emoji, style: const TextStyle(fontSize: 36)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        challenge.title,
+                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        challenge.description,
+                        style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: context.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Progress: ${challenge.currentValue} / ${challenge.targetValue}',
+                  style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  '${(challenge.progress * 100).toInt()}%',
+                  style: TextStyle(color: challenge.typeColor, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: challenge.progress,
+                minHeight: 8,
+                backgroundColor: context.bgElevated,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  challenge.isCompleted ? AppColors.success : challenge.typeColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Icon(Icons.star, size: 16, color: AppColors.primary),
+                const SizedBox(width: 4),
+                Text(
+                  '+${challenge.xpReward} XP reward',
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                Text(
+                  challenge.remainingTimeText,
+                  style: TextStyle(
+                    color: challenge.remainingTime < 6 ? AppColors.error : context.textMuted,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildChallengeCard(ChallengeModel challenge, int index) {
     return TapScale(
+      onTap: () => _showChallengeDetail(challenge),
       child: Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),

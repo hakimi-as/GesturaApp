@@ -26,7 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final FirestoreService _firestoreService = FirestoreService();
   
-  String _selectedSignLanguage = 'ASL';
+  String _selectedSignLanguage = 'BIM';
   String _selectedUserType = AppConstants.userTypeLearner;
   bool _isEditing = false;
   bool _isSaving = false;
@@ -62,7 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     
     if (user != null) {
       _nameController.text = user.fullName;
-      _selectedSignLanguage = user.preferredSignLanguage ?? 'ASL';
+      _selectedSignLanguage = user.preferredSignLanguage ?? 'BIM';
       _selectedUserType = user.userType;
     }
   }
@@ -111,8 +111,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _isSaving = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
+          const SnackBar(
+            content: Text('Could not save profile. Please check your connection and try again.'),
             backgroundColor: AppColors.error,
           ),
         );

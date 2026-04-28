@@ -45,7 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
   String _selectedLanguage = 'English';
-  String _selectedSignLanguage = 'ASL';
+  String _selectedSignLanguage = 'BIM';
 
   @override
   void initState() {
