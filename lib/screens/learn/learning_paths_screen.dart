@@ -151,137 +151,118 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
   }
 
   Widget _buildHeroHeader() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // App Bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(30),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.route_rounded, color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${_allPaths.length} Paths',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Hero Content
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Center(
-                          child: Text('🎯', style: TextStyle(fontSize: 28)),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Learning Paths',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'Master sign language step by step',
-                              style: TextStyle(
-                                color: Colors.white.withAlpha(200),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Stats Row
-                  Row(
-                    children: [
-                      _buildHeroStat(
-                        icon: Icons.check_circle_outline,
-                        value: '$_totalCompletedPaths',
-                        label: 'Completed',
-                      ),
-                      const SizedBox(width: 16),
-                      _buildHeroStat(
-                        icon: Icons.play_circle_outline,
-                        value: '$_pathsInProgress',
-                        label: 'In Progress',
-                      ),
-                      const SizedBox(width: 16),
-                      _buildHeroStat(
-                        icon: Icons.star_outline,
-                        value: _formatXP(_totalXPEarned),
-                        label: 'XP Earned',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Curved bottom
-            Container(
-              height: 24,
-              decoration: BoxDecoration(
-                color: context.bgPrimary,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // App Bar row
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 16, 0),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
+                  onPressed: () => Navigator.pop(context),
                 ),
-              ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: context.bgCard,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: context.borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.route_rounded, color: AppColors.primary, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${_allPaths.length} Paths',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // Title + subtitle
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: AppColors.primary.withAlpha(60)),
+                  ),
+                  child: const Center(
+                    child: Text('🎯', style: TextStyle(fontSize: 26)),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Learning Paths',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                            ),
+                      ),
+                      Text(
+                        'Master sign language step by step',
+                        style: TextStyle(fontSize: 13, color: context.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Stats Row
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Row(
+              children: [
+                _buildHeroStat(
+                  icon: Icons.check_circle_outline,
+                  value: '$_totalCompletedPaths',
+                  label: 'Completed',
+                  color: AppColors.success,
+                ),
+                const SizedBox(width: 12),
+                _buildHeroStat(
+                  icon: Icons.play_circle_outline,
+                  value: '$_pathsInProgress',
+                  label: 'In Progress',
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 12),
+                _buildHeroStat(
+                  icon: Icons.star_outline,
+                  value: _formatXP(_totalXPEarned),
+                  label: 'XP Earned',
+                  color: const Color(0xFFF59E0B),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     ).animate().fadeIn(duration: 500.ms);
   }
@@ -290,33 +271,29 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
     required IconData icon,
     required String value,
     required String label,
+    required Color color,
   }) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(20),
+          color: context.bgCard,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withAlpha(30)),
+          border: Border.all(color: context.borderColor),
         ),
         child: Column(
           children: [
-            Icon(icon, color: Colors.white, size: 22),
+            Icon(icon, color: color, size: 20),
             const SizedBox(height: 6),
             Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             Text(
               label,
-              style: TextStyle(
-                color: Colors.white.withAlpha(180),
-                fontSize: 11,
-              ),
+              style: TextStyle(fontSize: 10, color: context.textMuted),
             ),
           ],
         ),

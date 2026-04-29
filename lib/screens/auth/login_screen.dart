@@ -116,15 +116,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: 84,
                             height: 84,
                             decoration: BoxDecoration(
-                              gradient: AppColors.primaryGradient,
+                              color: AppColors.primary.withAlpha(25),
                               borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.40),
-                                  blurRadius: 28,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
+                              border: Border.all(color: AppColors.primary.withAlpha(80), width: 1.5),
                             ),
                             child: const Center(
                               child: Text('🤟', style: TextStyle(fontSize: 42)),

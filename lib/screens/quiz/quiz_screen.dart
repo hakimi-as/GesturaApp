@@ -716,51 +716,35 @@ class _QuizScreenState extends State<QuizScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.secondary.withAlpha(200),
-            AppColors.secondary.withAlpha(150),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+      decoration: AppDecorations.card(context).copyWith(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withAlpha(80),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         children: [
           Text(
             '${AppLocalizations.of(context).whichSignMeans}...',
             style: TextStyle(
-              color: Colors.white.withAlpha(200),
-              fontSize: 14,
+              color: context.textMuted,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             question.questionText,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(50),
+              color: AppColors.secondary.withAlpha(20),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.secondary.withAlpha(50)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -770,7 +754,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 Text(
                   AppLocalizations.of(context).pickCorrectSign,
                   style: TextStyle(
-                    color: Colors.white.withAlpha(220),
+                    color: AppColors.secondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
