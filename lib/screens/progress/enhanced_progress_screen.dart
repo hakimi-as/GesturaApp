@@ -273,7 +273,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: context.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,

@@ -397,13 +397,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   Widget _buildProfileHeader() {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      color: context.bgPrimary,
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -413,16 +407,16 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                    icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.qr_code_rounded, color: Colors.white),
+                    icon: Icon(Icons.qr_code_rounded, color: context.textPrimary),
                     onPressed: _showQRCode,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    icon: Icon(Icons.more_vert, color: context.textPrimary),
                     onPressed: () {},
                   ),
                 ],
@@ -436,14 +430,14 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withAlpha(100), width: 3),
+                      border: Border.all(color: context.borderColor, width: 3),
                     ),
                     child: Container(
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withAlpha(50),
+                        color: AppColors.primary.withAlpha(20),
                         image: _friend!.photoUrl != null
                             ? DecorationImage(
                                 image: NetworkImage(_friend!.photoUrl!),
@@ -455,8 +449,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                           ? Center(
                               child: Text(
                                 _friend!.initials,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: AppColors.primary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 36,
                                 ),
@@ -468,11 +462,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _friend!.fullName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 26,
-                    ),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -481,8 +473,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(40),
+                          color: context.bgElevated,
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: context.borderColor),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -491,8 +484,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                             const SizedBox(width: 6),
                             Text(
                               'Level ${_friend!.level}',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: context.textPrimary,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ),
@@ -504,8 +497,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(40),
+                          color: context.bgElevated,
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: context.borderColor),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -514,8 +508,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                             const SizedBox(width: 6),
                             Text(
                               '${_friend!.currentStreak} days',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: context.textPrimary,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ),
@@ -559,30 +553,30 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   Widget _buildFriendButton() {
     IconData icon;
     String text;
-    List<Color> gradientColors;
+    Color actionColor;
     bool isEnabled = true;
 
     switch (_friendshipStatus) {
       case 'friends':
         icon = Icons.check_circle_rounded;
         text = 'Friends';
-        gradientColors = [const Color(0xFF10B981), const Color(0xFF059669)];
+        actionColor = AppColors.success;
         break;
       case 'sent':
         icon = Icons.schedule_rounded;
         text = 'Request Sent';
-        gradientColors = [context.textMuted, context.textMuted];
+        actionColor = context.textMuted;
         isEnabled = false;
         break;
       case 'received':
         icon = Icons.person_add_rounded;
         text = 'Accept Request';
-        gradientColors = [const Color(0xFF6366F1), const Color(0xFF8B5CF6)];
+        actionColor = AppColors.primary;
         break;
       default:
         icon = Icons.person_add_rounded;
         text = 'Add Friend';
-        gradientColors = [const Color(0xFF6366F1), const Color(0xFF8B5CF6)];
+        actionColor = AppColors.primary;
     }
 
     return TapScale(
@@ -590,18 +584,23 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       child: Container(
         height: 52,
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: gradientColors),
+          color: isEnabled ? actionColor : context.bgElevated,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: isEnabled
-              ? [BoxShadow(color: gradientColors.first.withAlpha(80), blurRadius: 12, offset: const Offset(0, 6))]
-              : null,
+          border: isEnabled ? null : Border.all(color: context.borderColor),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 22),
+            Icon(icon, color: isEnabled ? Colors.white : context.textMuted, size: 22),
             const SizedBox(width: 10),
-            Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+            Text(
+              text,
+              style: TextStyle(
+                color: isEnabled ? Colors.white : context.textMuted,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
           ],
         ),
       ),
@@ -709,7 +708,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                 widthFactor: myPercent.clamp(0.05, 0.95),
                 child: Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [myColor, myColor.withAlpha(200)]),
+                    color: myColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
@@ -723,7 +722,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                         child: Text(
                           'You: $myValue$suffix',
                           style: TextStyle(
-                            color: myPercent > 0.3 ? Colors.white : context.textPrimary,
+                            color: myPercent > 0.35 ? Colors.white : context.textPrimary,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -736,7 +735,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                         child: Text(
                           '${_friend!.fullName.split(' ').first}: $friendValue$suffix',
                           style: TextStyle(
-                            color: myPercent < 0.7 ? context.textPrimary : Colors.white,
+                            color: myPercent < 0.65 ? context.textPrimary : Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -910,14 +909,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            badge.tierGradientStart.withAlpha(30),
-            badge.tierGradientEnd.withAlpha(20),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: badge.tierColor.withAlpha(20),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: badge.tierColor.withAlpha(80)),
       ),
