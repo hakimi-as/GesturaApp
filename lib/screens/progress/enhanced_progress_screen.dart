@@ -401,15 +401,11 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                                 width: 32,
                                 height: height.clamp(8, 100).toDouble(),
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: isToday
-                                        ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
-                                        : value > 0
-                                            ? [const Color(0xFF10B981).withAlpha(150), const Color(0xFF10B981)]
-                                            : [context.bgElevated, context.bgElevated],
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                  ),
+                                  color: isToday
+                                      ? AppColors.primary
+                                      : value > 0
+                                          ? AppColors.success
+                                          : context.bgElevated,
                                   borderRadius: BorderRadius.circular(8),
                                   border: isToday || value > 0
                                       ? null
@@ -1062,19 +1058,9 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
           },
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [badge.tierGradientStart, badge.tierGradientEnd],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: badge.tierColor.withAlpha(20),
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: badge.tierColor.withAlpha(50),
-                  blurRadius: 10,
-                  spreadRadius: 0,
-                ),
-              ],
+              border: Border.all(color: badge.tierColor.withAlpha(80)),
             ),
             child: Center(
               child: Text(
@@ -1258,13 +1244,7 @@ class _EnhancedProgressScreenState extends State<EnhancedProgressScreen>
                             width: 40,
                             height: height.clamp(8, 90).toDouble(),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: isThisWeek
-                                    ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
-                                    : [const Color(0xFF10B981).withAlpha(120), const Color(0xFF10B981)],
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                              ),
+                              color: isThisWeek ? AppColors.primary : AppColors.success,
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),

@@ -313,12 +313,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      gradient: (_profileImageBytes == null && user?.photoUrl == null)
-                          ? const LinearGradient(
-                              colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
+                      color: (_profileImageBytes == null && user?.photoUrl == null)
+                          ? AppColors.primary.withAlpha(20)
                           : null,
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -336,16 +332,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
                                 }
                                 return Container(
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
-                                    ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withAlpha(20),
                                   ),
                                   child: Center(
                                     child: Text(
                                       user.initials,
                                       style: const TextStyle(
-                                        color: Colors.white,
+                                        color: AppColors.primary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -805,34 +799,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+            decoration: AppDecorations.card(context).copyWith(
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
-                const Text('🎯', style: TextStyle(fontSize: 28)),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.accent.withAlpha(60)),
+                  ),
+                  child: const Text('🎯', style: TextStyle(fontSize: 22)),
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Daily Challenges',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       Text(
                         'Complete challenges for bonus XP',
                         style: TextStyle(
-                          color: Colors.white.withAlpha(180),
+                          color: context.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -847,13 +842,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(50),
+                        color: AppColors.accent.withAlpha(20),
                         borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.accent.withAlpha(60)),
                       ),
                       child: Text(
                         '$activeChallenges Active',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.accent,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),

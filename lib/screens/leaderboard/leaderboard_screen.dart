@@ -778,18 +778,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Widget _buildAvatar(String? photoUrl, String initials, int rank) {
+    final avatarColor = _getAvatarColor(rank);
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        gradient: photoUrl == null || photoUrl.isEmpty
-            ? LinearGradient(
-                colors: _getAvatarColors(rank),
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
+        color: photoUrl == null || photoUrl.isEmpty ? avatarColor.withAlpha(20) : null,
         borderRadius: BorderRadius.circular(12),
+        border: photoUrl == null || photoUrl.isEmpty
+            ? Border.all(color: avatarColor.withAlpha(80))
+            : null,
       ),
       child: photoUrl != null && photoUrl.isNotEmpty
           ? ClipRRect(
@@ -801,14 +799,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: _getAvatarColors(rank)),
+                    color: avatarColor.withAlpha(20),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
                     child: Text(
                       initials,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: avatarColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -820,8 +818,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           : Center(
               child: Text(
                 initials,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: avatarColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -855,16 +853,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  List<Color> _getAvatarColors(int rank) {
+  Color _getAvatarColor(int rank) {
     switch (rank) {
-      case 1:
-        return [const Color(0xFFFFD700), const Color(0xFFFF8C00)];
-      case 2:
-        return [const Color(0xFFC0C0C0), const Color(0xFF808080)];
-      case 3:
-        return [const Color(0xFFCD7F32), const Color(0xFF8B4513)];
-      default:
-        return [const Color(0xFF8B5CF6), const Color(0xFFEC4899)];
+      case 1: return const Color(0xFFFFD700);
+      case 2: return const Color(0xFFC0C0C0);
+      case 3: return const Color(0xFFCD7F32);
+      default: return AppColors.primary;
     }
   }
 }

@@ -193,8 +193,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                gradient: (_profileImageBytes == null && !hasPhotoUrl) 
-                    ? AppColors.primaryGradient 
+                color: (_profileImageBytes == null && !hasPhotoUrl)
+                    ? AppColors.primary.withAlpha(20)
                     : null,
                 borderRadius: BorderRadius.circular(35),
                 boxShadow: [
@@ -271,13 +271,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildInitialsAvatar(String initials) {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        color: AppColors.primary.withAlpha(20),
       ),
       child: Center(
         child: Text(
           initials,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.primary,
             fontSize: 42,
             fontWeight: FontWeight.bold,
           ),
