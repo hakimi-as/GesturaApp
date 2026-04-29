@@ -188,19 +188,8 @@ class _TranslateScreenState extends State<TranslateScreen>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            gradient: isSelected
-                ? LinearGradient(
-                    colors: index == 0
-                        ? [const Color(0xFF3B82F6), AppColors.primary]
-                        : [AppColors.primary, AppColors.secondary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
+            color: isSelected ? AppColors.primary : null,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: isSelected
-                ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.28), blurRadius: 8, offset: const Offset(0, 2))]
-                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -266,7 +255,7 @@ class _TranslateScreenState extends State<TranslateScreen>
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
+            color: context.bgElevated,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Icon(Icons.camera_alt_outlined, color: context.textMuted, size: 40),
@@ -512,11 +501,9 @@ class _TranslateScreenState extends State<TranslateScreen>
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.secondary.withValues(alpha: 0.15)],
-                ),
+                color: AppColors.primary.withAlpha(20),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                border: Border.all(color: AppColors.primary.withAlpha(80)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -747,15 +734,8 @@ class _TranslateScreenState extends State<TranslateScreen>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.secondary],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 14, offset: const Offset(0, 4)),
-                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -808,14 +788,7 @@ class _TranslateScreenState extends State<TranslateScreen>
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF6366F1).withValues(alpha: 0.4),
-                const Color(0xFF8B5CF6).withValues(alpha: 0.4),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: AppColors.primary.withAlpha(80),
             shape: BoxShape.circle,
           ),
           child: const Center(child: Text('🤟', style: TextStyle(fontSize: 50))),

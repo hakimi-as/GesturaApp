@@ -117,16 +117,8 @@ class _ProgressScreenState extends State<ProgressScreen>
         return Container(
           margin: const EdgeInsets.all(20),
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+          decoration: AppDecorations.card(context).copyWith(
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
           ),
           child: Column(
             children: [
@@ -147,15 +139,15 @@ class _ProgressScreenState extends State<ProgressScreen>
                     children: [
                       Text(
                         '${AppLocalizations.of(context).level} ${user?.level ?? 1}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         '${user?.xpToNextLevel ?? 100} ${AppLocalizations.of(context).xpToLevel} ${(user?.level ?? 1) + 1}',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: context.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -167,8 +159,8 @@ class _ProgressScreenState extends State<ProgressScreen>
                     child: LinearProgressIndicator(
                       value: user?.levelProgress ?? 0,
                       minHeight: 8,
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                      backgroundColor: context.borderColor,
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   ),
                 ],
@@ -187,8 +179,8 @@ class _ProgressScreenState extends State<ProgressScreen>
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.textPrimary,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -196,7 +188,7 @@ class _ProgressScreenState extends State<ProgressScreen>
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
+            color: context.textMuted,
             fontSize: 12,
           ),
         ),
