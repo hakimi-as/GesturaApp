@@ -325,12 +325,7 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    gradient: isSelected
-                        ? LinearGradient(
-                            colors: [color, color.withAlpha(200)],
-                          )
-                        : null,
-                    color: isSelected ? null : context.bgCard,
+                    color: isSelected ? color : context.bgCard,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected ? color : context.borderColor,
@@ -518,14 +513,7 @@ class _LearningPathCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    pathColor.withAlpha(25),
-                    pathColor.withAlpha(5),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: pathColor.withAlpha(20),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),
@@ -726,19 +714,8 @@ class _LearningPathCard extends StatelessWidget {
                     width: double.infinity,
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: isCompleted
-                              ? [const Color(0xFF10B981), const Color(0xFF059669)]
-                              : [pathColor, pathColor.withAlpha(200)],
-                        ),
+                        color: isCompleted ? AppColors.success : pathColor,
                         borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isCompleted ? const Color(0xFF10B981) : pathColor).withAlpha(60),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
                       ),
                       child: Material(
                         color: Colors.transparent,
@@ -1506,14 +1483,11 @@ class _JourneyStepItem extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    gradient: isCompleted
-                        ? const LinearGradient(
-                            colors: [Color(0xFF10B981), Color(0xFF059669)],
-                          )
+                    color: isCompleted
+                        ? AppColors.success
                         : isCurrent
-                            ? LinearGradient(colors: [pathColor, pathColor.withAlpha(200)])
-                            : null,
-                    color: isCompleted || isCurrent ? null : context.bgElevated,
+                            ? pathColor
+                            : context.bgElevated,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: isCompleted

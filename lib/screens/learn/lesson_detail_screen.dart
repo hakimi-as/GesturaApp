@@ -513,14 +513,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            context.bgCard,
-            context.bgElevated,
-          ],
-        ),
+        color: context.bgCard,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: context.borderColor),
       ),

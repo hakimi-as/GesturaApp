@@ -1198,13 +1198,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [iconColor.withValues(alpha: 0.22), iconColor.withValues(alpha: 0.10)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: iconColor.withAlpha(30),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: iconColor.withValues(alpha: 0.18)),
+                border: Border.all(color: iconColor.withAlpha(50)),
               ),
               child: Icon(icon, color: iconColor, size: 20),
             ),
