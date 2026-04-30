@@ -31,7 +31,7 @@ class BottomNavBar extends StatelessWidget {
               _buildNavItem(context: context, index: 0, label: loc.navHome,      painter: _HomeIconPainter()),
               _buildNavItem(context: context, index: 1, label: loc.navTranslate, painter: _SignIconPainter()),
               _buildNavItem(context: context, index: 2, label: loc.navLearn,     painter: _LearnIconPainter()),
-              _buildNavItem(context: context, index: 3, label: loc.navSettings,  painter: _MeIconPainter()),
+              _buildNavItem(context: context, index: 3, label: loc.navProfile,   painter: _MeIconPainter()),
             ],
           ),
         ),
@@ -47,10 +47,14 @@ class BottomNavBar extends StatelessWidget {
   }) {
     final isActive = currentIndex == index;
 
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
+    return Semantics(
+      label: label,
+      button: true,
+      selected: isActive,
+      child: GestureDetector(
+        onTap: () => onTap(index),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
@@ -82,6 +86,7 @@ class BottomNavBar extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

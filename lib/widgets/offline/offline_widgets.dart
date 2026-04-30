@@ -27,11 +27,7 @@ class OfflineBanner extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFFEF4444), Color(0xFFF97316)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
+            color: const Color(0xFFEF4444),
           ),
           child: SafeArea(
             bottom: false,

@@ -62,9 +62,7 @@ class LearningPathMiniCard extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [pathColor.withAlpha(40), pathColor.withAlpha(20)],
-                    ),
+                    color: pathColor.withAlpha(30),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
@@ -270,15 +268,11 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [pathColor, pathColor.withAlpha(200)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: pathColor,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: pathColor.withAlpha(80),
+              color: pathColor.withAlpha(70),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -507,11 +501,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: const Color(0xFF6366F1),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -629,16 +619,11 @@ class LearningPathStepItem extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: isCompleted
-                      ? const LinearGradient(
-                          colors: [Color(0xFF10B981), Color(0xFF059669)],
-                        )
+                  color: isCompleted
+                      ? const Color(0xFF10B981)
                       : isCurrent
-                          ? LinearGradient(
-                              colors: [AppColors.primary, AppColors.primary.withAlpha(200)],
-                            )
-                          : null,
-                  color: (isCompleted || isCurrent) ? null : context.bgElevated,
+                          ? AppColors.primary
+                          : context.bgElevated,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: (isCompleted || isCurrent)
                       ? [
@@ -784,12 +769,7 @@ class LearningPathCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    pathColor.withAlpha(30),
-                    pathColor.withAlpha(10),
-                  ],
-                ),
+                color: pathColor.withAlpha(20),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),

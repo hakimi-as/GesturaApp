@@ -101,20 +101,8 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        widget.badge.tierGradientStart,
-                        widget.badge.tierGradientEnd,
-                      ],
-                    ),
+                    color: widget.badge.tierColor,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: widget.badge.tierColor.withAlpha(100),
-                        blurRadius: 10,
-                        spreadRadius: 0,
-                      ),
-                    ],
                   ),
                   child: Text(
                     widget.badge.tierName.toUpperCase(),
@@ -259,19 +247,12 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
           height: 110,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [
-                widget.badge.tierGradientStart,
-                widget.badge.tierGradientEnd,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: widget.badge.tierColor,
             boxShadow: [
               BoxShadow(
-                color: widget.badge.tierColor.withAlpha(150),
-                blurRadius: 30,
-                spreadRadius: 5,
+                color: widget.badge.tierColor.withAlpha(100),
+                blurRadius: 24,
+                spreadRadius: 4,
               ),
             ],
           ),
@@ -315,9 +296,7 @@ class BadgeUnlockSnackBar {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [badge.tierGradientStart, badge.tierGradientEnd],
-                ),
+                color: badge.tierColor,
               ),
               child: Center(
                 child: Text(badge.icon, style: const TextStyle(fontSize: 20)),

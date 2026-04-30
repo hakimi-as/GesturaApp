@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/theme.dart';
 import '../../config/design_system.dart';
@@ -356,8 +357,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     return Center(
                                       child: Text(
                                         user?.initials ?? 'U',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: AppColors.primary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                         ),
@@ -368,8 +369,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               : Center(
                                   child: Text(
                                     user?.initials ?? 'U',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
@@ -419,21 +420,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       '$level',
-                      style: TextStyle(
-                        fontFamily: 'FamiljenGrotesk',
+                      style: GoogleFonts.familjenGrotesk(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
                         height: 1,
-                      ),
-                    ),
-                    Text(
-                      'LVL',
-                      style: TextStyle(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w600,
-                        color: context.textMuted,
-                        letterSpacing: 0.5,
                       ),
                     ),
                   ],
@@ -480,21 +471,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 2),
                   Text(
                     '$streak',
-                    style: TextStyle(
-                      fontFamily: 'FamiljenGrotesk',
+                    style: GoogleFonts.familjenGrotesk(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFF59E0B),
                       height: 1,
-                    ),
-                  ),
-                  Text(
-                    'STREAK',
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w600,
-                      color: context.textMuted,
-                      letterSpacing: 0.5,
                     ),
                   ),
                 ],

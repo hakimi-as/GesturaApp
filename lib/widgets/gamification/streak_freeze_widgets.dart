@@ -69,16 +69,9 @@ class StreakFreezeWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: freezeCount > 0
-              ? const LinearGradient(
-                  colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: freezeCount == 0 ? context.bgCard : null,
+          color: freezeCount > 0 ? const Color(0xFF06B6D4) : context.bgCard,
           borderRadius: BorderRadius.circular(16),
-          border: freezeCount == 0 
+          border: freezeCount == 0
               ? Border.all(color: context.borderColor)
               : null,
         ),

@@ -192,30 +192,16 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Accent bar
-        Container(
-          width: 4,
-          height: 20,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.secondary],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 10),
         if (emoji != null) ...[
-          Text(emoji!, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 6),
+          Text(emoji!, style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
         ],
         Expanded(
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
                 ),
           ),
         ),
@@ -252,23 +238,14 @@ class GradientButton extends StatelessWidget {
         width: double.infinity,
         height: height,
         decoration: BoxDecoration(
-          gradient: onTap == null && !loading
-              ? LinearGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.5),
-                    AppColors.secondary.withValues(alpha: 0.5),
-                  ],
-                )
-              : const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
+          color: onTap == null && !loading
+              ? AppColors.primary.withValues(alpha: 0.4)
+              : AppColors.primary,
           borderRadius: BorderRadius.circular(16),
           boxShadow: onTap != null && !loading
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
+                    color: AppColors.primary.withValues(alpha: 0.30),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   )
@@ -365,21 +342,17 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDarkMode;
     return Container(
       padding: padding ?? const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black)
-            .withValues(alpha: isDark ? 0.06 : 0.03),
+        color: context.bgCard,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.60),
-        ),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.08),
-            blurRadius: 32,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.20 : 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
       ),

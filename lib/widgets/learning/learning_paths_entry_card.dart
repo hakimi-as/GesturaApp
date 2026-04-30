@@ -24,14 +24,7 @@ class LearningPathsEntryCard extends StatelessWidget {
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.primary,
-              AppColors.primary.withAlpha(200),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: AppColors.primary,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(

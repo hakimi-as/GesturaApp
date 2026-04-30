@@ -32,6 +32,7 @@ class AppLocalizations {
       'navTranslate': 'Translate',
       'navLearn': 'Learn',
       'navSettings': 'Settings',
+      'navProfile': 'Profile',
 
       // Common actions
       'cancel': 'Cancel',
@@ -670,6 +671,7 @@ class AppLocalizations {
       'navTranslate': 'Terjemah',
       'navLearn': 'Belajar',
       'navSettings': 'Tetapan',
+      'navProfile': 'Profil',
 
       // Common actions
       'cancel': 'Batal',
@@ -1313,6 +1315,7 @@ class AppLocalizations {
   String get navTranslate => _t('navTranslate');
   String get navLearn => _t('navLearn');
   String get navSettings => _t('navSettings');
+  String get navProfile => _t('navProfile');
 
   // Common actions
   String get cancel => _t('cancel');

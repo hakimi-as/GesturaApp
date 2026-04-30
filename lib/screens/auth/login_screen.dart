@@ -59,46 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgPrimary,
-      body: Stack(
-        children: [
-          // Background glow orbs
-          Positioned(
-            top: -100,
-            right: -80,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.18),
-                    AppColors.primary.withValues(alpha: 0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -80,
-            left: -60,
-            child: Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.secondary.withValues(alpha: 0.14),
-                    AppColors.secondary.withValues(alpha: 0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Content
-          SafeArea(
+      body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Form(
@@ -284,8 +245,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-          ),
-        ],
       ),
     );
   }

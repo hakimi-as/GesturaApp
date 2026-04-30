@@ -79,25 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Stack(
-        children: [
-          // Background glow
-          Positioned(
-            top: -80,
-            left: -60,
-            child: Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [
-                  AppColors.secondary.withValues(alpha: 0.15),
-                  AppColors.secondary.withValues(alpha: 0),
-                ]),
-              ),
-            ),
-          ),
-          SafeArea(
+      body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Form(
@@ -259,8 +241,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
             ),
-          ),
-        ],
       ),
     );
   }

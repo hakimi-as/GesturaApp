@@ -138,12 +138,7 @@ class _ChallengeCompleteDialogState extends State<ChallengeCompleteDialog> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        widget.challenge.typeColor,
-                        widget.challenge.typeColor.withAlpha(200),
-                      ],
-                    ),
+                    color: widget.challenge.typeColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -223,20 +218,13 @@ class _ChallengeCompleteDialogState extends State<ChallengeCompleteDialog> {
       width: 100,
       height: 100,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            widget.challenge.typeColor,
-            widget.challenge.typeColor.withAlpha(150),
-          ],
-        ),
+        color: widget.challenge.typeColor,
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: widget.challenge.typeColor.withAlpha(100),
+            color: widget.challenge.typeColor.withAlpha(80),
             blurRadius: 20,
-            spreadRadius: 5,
+            spreadRadius: 4,
           ),
         ],
       ),
