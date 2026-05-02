@@ -320,7 +320,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                         height: 52,
                         decoration: BoxDecoration(
                           color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Center(
                           child: Text(
@@ -399,7 +399,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                             height: 36,
                             decoration: BoxDecoration(
                               color: Colors.white.withAlpha(30),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: Center(
                               child: Text(nextStep.typeIcon, style: const TextStyle(fontSize: 18)),

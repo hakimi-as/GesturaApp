@@ -70,13 +70,13 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
                 color: widget.badge.tierColor.withAlpha(100),
-                width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: widget.badge.tierColor.withAlpha(50),
-                  blurRadius: 40,
-                  spreadRadius: 10,
+                  color: widget.badge.tierColor.withAlpha(40),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -99,17 +99,19 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
 
                 // Tier Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
-                    color: widget.badge.tierColor,
-                    borderRadius: BorderRadius.circular(20),
+                    color: widget.badge.tierColor.withAlpha(26),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: widget.badge.tierColor.withAlpha(80)),
                   ),
                   child: Text(
                     widget.badge.tierName.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
+                    style: TextStyle(
+                      color: widget.badge.tierColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.5, delay: 600.ms),
@@ -199,10 +201,10 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
               blastDirectionality: BlastDirectionality.explosive,
               shouldLoop: false,
               colors: [
-                widget.badge.tierGradientStart,
-                widget.badge.tierGradientEnd,
+                widget.badge.tierColor,
+                widget.badge.tierColor.withAlpha(180),
                 Colors.white,
-                AppColors.primary,
+                AppColors.primary.withAlpha(200),
               ],
               numberOfParticles: 30,
               gravity: 0.2,
@@ -247,26 +249,16 @@ class _BadgeUnlockDialogState extends State<BadgeUnlockDialog> {
           height: 110,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: widget.badge.tierColor,
-            boxShadow: [
-              BoxShadow(
-                color: widget.badge.tierColor.withAlpha(100),
-                blurRadius: 24,
-                spreadRadius: 4,
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(5),
-          child: Container(
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              shape: BoxShape.circle,
+            color: widget.badge.tierColor.withAlpha(30),
+            border: Border.all(
+              color: widget.badge.tierColor,
+              width: 2.5,
             ),
-            child: Center(
-              child: Text(
-                widget.badge.icon,
-                style: const TextStyle(fontSize: 50),
-              ),
+          ),
+          child: Center(
+            child: Text(
+              widget.badge.icon,
+              style: const TextStyle(fontSize: 50),
             ),
           ),
         )
