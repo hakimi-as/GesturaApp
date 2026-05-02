@@ -1,1050 +1,615 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestura — Design Preview</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestura — Design Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:   #09091A; --bg1: #0F0F1A; --bg2: #1B1B2F; --bg3: #222238; --bg4: #2A2A45;
+      --bdr:  rgba(99,102,241,0.15); --bdr2: rgba(99,102,241,0.32);
+      --pri:  #6366F1; --pri-d: rgba(99,102,241,0.14); --pri-m: rgba(99,102,241,0.28);
+      --pk:   #EC4899; --pk-d:  rgba(236,72,153,0.14);
+      --grn:  #10B981; --grn-d: rgba(16,185,129,0.14);
+      --amb:  #F59E0B; --amb-d: rgba(245,158,11,0.14);
+      --t1: #EEEEFF; --t2: #C0C0D8; --t3: #6868A8;
+      --fd: 'Familjen Grotesk', sans-serif; --fb: 'Lexend', sans-serif;
+      --rsm: 8px; --rmd: 14px; --rlg: 20px; --rxl: 28px;
+    }
+    body { background: var(--bg); color: var(--t1); font-family: var(--fb); font-size: 14px; line-height: 1.5; }
 
-  :root {
-    --bg-primary:    oklch(12% 0.025 270);
-    --bg-secondary:  oklch(16% 0.028 270);
-    --bg-card:       oklch(14% 0.027 270);
-    --bg-elevated:   oklch(18% 0.030 270);
-    --border:        oklch(22% 0.030 270);
+    /* ── Nav tabs ── */
+    .tabs { display: flex; border-bottom: 1px solid var(--bdr); background: var(--bg1); padding: 0 32px; position: sticky; top: 0; z-index: 10; }
+    .tab { padding: 16px 20px; font-family: var(--fd); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--t3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab:hover { color: var(--t2); }
+    .tab.active { color: var(--pri); border-bottom-color: var(--pri); }
 
-    --indigo:        oklch(57% 0.20 270);
-    --indigo-dim:    oklch(57% 0.20 270 / 0.15);
-    --indigo-soft:   oklch(57% 0.20 270 / 0.08);
-    --purple:        oklch(55% 0.22 295);
-    --purple-dim:    oklch(55% 0.22 295 / 0.15);
-    --pink:          oklch(62% 0.22 340);
+    /* ── Sections ── */
+    .section { display: none; }
+    .section.active { display: block; }
 
-    --success:       oklch(65% 0.18 162);
-    --warning:       oklch(72% 0.17  70);
+    /* ── Page header ── */
+    .ph { padding: 40px 40px 28px; border-bottom: 1px solid var(--bdr); }
+    .eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pri); background: var(--pri-d); border: 1px solid var(--bdr2); border-radius: 20px; padding: 3px 11px; margin-bottom: 14px; }
+    .ph h1 { font-family: var(--fd); font-size: 34px; font-weight: 700; letter-spacing: -0.03em; color: var(--t1); line-height: 1.05; margin-bottom: 8px; }
+    .ph p  { font-size: 14px; color: var(--t2); font-weight: 300; max-width: 560px; line-height: 1.6; }
 
-    --text-primary:  oklch(97% 0.008 250);
-    --text-secondary:oklch(80% 0.015 250);
-    --text-muted:    oklch(52% 0.020 250);
+    /* ── Two-phone comparison ── */
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .phone-panel { padding: 36px 32px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .phone-panel.left  { background: var(--bg1); border-right: 1px solid var(--bdr); }
+    .phone-panel.right { background: var(--bg); }
+    .panel-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+    .panel-label.before { color: var(--t3); }
+    .panel-label.after  { color: var(--pri); }
 
-    --font-display: 'Familjen Grotesk', sans-serif;
-    --font-body:    'Lexend', sans-serif;
+    .phone {
+      width: 288px; border-radius: 32px; overflow: hidden;
+      border: 2px solid var(--bdr2);
+      box-shadow: 0 0 0 5px var(--bg), 0 0 0 7px var(--bdr), 0 40px 80px rgba(0,0,0,0.6);
+    }
+    .screen { background: var(--bg1); overflow-y: auto; max-height: 580px; scrollbar-width: none; }
+    .screen::-webkit-scrollbar { display: none; }
 
-    --r-sm: 10px;
-    --r-md: 16px;
-    --r-lg: 22px;
-    --r-xl: 28px;
-  }
+    /* ── BEFORE dashboard ── */
+    .b-appbar { padding: 16px 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+    .b-logo { font-family: var(--fd); font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); }
+    .b-logo em { color: var(--pri); font-style: normal; }
+    .b-av { width: 32px; height: 32px; border-radius: 50%; background: var(--pri-d); border: 2px solid var(--pri); display: flex; align-items: center; justify-content: center; font-family: var(--fd); font-size: 12px; font-weight: 700; color: var(--pri); }
 
-  body {
-    background: oklch(9% 0.018 270);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 48px 24px 64px;
-    font-family: var(--font-body);
-    color: var(--text-primary);
-    gap: 48px;
-  }
+    .b-hero { padding: 4px 16px 16px; }
+    .b-greet { font-size: 13px; color: var(--t2); margin-bottom: 12px; }
+    .b-greet strong { color: var(--t1); }
 
-  /* ─── Page header ─── */
-  .page-header {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
-  .page-header h1 {
-    font-family: var(--font-display);
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.4px;
-    color: var(--text-primary);
-  }
-  .page-header p {
-    font-size: 14px;
-    color: var(--text-muted);
-    font-weight: 400;
-    letter-spacing: 0;
-  }
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--indigo-dim);
-    color: var(--indigo);
-    font-family: var(--font-display);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    border-radius: 100px;
-    border: 1px solid oklch(57% 0.20 270 / 0.25);
-  }
+    /* OLD stat row — equal size bubbles */
+    .b-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .b-stat { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 14px; text-align: center; }
+    .b-stat-num { font-family: var(--fd); font-size: 22px; font-weight: 700; color: var(--t1); }
+    .b-stat-lbl { font-size: 10px; color: var(--t3); margin-top: 3px; }
 
-  /* ─── Grid of screens ─── */
-  .screens-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 32px;
-    width: 100%;
-    max-width: 1160px;
-  }
+    .b-xp-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 14px; margin-bottom: 16px; }
+    .b-xp-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .b-xp-label { font-size: 12px; color: var(--t2); }
+    .b-xp-val { font-size: 12px; font-weight: 600; color: var(--t1); }
+    .b-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+    .b-bar-fill { height: 100%; border-radius: 3px; background: var(--pri); }
 
-  /* ─── Phone frame ─── */
-  .phone-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-  }
-  .screen-label {
-    font-family: var(--font-display);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-  .phone {
-    width: 340px;
-    background: var(--bg-primary);
-    border-radius: 40px;
-    border: 2px solid var(--border);
-    overflow: hidden;
-    box-shadow: 0 32px 80px oklch(0% 0 0 / 0.5), 0 0 0 1px oklch(100% 0 0 / 0.04);
-    position: relative;
-  }
-  .phone-notch {
-    width: 100px;
-    height: 28px;
-    background: oklch(10% 0.02 270);
-    border-radius: 0 0 18px 18px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    position: relative;
-    z-index: 10;
-  }
-  .phone-notch .cam { width: 10px; height: 10px; border-radius: 50%; background: oklch(18% 0.03 270); }
-  .phone-screen { padding: 0; overflow: hidden; }
+    /* OLD section header */
+    .b-sec { padding: 0 16px; margin-bottom: 10px; }
+    .b-sec-title { font-size: 15px; font-weight: 700; color: var(--t1); }
 
-  /* ─── Status bar ─── */
-  .status-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px 6px;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-family: var(--font-display);
-  }
-  .status-icons { display: flex; gap: 6px; align-items: center; }
-  .status-icons svg { width: 14px; height: 14px; }
+    .b-cards { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .b-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 14px; }
+    .b-card-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .b-card-icon { width: 36px; height: 36px; background: var(--pri-d); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .b-card-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .b-card-desc  { font-size: 10px; color: var(--t3); margin-top: 1px; }
 
-  /* ─── DASHBOARD SCREEN ─── */
-  .dash-header {
-    padding: 12px 20px 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .dash-greeting {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .dash-greeting .hello {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--text-muted);
-    font-family: var(--font-body);
-  }
-  .dash-greeting .name {
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.3px;
-  }
-  .avatar {
-    width: 38px; height: 38px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--indigo), var(--purple));
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-display);
-    font-size: 14px; font-weight: 700;
-    color: white;
-    flex-shrink: 0;
-  }
+    /* ── AFTER dashboard ── */
+    .a-appbar { padding: 16px 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+    .a-logo { font-family: var(--fd); font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); }
+    .a-logo em { color: var(--pri); font-style: normal; }
+    .a-av { width: 32px; height: 32px; border-radius: 50%; background: var(--pri-d); border: 2px solid var(--pri); display: flex; align-items: center; justify-content: center; font-family: var(--fd); font-size: 12px; font-weight: 700; color: var(--pri); }
 
-  /* XP hero strip */
-  .xp-strip {
-    margin: 16px 20px 0;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    padding: 16px 18px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    position: relative;
-    overflow: hidden;
-  }
-  .xp-strip::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse 180px 80px at 90% 50%, var(--purple-dim), transparent);
-    pointer-events: none;
-  }
-  .xp-circle {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    background: var(--indigo-soft);
-    border: 2px solid var(--indigo-dim);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .xp-circle .num {
-    font-family: var(--font-display);
-    font-size: 16px; font-weight: 700;
-    color: var(--indigo);
-    line-height: 1;
-  }
-  .xp-circle .lbl {
-    font-size: 9px; font-weight: 500;
-    color: var(--text-muted);
-    text-transform: uppercase; letter-spacing: 0.5px;
-  }
-  .xp-info { flex: 1; }
-  .xp-info .level {
-    font-family: var(--font-display);
-    font-size: 13px; font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 6px;
-  }
-  .progress-track {
-    height: 5px;
-    background: var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    border-radius: 10px;
-    background: linear-gradient(90deg, var(--indigo), var(--purple));
-    width: 62%;
-  }
-  .xp-info .xp-caption {
-    font-size: 10px; color: var(--text-muted);
-    margin-top: 5px;
-  }
-  .streak-pill {
-    display: flex; flex-direction: column;
-    align-items: center; gap: 2px;
-    flex-shrink: 0;
-  }
-  .streak-pill .fire { font-size: 20px; }
-  .streak-pill .days {
-    font-family: var(--font-display);
-    font-size: 13px; font-weight: 700;
-    color: var(--warning);
-    line-height: 1;
-  }
-  .streak-pill .streak-lbl {
-    font-size: 9px; color: var(--text-muted); text-transform: uppercase;
-  }
+    .a-hero { padding: 2px 16px 16px; }
+    .a-greet-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--t3); margin-bottom: 1px; }
+    .a-name { font-family: var(--fd); font-size: 19px; font-weight: 600; letter-spacing: -0.02em; color: var(--t1); margin-bottom: 16px; }
 
-  /* section heading */
-  .sect-head {
-    padding: 20px 20px 10px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .sect-head h2 {
-    font-family: var(--font-display);
-    font-size: 15px; font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.2px;
-  }
-  .sect-head a {
-    font-size: 12px; font-weight: 500;
-    color: var(--indigo); text-decoration: none;
-  }
+    /* NEW level + xp */
+    .a-level-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 12px; }
+    .a-lv-wrap { display: flex; flex-direction: column; }
+    .a-lv-lbl { font-size: 8px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); line-height: 1; }
+    .a-lv-num { font-family: var(--fd); font-size: 50px; font-weight: 700; letter-spacing: -0.04em; color: var(--pri); line-height: 0.88; }
+    .a-xp-wrap { flex: 1; padding-bottom: 4px; }
+    .a-xp-frac { font-size: 10px; color: var(--t3); margin-bottom: 5px; }
+    .a-xp-frac strong { color: var(--t2); font-weight: 600; }
+    .a-xp-track { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+    .a-xp-fill  { height: 100%; width: 78%; background: var(--pri); border-radius: 2px; }
+    .a-xp-next  { font-size: 9px; color: var(--t3); margin-top: 3px; }
 
-  /* quick action row */
-  .quick-actions {
-    padding: 0 20px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-  }
-  .qa-btn {
-    display: flex; flex-direction: column;
-    align-items: center; gap: 8px;
-    padding: 12px 4px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .qa-icon {
-    width: 38px; height: 38px;
-    border-radius: 11px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 17px;
-  }
-  .qa-btn span {
-    font-family: var(--font-display);
-    font-size: 10px; font-weight: 600;
-    color: var(--text-secondary);
-    text-align: center; line-height: 1.2;
-  }
+    /* NEW asymmetric stats */
+    .a-stats { display: grid; grid-template-columns: 1fr 1.35fr; gap: 8px; margin-bottom: 22px; }
+    .a-streak { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rmd); padding: 11px 12px; }
+    .a-streak-ic { font-size: 16px; margin-bottom: 5px; }
+    .a-streak-n  { font-family: var(--fd); font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: var(--t1); line-height: 1; }
+    .a-streak-lb { font-size: 9px; color: var(--t3); margin-top: 2px; font-weight: 500; }
+    .a-goal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rmd); padding: 11px 12px; display: flex; flex-direction: column; justify-content: space-between; }
+    .a-goal-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .a-goal-n  { font-family: var(--fd); font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); line-height: 1; }
+    .a-goal-lb { font-size: 9px; color: var(--t3); margin-top: 2px; font-weight: 500; }
+    .a-goal-badge { font-size: 8px; font-weight: 700; background: var(--grn-d); color: var(--grn); border-radius: 5px; padding: 2px 6px; }
+    .a-goal-dots { display: flex; gap: 4px; margin-top: 9px; }
+    .a-dot { height: 4px; flex: 1; border-radius: 2px; background: var(--bg3); }
+    .a-dot.on { background: var(--grn); }
 
-  /* challenge card */
-  .challenge-card {
-    margin: 6px 20px 0;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    padding: 16px;
-    display: flex; align-items: center; gap: 14px;
-    position: relative; overflow: hidden;
-  }
-  .challenge-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse 140px 60px at 0% 60%, var(--indigo-dim), transparent);
-    pointer-events: none;
-  }
-  .challenge-icon {
-    width: 46px; height: 46px;
-    border-radius: var(--r-sm);
-    background: var(--indigo-soft);
-    border: 1px solid var(--indigo-dim);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; flex-shrink: 0;
-  }
-  .challenge-body { flex: 1; }
-  .challenge-body h3 {
-    font-family: var(--font-display);
-    font-size: 13px; font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.1px; margin-bottom: 3px;
-  }
-  .challenge-body p {
-    font-size: 11px; color: var(--text-muted);
-    font-weight: 400; line-height: 1.4;
-  }
-  .xp-tag {
-    font-family: var(--font-display);
-    font-size: 11px; font-weight: 700;
-    color: var(--indigo);
-    background: var(--indigo-soft);
-    border: 1px solid var(--indigo-dim);
-    padding: 4px 8px;
-    border-radius: 100px;
-    white-space: nowrap;
-  }
+    /* NEW section header */
+    .a-sec { display: flex; align-items: center; gap: 7px; padding: 0 16px; margin-bottom: 8px; }
+    .a-sec-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pri); flex-shrink: 0; }
+    .a-sec-dot.pk { background: var(--pk); }
+    .a-sec-title { font-family: var(--fd); font-size: 13px; font-weight: 700; letter-spacing: -0.01em; color: var(--t1); flex: 1; }
+    .a-sec-action { font-size: 10px; font-weight: 500; color: var(--pri); }
 
-  /* bottom nav */
-  .bottom-nav {
-    display: flex;
-    background: var(--bg-card);
-    border-top: 1px solid var(--border);
-    padding: 10px 0 20px;
-  }
-  .nav-item {
-    flex: 1;
-    display: flex; flex-direction: column;
-    align-items: center; gap: 4px;
-    padding: 6px 0;
-    cursor: pointer;
-    position: relative;
-  }
-  .nav-icon {
-    width: 22px; height: 22px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .nav-icon svg { width: 20px; height: 20px; }
-  .nav-item.active .nav-icon svg { color: var(--indigo); }
-  .nav-item:not(.active) .nav-icon svg { color: var(--text-muted); }
-  .nav-dot {
-    width: 4px; height: 4px;
-    border-radius: 50%;
-    background: var(--indigo);
-    position: absolute;
-    bottom: 2px;
-  }
-  .nav-lbl {
-    font-family: var(--font-display);
-    font-size: 9px; font-weight: 600;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-  }
-  .nav-item.active .nav-lbl { color: var(--indigo); }
-  .nav-item:not(.active) .nav-lbl { color: var(--text-muted); }
+    /* NEW challenge cards */
+    .a-cards { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .a-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 12px 13px; }
+    .a-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 7px; }
+    .a-card-tag { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; background: var(--pk-d); color: var(--pk); }
+    .a-card-tag.ind { background: var(--pri-d); color: var(--pri); }
+    .a-card-xp  { font-size: 10px; font-weight: 600; color: var(--grn); font-family: var(--fd); }
+    .a-card-title { font-family: var(--fd); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--t1); margin-bottom: 2px; }
+    .a-card-desc  { font-size: 10px; font-weight: 300; color: var(--t2); margin-bottom: 8px; }
+    .a-card-bar { height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+    .a-card-fill { height: 100%; border-radius: 2px; background: var(--pri); }
+    .a-card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; }
+    .a-card-pct { font-size: 9px; color: var(--t3); }
+    .a-card-btn { font-family: var(--fd); font-size: 10px; font-weight: 600; color: var(--pri); background: var(--pri-d); border: 1px solid var(--bdr2); border-radius: 6px; padding: 4px 9px; }
 
-  /* ─── LEARN SCREEN ─── */
-  .learn-appbar {
-    padding: 12px 20px 0;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .learn-title {
-    font-family: var(--font-display);
-    font-size: 22px; font-weight: 700;
-    letter-spacing: -0.4px;
-    color: var(--text-primary);
-  }
-  .search-btn {
-    width: 36px; height: 36px;
-    border-radius: 11px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .search-btn svg { width: 16px; height: 16px; color: var(--text-secondary); }
+    /* badges */
+    .a-badges { padding: 0 16px 20px; }
+    .a-badges-row { display: flex; gap: 9px; margin-top: 8px; }
+    .ab-c { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .ab-i { width: 38px; height: 38px; border-radius: 50%; background: var(--bg2); border: 2px solid var(--bdr2); display: flex; align-items: center; justify-content: center; font-size: 17px; }
+    .ab-i.ind { background: var(--pri-d); border-color: var(--pri); }
+    .ab-i.pk  { background: var(--pk-d);  border-color: var(--pk); }
+    .ab-i.lk  { filter: grayscale(1); opacity: 0.4; }
+    .ab-n { font-size: 7px; font-weight: 500; color: var(--t3); text-align: center; max-width: 40px; line-height: 1.2; }
 
-  /* tab row */
-  .tab-row {
-    padding: 14px 20px 0;
-    display: flex; gap: 8px;
-  }
-  .tab-pill {
-    padding: 7px 14px;
-    border-radius: 100px;
-    font-family: var(--font-display);
-    font-size: 12px; font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .tab-pill.active {
-    background: var(--indigo);
-    color: white;
-  }
-  .tab-pill:not(.active) {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-  }
+    /* ── Annotations ── */
+    .ann-list { display: flex; flex-direction: column; gap: 9px; width: 288px; }
+    .ann { display: flex; gap: 8px; align-items: flex-start; }
+    .an-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .an-dot.pri { background: var(--pri); }
+    .an-dot.pk  { background: var(--pk); }
+    .an-dot.grn { background: var(--grn); }
+    .ann p { font-size: 11px; color: var(--t2); font-weight: 300; line-height: 1.5; }
+    .ann strong { color: var(--t1); font-weight: 500; }
 
-  /* category cards */
-  .cat-grid {
-    padding: 14px 20px 0;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-  }
-  .cat-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    padding: 16px;
-    display: flex; flex-direction: column; gap: 12px;
-    cursor: pointer; position: relative; overflow: hidden;
-  }
-  .cat-card.featured {
-    grid-column: span 2;
-    flex-direction: row;
-    align-items: center;
-    gap: 16px;
-  }
-  .cat-card.featured::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse 200px 100px at 100% 50%, var(--purple-dim), transparent);
-    pointer-events: none;
-  }
-  .cat-emoji-bg {
-    width: 46px; height: 46px;
-    border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; flex-shrink: 0;
-  }
-  .cat-card.featured .cat-emoji-bg {
-    width: 56px; height: 56px;
-    border-radius: 17px;
-    font-size: 26px;
-  }
-  .cat-info h3 {
-    font-family: var(--font-display);
-    font-size: 13px; font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.1px; margin-bottom: 3px;
-  }
-  .cat-card.featured .cat-info h3 { font-size: 15px; margin-bottom: 4px; }
-  .cat-info p {
-    font-size: 10px; color: var(--text-muted); font-weight: 400; line-height: 1.4;
-  }
-  .cat-card.featured .cat-info p { font-size: 11px; }
-  .cat-progress {
-    display: flex; flex-direction: column; gap: 5px;
-  }
-  .cat-progress-row {
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .cat-progress-row span {
-    font-size: 9px; color: var(--text-muted);
-  }
-  .cat-progress-row .pct {
-    font-family: var(--font-display);
-    font-weight: 600; font-size: 10px;
-    color: var(--indigo);
-  }
-  .cat-track {
-    height: 4px;
-    background: var(--border);
-    border-radius: 10px; overflow: hidden;
-  }
-  .cat-fill {
-    height: 100%;
-    border-radius: 10px;
-    background: linear-gradient(90deg, var(--indigo), var(--purple));
-  }
+    /* ── Change list ── */
+    .changes { padding: 32px 40px; border-top: 1px solid var(--bdr); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+    .change-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rmd); padding: 18px; }
+    .change-card h4 { font-family: var(--fd); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--t1); margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+    .ch-num { width: 20px; height: 20px; border-radius: 50%; background: var(--pri-d); border: 1px solid var(--bdr2); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--pri); flex-shrink: 0; font-family: var(--fd); }
+    .change-card ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .change-card li { font-size: 12px; font-weight: 300; color: var(--t2); padding-left: 12px; position: relative; line-height: 1.5; }
+    .change-card li::before { content: '→'; position: absolute; left: 0; color: var(--pri); font-size: 10px; top: 2px; }
 
-  /* ─── QUIZ SCREEN ─── */
-  .quiz-header {
-    padding: 12px 20px 0;
-    display: flex; align-items: center; gap: 14px;
-  }
-  .back-btn {
-    width: 34px; height: 34px;
-    border-radius: 11px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .quiz-progress-bar {
-    flex: 1; height: 5px;
-    background: var(--border);
-    border-radius: 10px; overflow: hidden;
-  }
-  .quiz-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--indigo), var(--purple));
-    width: 45%;
-    border-radius: 10px;
-  }
-  .quiz-counter {
-    font-family: var(--font-display);
-    font-size: 12px; font-weight: 600;
-    color: var(--text-muted);
-    flex-shrink: 0;
-  }
+    /* ── Phase C section ── */
+    .phase-c-grid { padding: 32px 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    .phase-c-panel { display: flex; flex-direction: column; gap: 20px; }
+    .sec-label { font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--t3); padding-bottom: 10px; border-bottom: 1px solid var(--bdr); margin-bottom: 4px; }
 
-  .quiz-question-area {
-    padding: 20px 20px 0;
-  }
-  .quiz-category-tag {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-family: var(--font-display);
-    font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.8px;
-    color: var(--purple);
-    background: var(--purple-dim);
-    border: 1px solid oklch(55% 0.22 295 / 0.2);
-    padding: 4px 10px; border-radius: 100px;
-    margin-bottom: 12px;
-  }
-  .quiz-q-text {
-    font-family: var(--font-display);
-    font-size: 17px; font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.3px; line-height: 1.35;
-    margin-bottom: 16px;
-  }
-  .quiz-sign-box {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    height: 110px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 48px;
-    margin-bottom: 18px;
-    position: relative; overflow: hidden;
-  }
-  .quiz-sign-box::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse 150px 80px at 50% 50%, var(--indigo-dim), transparent);
-    pointer-events: none;
-  }
+    /* Badge card demos */
+    .badge-demo-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .bdg { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 14px; width: 100px; display: flex; flex-direction: column; align-items: center; gap: 9px; }
+    .bdg-ring { width: 52px; height: 52px; border-radius: 50%; background: var(--pri-d); border: 2px solid var(--pri); display: flex; align-items: center; justify-content: center; font-size: 22px; position: relative; }
+    .bdg-ring.gold { background: var(--amb-d); border-color: var(--amb); }
+    .bdg-ring.pink { background: var(--pk-d);  border-color: var(--pk); }
+    .bdg-ring.lock { background: var(--bg3); border-color: var(--bdr2); filter: grayscale(1); opacity: 0.45; }
+    .bdg-tier { position: absolute; bottom: -7px; font-size: 7px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 5px; border-radius: 4px; color: #fff; background: var(--pri); font-family: var(--fb); white-space: nowrap; }
+    .bdg-tier.go { background: var(--amb); }
+    .bdg-tier.pk { background: var(--pk); }
+    .bdg-name { font-family: var(--fd); font-size: 10px; font-weight: 600; color: var(--t1); text-align: center; line-height: 1.2; }
+    .bdg-xp { font-size: 9px; font-weight: 500; color: var(--grn); background: var(--grn-d); border-radius: 5px; padding: 2px 7px; }
+    .bdg-xp.lk { color: var(--t3); background: var(--bg3); }
 
-  .options-list {
-    padding: 0 20px;
-    display: flex; flex-direction: column; gap: 9px;
-  }
-  .option-card {
-    display: flex; align-items: center; gap: 13px;
-    padding: 13px 15px;
-    background: var(--bg-card);
-    border: 1.5px solid var(--border);
-    border-radius: var(--r-md);
-    cursor: pointer;
-  }
-  .option-card.selected {
-    border-color: var(--indigo);
-    background: var(--indigo-soft);
-  }
-  .option-card.correct {
-    border-color: var(--success);
-    background: oklch(65% 0.18 162 / 0.08);
-  }
-  .option-letter {
-    width: 28px; height: 28px;
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-display);
-    font-size: 12px; font-weight: 700;
-    flex-shrink: 0;
-  }
-  .option-card .option-letter { background: var(--bg-elevated); color: var(--text-muted); }
-  .option-card.selected .option-letter { background: var(--indigo); color: white; }
-  .option-card.correct .option-letter { background: var(--success); color: white; }
-  .option-text {
-    font-family: var(--font-display);
-    font-size: 13px; font-weight: 600;
-    color: var(--text-primary);
-    line-height: 1.3;
-  }
-  .option-card.selected .option-text { color: var(--text-primary); }
+    /* Challenge card demo */
+    .ch-full { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); overflow: hidden; }
+    .ch-inner { padding: 16px 18px 14px; }
+    .ch-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .ch-emoji { font-size: 30px; line-height: 1; }
+    .ch-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .ch-tag { font-size: 8px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; background: var(--pk-d); color: var(--pk); }
+    .ch-xp  { font-family: var(--fd); font-size: 12px; font-weight: 600; color: var(--grn); }
+    .ch-title { font-family: var(--fd); font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); margin-bottom: 3px; }
+    .ch-desc  { font-size: 12px; font-weight: 300; color: var(--t2); margin-bottom: 14px; line-height: 1.5; }
+    .ch-bar { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+    .ch-bar div { height: 100%; border-radius: 2px; background: var(--pri); }
+    .ch-foot { display: flex; justify-content: space-between; font-size: 10px; color: var(--t3); }
 
-  /* ─── type specimens section ─── */
-  .type-demo {
-    width: 100%; max-width: 1160px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--r-xl);
-    padding: 40px 48px;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
-  }
-  .type-col h3 {
-    font-size: 10px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 1.2px;
-    color: var(--text-muted);
-    margin-bottom: 24px;
-  }
-  .type-specimen { display: flex; flex-direction: column; gap: 16px; }
-  .ts-row { display: flex; flex-direction: column; gap: 2px; }
-  .ts-meta { font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px; }
-  .ts-sample.display-hero {
-    font-family: var(--font-display);
-    font-size: 36px; font-weight: 700;
-    color: var(--text-primary); letter-spacing: -0.8px; line-height: 1.1;
-  }
-  .ts-sample.display-lg {
-    font-family: var(--font-display);
-    font-size: 24px; font-weight: 700;
-    color: var(--text-primary); letter-spacing: -0.4px;
-  }
-  .ts-sample.display-md {
-    font-family: var(--font-display);
-    font-size: 17px; font-weight: 700;
-    color: var(--text-primary); letter-spacing: -0.2px;
-  }
-  .ts-sample.display-sm {
-    font-family: var(--font-display);
-    font-size: 13px; font-weight: 600;
-    color: var(--text-secondary); letter-spacing: 0;
-  }
-  .ts-sample.body-lg {
-    font-family: var(--font-body);
-    font-size: 15px; font-weight: 400;
-    color: var(--text-secondary); line-height: 1.6;
-  }
-  .ts-sample.body-md {
-    font-family: var(--font-body);
-    font-size: 13px; font-weight: 400;
-    color: var(--text-secondary); line-height: 1.6;
-  }
-  .ts-sample.body-label {
-    font-family: var(--font-body);
-    font-size: 11px; font-weight: 500;
-    color: var(--text-muted); letter-spacing: 0.2px;
-  }
-  .ts-sample.body-caption {
-    font-family: var(--font-body);
-    font-size: 10px; font-weight: 400;
-    color: var(--text-muted); letter-spacing: 0.1px;
-  }
+    /* Learn path card demo */
+    .path-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); overflow: hidden; }
+    .path-top { padding: 14px 16px; display: flex; align-items: flex-start; justify-content: space-between; }
+    .path-icon { width: 40px; height: 40px; background: rgba(99,102,241,0.18); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .path-prog { display: flex; align-items: center; gap: 6px; }
+    .path-pct-ring { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--bdr2); display: flex; align-items: center; justify-content: center; position: relative; }
+    .path-pct-ring::before { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid transparent; border-top-color: var(--pri); border-right-color: var(--pri); }
+    .path-pct { font-family: var(--fd); font-size: 9px; font-weight: 700; color: var(--pri); }
+    .path-body { padding: 0 16px 14px; }
+    .path-name { font-family: var(--fd); font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: var(--t1); margin-bottom: 3px; }
+    .path-sub  { font-size: 11px; font-weight: 300; color: var(--t2); margin-bottom: 10px; }
+    .path-bar-track { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+    .path-bar-fill  { height: 100%; border-radius: 2px; background: var(--pri); width: 45%; }
 
-  /* color swatches */
-  .color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-  .swatch {
-    display: flex; flex-direction: column; gap: 6px;
-    align-items: center;
-  }
-  .swatch-box {
-    width: 48px; height: 48px;
-    border-radius: 12px;
-    border: 1px solid oklch(100% 0 0 / 0.06);
-  }
-  .swatch-lbl {
-    font-size: 9px; color: var(--text-muted);
-    text-align: center; font-family: var(--font-display); letter-spacing: 0.3px;
-  }
+    /* ── Phase A done banner ── */
+    .done-banner { margin: 32px 40px 0; padding: 14px 20px; background: var(--grn-d); border: 1px solid rgba(16,185,129,0.30); border-radius: var(--rmd); display: flex; align-items: center; gap: 10px; }
+    .done-banner span { font-size: 12px; color: var(--grn); font-weight: 400; }
+    .done-banner strong { font-weight: 600; }
 
-  @media (max-width: 720px) {
-    .screens-grid { grid-template-columns: 1fr; align-items: center; }
-    .type-demo { grid-template-columns: 1fr; gap: 32px; padding: 28px 24px; }
-    body { padding: 32px 16px 48px; }
-  }
-</style>
+    @media (max-width: 860px) {
+      .comparison { grid-template-columns: 1fr; }
+      .changes { grid-template-columns: 1fr; }
+      .phase-c-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
 
-<div class="page-header">
-  <span class="badge">Design Preview</span>
-  <h1>Gestura</h1>
-  <p>Familjen Grotesk · Lexend · Dark navy / Indigo / Purple</p>
+<div class="tabs">
+  <div class="tab active" onclick="show('phase-a')">Phase A — Foundation ✓</div>
+  <div class="tab" onclick="show('phase-b')">Phase B — Dashboard ✓</div>
+  <div class="tab" onclick="show('phase-c')">Phase C — Cards & Widgets</div>
 </div>
 
-<!-- ── SCREENS ── -->
-<div class="screens-grid">
-
-  <!-- DASHBOARD -->
-  <div class="phone-wrap">
-    <span class="screen-label">Dashboard</span>
-    <div class="phone">
-      <div class="phone-notch"><div class="cam"></div></div>
-      <div class="phone-screen">
-
-        <div class="status-bar">
-          <span>9:41</span>
-          <div class="status-icons">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1.5 8.5a13 13 0 0 1 21 0M5 12a10 10 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0M12 19h.01"/></svg>
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
-          </div>
-        </div>
-
-        <div class="dash-header">
-          <div class="dash-greeting">
-            <span class="hello">Good morning 👋</span>
-            <span class="name">Ahmad</span>
-          </div>
-          <div class="avatar">A</div>
-        </div>
-
-        <div class="xp-strip">
-          <div class="xp-circle">
-            <span class="num">12</span>
-            <span class="lbl">Level</span>
-          </div>
-          <div class="xp-info">
-            <div class="level">Rising Signer</div>
-            <div class="progress-track"><div class="progress-fill"></div></div>
-            <div class="xp-caption">620 / 1,000 XP to Level 13</div>
-          </div>
-          <div class="streak-pill">
-            <span class="fire">🔥</span>
-            <span class="days">14</span>
-            <span class="streak-lbl">Streak</span>
-          </div>
-        </div>
-
-        <div class="sect-head">
-          <h2>Quick Actions</h2>
-        </div>
-        <div class="quick-actions">
-          <div class="qa-btn">
-            <div class="qa-icon" style="background: oklch(57% 0.20 270 / 0.12);">📚</div>
-            <span>Learn</span>
-          </div>
-          <div class="qa-btn">
-            <div class="qa-icon" style="background: oklch(55% 0.22 295 / 0.12);">🧠</div>
-            <span>Quiz</span>
-          </div>
-          <div class="qa-btn">
-            <div class="qa-icon" style="background: oklch(62% 0.22 340 / 0.12);">📷</div>
-            <span>Translate</span>
-          </div>
-          <div class="qa-btn">
-            <div class="qa-icon" style="background: oklch(65% 0.18 162 / 0.12);">👥</div>
-            <span>Social</span>
-          </div>
-        </div>
-
-        <div class="sect-head" style="padding-top:16px;">
-          <h2>Today's Challenge</h2>
-          <a href="#">See all</a>
-        </div>
-        <div class="challenge-card">
-          <div class="challenge-icon">✋</div>
-          <div class="challenge-body">
-            <h3>Complete 3 Greetings signs</h3>
-            <p>Sign HELLO, THANK YOU, and PLEASE correctly</p>
-          </div>
-          <span class="xp-tag">+50 XP</span>
-        </div>
-
-        <div style="height:14px;"></div>
-
-        <div class="bottom-nav">
-          <div class="nav-item active">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-            <span class="nav-lbl">Home</span>
-            <div class="nav-dot"></div>
-          </div>
-          <div class="nav-item">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
-            <span class="nav-lbl">Learn</span>
-          </div>
-          <div class="nav-item">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></div>
-            <span class="nav-lbl">Quiz</span>
-          </div>
-          <div class="nav-item">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-            <span class="nav-lbl">Social</span>
-          </div>
-          <div class="nav-item">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div>
-            <span class="nav-lbl">Me</span>
-          </div>
-        </div>
-
-      </div>
+<!-- ═══════════════════════════════════════════════════════ PHASE A -->
+<div class="section active" id="phase-a">
+  <div class="ph">
+    <div class="eyebrow">Phase A · Shipped</div>
+    <h1>Foundation</h1>
+    <p>Color tokens, type scale, radius system, SectionHeader dot, and GradientButton — all propagated to every screen automatically. No screen-by-screen edits needed.</p>
+  </div>
+  <div class="done-banner">
+    <span>✅ <strong>Committed and pushed.</strong> Every surface in the app is now using indigo-tinted neutrals, tighter heading letterSpacing, and Familjen Grotesk labels on all primary buttons.</span>
+  </div>
+  <div class="changes" style="padding-top:28px">
+    <div class="change-card">
+      <h4><div class="ch-num">1</div> Color tokens</h4>
+      <ul>
+        <li>bgCard <code>#16162A</code> → <code>#1B1B2F</code></li>
+        <li>bgElevated → <code>#222238</code></li>
+        <li>textPrimary <code>#F8FAFC</code> → <code>#EEEEFF</code></li>
+        <li>textMuted → <code>#6868A8</code></li>
+        <li>border → <code>#2C2C4E</code></li>
+        <li>Light theme also indigo-tinted</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">2</div> Type scale</h4>
+      <ul>
+        <li>headlineLarge letterSpacing −0.8</li>
+        <li>headlineMedium letterSpacing −0.6</li>
+        <li>Explicit lineHeight on all styles</li>
+        <li>w800 → w700 (FG already heavy)</li>
+        <li>titleMedium gets −0.2 tracking</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">3</div> Components</h4>
+      <ul>
+        <li>AppRadius: sm/md/lg/xl constants</li>
+        <li>SectionHeader: 7px dot accent</li>
+        <li>GradientButton: radius 16→14, FG label</li>
+        <li>AppDecorations.tileCard() added</li>
+        <li>heroCard: solid color (no gradient)</li>
+      </ul>
     </div>
   </div>
+</div>
 
-  <!-- LEARN -->
-  <div class="phone-wrap">
-    <span class="screen-label">Learn</span>
-    <div class="phone">
-      <div class="phone-notch"><div class="cam"></div></div>
-      <div class="phone-screen">
+<!-- ═══════════════════════════════════════════════════════ PHASE B -->
+<div class="section" id="phase-b">
+  <div class="ph">
+    <div class="eyebrow">Phase B · Shipped</div>
+    <h1>Dashboard Redesign</h1>
+    <p>The hero screen. Break the identical stat-bubble grid. Give numbers their proper typographic weight. Introduce visual rhythm with varied spacing and asymmetric tiles.</p>
+  </div>
+  <div class="done-banner">
+    <span>✅ <strong>Committed and pushed.</strong> Open hero layout with 50px level number, asymmetric streak/goals tiles, and tag+XP challenge cards — all in <code>dashboard_screen.dart</code>.</span>
+  </div>
 
-        <div class="status-bar">
-          <span>9:41</span>
-          <div class="status-icons">
-            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+  <div class="comparison">
+    <!-- BEFORE -->
+    <div class="phone-panel left">
+      <div class="panel-label before">Before (current)</div>
+      <div class="phone">
+        <div class="screen">
+          <div class="b-appbar">
+            <div class="b-logo">Gest<em>ura</em></div>
+            <div class="b-av">H</div>
           </div>
-        </div>
-
-        <div class="learn-appbar">
-          <span class="learn-title">Learn BIM</span>
-          <div class="search-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
-        </div>
-
-        <div class="tab-row">
-          <div class="tab-pill active">Categories</div>
-          <div class="tab-pill">Learning Path</div>
-          <div class="tab-pill">Saved</div>
-        </div>
-
-        <div class="cat-grid">
-          <!-- featured -->
-          <div class="cat-card featured">
-            <div class="cat-emoji-bg" style="background: oklch(57% 0.20 270 / 0.12); border: 1px solid oklch(57% 0.20 270 / 0.2);">👋</div>
-            <div class="cat-info" style="flex:1;">
-              <h3>Greetings & Everyday</h3>
-              <p>Master daily conversations and polite expressions</p>
-              <div style="margin-top:10px;">
-                <div class="cat-progress-row">
-                  <span>24 / 30 signs</span>
-                  <span class="pct">80%</span>
+          <div class="b-hero">
+            <div class="b-greet">Good morning, <strong>Hakimi</strong> 👋</div>
+            <!-- XP card -->
+            <div class="b-xp-card">
+              <div class="b-xp-row">
+                <div class="b-xp-label">Level 7 — XP Progress</div>
+                <div class="b-xp-val">1,240 / 1,600</div>
+              </div>
+              <div class="b-bar"><div class="b-bar-fill" style="width:78%"></div></div>
+            </div>
+            <!-- Identical stat bubbles -->
+            <div class="b-stat-row">
+              <div class="b-stat">
+                <div class="b-stat-num">🔥 14</div>
+                <div class="b-stat-lbl">Day Streak</div>
+              </div>
+              <div class="b-stat">
+                <div class="b-stat-num">3/5</div>
+                <div class="b-stat-lbl">Daily Goals</div>
+              </div>
+            </div>
+          </div>
+          <!-- Plain section header -->
+          <div class="b-sec"><div class="b-sec-title">Daily Challenges</div></div>
+          <div class="b-cards">
+            <div class="b-card">
+              <div class="b-card-row">
+                <div class="b-card-icon">🖐</div>
+                <div>
+                  <div class="b-card-title">Fingerspelling Sprint</div>
+                  <div class="b-card-desc">Practice signs A through E</div>
                 </div>
-                <div class="cat-track" style="margin-top:5px;"><div class="cat-fill" style="width:80%"></div></div>
               </div>
+              <div class="b-bar"><div class="b-bar-fill" style="width:60%"></div></div>
+            </div>
+            <div class="b-card">
+              <div class="b-card-row">
+                <div class="b-card-icon">📖</div>
+                <div>
+                  <div class="b-card-title">Vocabulary Rush</div>
+                  <div class="b-card-desc">10 new greetings signs</div>
+                </div>
+              </div>
+              <div class="b-bar"><div class="b-bar-fill" style="width:0%"></div></div>
             </div>
           </div>
-          <!-- grid items -->
-          <div class="cat-card">
-            <div class="cat-emoji-bg" style="background: oklch(55% 0.22 295 / 0.12); border: 1px solid oklch(55% 0.22 295 / 0.2); width:44px;height:44px;border-radius:13px;font-size:20px;">🔢</div>
-            <div class="cat-info">
-              <h3>Numbers</h3>
-              <p>0 to 100 and beyond</p>
-            </div>
-            <div class="cat-progress">
-              <div class="cat-progress-row">
-                <span>8 / 20</span><span class="pct">40%</span>
-              </div>
-              <div class="cat-track"><div class="cat-fill" style="width:40%"></div></div>
-            </div>
-          </div>
-          <div class="cat-card">
-            <div class="cat-emoji-bg" style="background: oklch(62% 0.22 340 / 0.12); border: 1px solid oklch(62% 0.22 340 / 0.2); width:44px;height:44px;border-radius:13px;font-size:20px;">👨‍👩‍👧</div>
-            <div class="cat-info">
-              <h3>Family</h3>
-              <p>Relatives and relations</p>
-            </div>
-            <div class="cat-progress">
-              <div class="cat-progress-row">
-                <span>0 / 18</span><span class="pct" style="color:var(--text-muted)">0%</span>
-              </div>
-              <div class="cat-track"><div class="cat-fill" style="width:0%"></div></div>
-            </div>
-          </div>
-          <div class="cat-card">
-            <div class="cat-emoji-bg" style="background: oklch(65% 0.18 162 / 0.12); border: 1px solid oklch(65% 0.18 162 / 0.2); width:44px;height:44px;border-radius:13px;font-size:20px;">🍎</div>
-            <div class="cat-info">
-              <h3>Food & Drink</h3>
-              <p>Meals, tastes and hunger</p>
-            </div>
-            <div class="cat-progress">
-              <div class="cat-progress-row">
-                <span>3 / 22</span><span class="pct">14%</span>
-              </div>
-              <div class="cat-track"><div class="cat-fill" style="width:14%"></div></div>
+          <div class="b-sec"><div class="b-sec-title">Recent Badges</div></div>
+          <div style="padding: 0 16px 20px">
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <div class="b-stat" style="width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:50%">🏅</div>
+              <div class="b-stat" style="width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:50%">🔥</div>
+              <div class="b-stat" style="width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:50%">⭐</div>
             </div>
           </div>
         </div>
+      </div>
+      <div class="ann-list">
+        <div class="ann"><div class="an-dot pri"></div><p><strong>XP buried in a card</strong> — level number is small label text, not a visual anchor</p></div>
+        <div class="ann"><div class="an-dot pk"></div><p><strong>Identical 2×2 stat boxes</strong> — same size, same radius, same padding. No visual hierarchy</p></div>
+        <div class="ann"><div class="an-dot grn"></div><p><strong>Square icon + title</strong> — every challenge card looks the same layout</p></div>
+      </div>
+    </div>
 
-        <div style="height: 14px;"></div>
+    <!-- AFTER -->
+    <div class="phone-panel right">
+      <div class="panel-label after">After (proposed)</div>
+      <div class="phone">
+        <div class="screen">
+          <div class="a-appbar">
+            <div class="a-logo">Gest<em>ura</em></div>
+            <div class="a-av">H</div>
+          </div>
+          <div class="a-hero">
+            <div class="a-greet-lbl">Good morning</div>
+            <div class="a-name">Hakimi 👋</div>
+            <!-- Level + XP open, not in a card -->
+            <div class="a-level-row">
+              <div class="a-lv-wrap">
+                <div class="a-lv-lbl">Level</div>
+                <div class="a-lv-num">7</div>
+              </div>
+              <div class="a-xp-wrap">
+                <div class="a-xp-frac"><strong>1,240</strong> / 1,600 XP</div>
+                <div class="a-xp-track"><div class="a-xp-fill"></div></div>
+                <div class="a-xp-next">360 XP to Level 8</div>
+              </div>
+            </div>
+            <!-- Asymmetric stats -->
+            <div class="a-stats">
+              <div class="a-streak">
+                <div class="a-streak-ic">🔥</div>
+                <div class="a-streak-n">14</div>
+                <div class="a-streak-lb">Day streak</div>
+              </div>
+              <div class="a-goal">
+                <div class="a-goal-top">
+                  <div>
+                    <div class="a-goal-n">3 / 5</div>
+                    <div class="a-goal-lb">Today's goals</div>
+                  </div>
+                  <div class="a-goal-badge">60%</div>
+                </div>
+                <div class="a-goal-dots">
+                  <div class="a-dot on"></div><div class="a-dot on"></div>
+                  <div class="a-dot on"></div><div class="a-dot"></div><div class="a-dot"></div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <div class="bottom-nav">
-          <div class="nav-item">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
-            <span class="nav-lbl">Home</span>
+          <!-- Dot section header -->
+          <div class="a-sec">
+            <div class="a-sec-dot pk"></div>
+            <div class="a-sec-title">Today's Challenges</div>
+            <div class="a-sec-action">See all</div>
           </div>
-          <div class="nav-item active">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
-            <span class="nav-lbl">Learn</span>
-            <div class="nav-dot"></div>
+          <div class="a-cards">
+            <div class="a-card">
+              <div class="a-card-top">
+                <div class="a-card-tag">✨ For You</div>
+                <div class="a-card-xp">+45 XP</div>
+              </div>
+              <div class="a-card-title">Fingerspelling Sprint</div>
+              <div class="a-card-desc">Signs A–E · your weakest set this week</div>
+              <div class="a-card-bar"><div class="a-card-fill" style="width:60%"></div></div>
+              <div class="a-card-foot">
+                <div class="a-card-pct">60% done</div>
+                <div class="a-card-btn">Continue →</div>
+              </div>
+            </div>
+            <div class="a-card">
+              <div class="a-card-top">
+                <div class="a-card-tag ind">Vocabulary</div>
+                <div class="a-card-xp">+50 XP</div>
+              </div>
+              <div class="a-card-title">Vocabulary Rush</div>
+              <div class="a-card-desc">10 new greetings signs</div>
+              <div class="a-card-foot" style="margin-top:0">
+                <div class="a-card-pct">Not started</div>
+                <div class="a-card-btn">Begin →</div>
+              </div>
+            </div>
           </div>
-          <div class="nav-item">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
-            <span class="nav-lbl">Quiz</span>
+
+          <div class="a-sec">
+            <div class="a-sec-dot"></div>
+            <div class="a-sec-title">Recent Badges</div>
+            <div class="a-sec-action">View all</div>
           </div>
-          <div class="nav-item">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
-            <span class="nav-lbl">Social</span>
-          </div>
-          <div class="nav-item">
-            <div class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div>
-            <span class="nav-lbl">Me</span>
+          <div class="a-badges">
+            <div class="a-badges-row">
+              <div class="ab-c"><div class="ab-i ind">🏅</div><div class="ab-n">First Sign</div></div>
+              <div class="ab-c"><div class="ab-i pk">🔥</div><div class="ab-n">7-Day Streak</div></div>
+              <div class="ab-c"><div class="ab-i ind">⭐</div><div class="ab-n">Quiz Ace</div></div>
+              <div class="ab-c"><div class="ab-i lk">🔒</div><div class="ab-n">Social Butterfly</div></div>
+              <div class="ab-c"><div class="ab-i lk">🔒</div><div class="ab-n">Speed Signer</div></div>
+            </div>
           </div>
         </div>
+      </div>
 
+      <div class="ann-list">
+        <div class="ann"><div class="an-dot pri"></div><p><strong>Level "7" at 50px</strong> — Familjen Grotesk, open composition. Progress is the headline, not a label</p></div>
+        <div class="ann"><div class="an-dot pk"></div><p><strong>Asymmetric stat tiles</strong> — streak (portrait) vs goal (landscape + dots). Different shapes, different purposes</p></div>
+        <div class="ann"><div class="an-dot grn"></div><p><strong>Tag + XP header</strong> — "For You" tag top-left, XP top-right. Card breathes and has internal hierarchy</p></div>
       </div>
     </div>
   </div>
 
-  <!-- QUIZ -->
-  <div class="phone-wrap">
-    <span class="screen-label">Quiz</span>
-    <div class="phone">
-      <div class="phone-notch"><div class="cam"></div></div>
-      <div class="phone-screen">
-
-        <div class="status-bar">
-          <span>9:41</span>
-          <div class="status-icons">
-            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
-          </div>
-        </div>
-
-        <div class="quiz-header">
-          <div class="back-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </div>
-          <div class="quiz-progress-bar"><div class="quiz-progress-fill"></div></div>
-          <span class="quiz-counter">4 / 8</span>
-        </div>
-
-        <div class="quiz-question-area">
-          <div class="quiz-category-tag">Greetings</div>
-          <div class="quiz-q-text">Which sign means<br>"Thank You"?</div>
-          <div class="quiz-sign-box">🤝</div>
-        </div>
-
-        <div class="options-list">
-          <div class="option-card">
-            <div class="option-letter">A</div>
-            <span class="option-text">Hello</span>
-          </div>
-          <div class="option-card correct">
-            <div class="option-letter">B</div>
-            <span class="option-text">Thank You</span>
-          </div>
-          <div class="option-card selected">
-            <div class="option-letter">C</div>
-            <span class="option-text">Please</span>
-          </div>
-          <div class="option-card">
-            <div class="option-letter">D</div>
-            <span class="option-text">Goodbye</span>
-          </div>
-        </div>
-
-        <div style="height: 60px;"></div>
-
-      </div>
+  <div class="changes">
+    <div class="change-card">
+      <h4><div class="ch-num">1</div> Hero section</h4>
+      <ul>
+        <li>Greeting split: 9px uppercase label + 19px name</li>
+        <li>Level removed from XP card → open layout</li>
+        <li>"7" at 50px Familjen Grotesk, primary color</li>
+        <li>XP bar 4px, thin and precise</li>
+        <li>XP card wrapper removed — breathes freely</li>
+      </ul>
     </div>
-  </div>
-
-</div>
-
-<!-- ── TYPOGRAPHY & COLOR REFERENCE ── -->
-<div class="type-demo">
-  <div class="type-col">
-    <h3>Familjen Grotesk — Display & Headings</h3>
-    <div class="type-specimen">
-      <div class="ts-row">
-        <span class="ts-meta">Hero · 36px · 700</span>
-        <span class="ts-sample display-hero">Break Silence,<br>Build Bridges.</span>
-      </div>
-      <div class="ts-row">
-        <span class="ts-meta">Heading · 24px · 700</span>
-        <span class="ts-sample display-lg">Learn BIM</span>
-      </div>
-      <div class="ts-row">
-        <span class="ts-meta">Title · 17px · 700</span>
-        <span class="ts-sample display-md">Greetings & Everyday</span>
-      </div>
-      <div class="ts-row">
-        <span class="ts-meta">Label · 13px · 600</span>
-        <span class="ts-sample display-sm">Today's Challenge · 24 / 30 signs</span>
-      </div>
+    <div class="change-card">
+      <h4><div class="ch-num">2</div> Stat tiles</h4>
+      <ul>
+        <li>Grid: 1fr / 1.35fr (not equal columns)</li>
+        <li>Streak tile: icon → number → label stacked</li>
+        <li>Goal tile: value + badge top, progress dots bottom</li>
+        <li>Both use AppRadius.md (14px) not lg (20px)</li>
+        <li>Spacing 8px within, 22px after the group</li>
+      </ul>
     </div>
-  </div>
-  <div class="type-col">
-    <h3>Lexend — Body & Supporting Text</h3>
-    <div class="type-specimen">
-      <div class="ts-row">
-        <span class="ts-meta">Body · 15px · 400</span>
-        <span class="ts-sample body-lg">Master daily conversations and polite expressions in Bahasa Isyarat Malaysia.</span>
-      </div>
-      <div class="ts-row">
-        <span class="ts-meta">Body · 13px · 400</span>
-        <span class="ts-sample body-md">Sign HELLO, THANK YOU, and PLEASE correctly to complete the challenge.</span>
-      </div>
-      <div class="ts-row">
-        <span class="ts-meta">Label · 11px · 500</span>
-        <span class="ts-sample body-label">8 / 20 signs · Learning Path · Beginner</span>
-      </div>
-      <div class="ts-row">
-        <span class="ts-meta">Caption · 10px · 400</span>
-        <span class="ts-sample body-caption">620 / 1,000 XP to Level 13 · 14-day streak</span>
-      </div>
-    </div>
-    <div style="margin-top: 28px;">
-      <h3 style="margin-bottom:16px;">Palette</h3>
-      <div class="color-row">
-        <div class="swatch"><div class="swatch-box" style="background: oklch(57% 0.20 270);"></div><span class="swatch-lbl">Indigo</span></div>
-        <div class="swatch"><div class="swatch-box" style="background: oklch(55% 0.22 295);"></div><span class="swatch-lbl">Purple</span></div>
-        <div class="swatch"><div class="swatch-box" style="background: oklch(62% 0.22 340);"></div><span class="swatch-lbl">Pink</span></div>
-        <div class="swatch"><div class="swatch-box" style="background: oklch(65% 0.18 162);"></div><span class="swatch-lbl">Success</span></div>
-        <div class="swatch"><div class="swatch-box" style="background: oklch(12% 0.025 270);"></div><span class="swatch-lbl">BG</span></div>
-        <div class="swatch"><div class="swatch-box" style="background: oklch(14% 0.027 270);"></div><span class="swatch-lbl">Card</span></div>
-        <div class="swatch"><div class="swatch-box" style="background: oklch(22% 0.030 270);"></div><span class="swatch-lbl">Border</span></div>
-      </div>
+    <div class="change-card">
+      <h4><div class="ch-num">3</div> Challenge cards</h4>
+      <ul>
+        <li>Remove square icon — emoji anchor instead</li>
+        <li>Tag top-left (context) / XP top-right (reward)</li>
+        <li>Title Familjen Grotesk 14px 600</li>
+        <li>Progress bar 3px (less visual weight)</li>
+        <li>Continue/Begin button inline bottom-right</li>
+      </ul>
     </div>
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════ PHASE C -->
+<div class="section" id="phase-c">
+  <div class="ph">
+    <div class="eyebrow">Phase C · Shared Widgets</div>
+    <h1>Cards &amp; Widgets</h1>
+    <p>Badge cards, challenge complete dialogs, learning path cards — the repeated components that show up across every screen. Celebratory moments deserve more presence; repeated elements need visual variety.</p>
+  </div>
+
+  <div class="phase-c-grid">
+    <div class="phase-c-panel">
+
+      <div class="sec-label">Badge cards — tier in border, not fill</div>
+      <div class="badge-demo-row">
+        <div class="bdg">
+          <div class="bdg-ring" style="position:relative">🏅<div class="bdg-tier">Silver</div></div>
+          <div class="bdg-name">First Sign</div>
+          <div class="bdg-xp">+25 XP</div>
+        </div>
+        <div class="bdg">
+          <div class="bdg-ring gold" style="position:relative">🔥<div class="bdg-tier go">Gold</div></div>
+          <div class="bdg-name">14-Day Streak</div>
+          <div class="bdg-xp">+100 XP</div>
+        </div>
+        <div class="bdg">
+          <div class="bdg-ring pink" style="position:relative">✨<div class="bdg-tier pk">Rare</div></div>
+          <div class="bdg-name">Community First</div>
+          <div class="bdg-xp">+150 XP</div>
+        </div>
+        <div class="bdg">
+          <div class="bdg-ring lock">🔒</div>
+          <div class="bdg-name" style="color:var(--t3)">Speed Signer</div>
+          <div class="bdg-xp lk">+75 XP</div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--t3);font-weight:300;line-height:1.6">Tier expressed through border color + pill label. Gold and Rare have distinct visual weight from Silver. Locked state: desaturation not just opacity.</p>
+
+      <div class="sec-label" style="margin-top:8px">Challenge card — full size</div>
+      <div class="ch-full">
+        <div class="ch-inner">
+          <div class="ch-head">
+            <div class="ch-emoji">🖐</div>
+            <div class="ch-meta">
+              <div class="ch-tag">✨ For You</div>
+              <div class="ch-xp">+45 XP</div>
+            </div>
+          </div>
+          <div class="ch-title">Fingerspelling Sprint</div>
+          <div class="ch-desc">Signs A through E — your three most-missed signs from last week's sessions.</div>
+          <div class="ch-bar"><div style="width:60%"></div></div>
+          <div class="ch-foot"><span>3 of 5 completed</span><span>60%</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="phase-c-panel">
+
+      <div class="sec-label">Learning path card</div>
+      <div class="path-card">
+        <div class="path-top">
+          <div class="path-icon">🤟</div>
+          <div class="path-prog">
+            <div class="path-pct-ring"><div class="path-pct">45%</div></div>
+          </div>
+        </div>
+        <div class="path-body">
+          <div class="path-name">Everyday Conversations</div>
+          <div class="path-sub">12 of 26 lessons complete</div>
+          <div class="path-bar-track"><div class="path-bar-fill"></div></div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--t3);font-weight:300;line-height:1.6">Path icon in a tinted square (not a gradient). Progress shown via both circular indicator and bar — clear redundancy for accessibility. Title and subtitle use proper size contrast.</p>
+
+      <div class="sec-label" style="margin-top:8px">What changes in Phase C</div>
+      <div class="change-card" style="width:100%">
+        <h4><div class="ch-num">C</div> Shared widget changes</h4>
+        <ul>
+          <li>BadgeCard: tier pill smaller (8px), dot under icon removed</li>
+          <li>BadgeUnlockDialog: confetti colors → tier palette, not gradient</li>
+          <li>ChallengeCard: emoji replaces colored square icon throughout</li>
+          <li>LearningPathCard: icon container AppRadius.md, no gradient fill</li>
+          <li>StatCard (dashboard): convert existing equal-size to asymmetric</li>
+          <li>StreakFreeze: flat color card, icon + text layout tidied</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function show(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
 </body>
 </html>

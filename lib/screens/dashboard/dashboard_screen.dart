@@ -145,8 +145,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildHeader(context),
-                      const SizedBox(height: 20),
-                      _buildWelcomeCard(context),
+                      const SizedBox(height: 24),
+                      _buildHeroSection(context),
+                      const SizedBox(height: 16),
+                      _buildStatTiles(context),
                       const SizedBox(height: 24),
     
                       // Learning Path Card
@@ -387,7 +389,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWelcomeCard(BuildContext context) {
+  Widget _buildHeroSection(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
@@ -395,107 +397,265 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final progress = user?.levelProgress ?? 0.0;
         final xpToNext = user?.xpToNextLevel ?? 100;
         final xpForNext = user?.xpForNextLevel ?? 100;
-        final streak = user?.currentStreak ?? 0;
-        final levelTitle = _levelTitle(level);
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: AppDecorations.card(context).copyWith(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: Row(
-            children: [
-              // Level circle
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(20),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary.withAlpha(60), width: 1.5),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '$level',
-                      style: GoogleFonts.familjenGrotesk(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                        height: 1,
-                      ),
-                    ),
-                  ],
-                ),
+        final nameParts = (user?.fullName ?? '').trim().split(' ');
+        final firstName = nameParts.isNotEmpty && nameParts.first.isNotEmpty
+            ? nameParts.first
+            : 'there';
+
+        final hour = DateTime.now().hour;
+        final greeting = hour < 12
+            ? 'Good morning'
+            : (hour < 17 ? 'Good afternoon' : 'Good evening');
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              greeting.toUpperCase(),
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.1,
+                color: context.textMuted,
               ),
-              const SizedBox(width: 14),
-              // XP progress
-              Expanded(
-                child: Column(
+            ),
+            const SizedBox(height: 1),
+            Text(
+              '$firstName 👋',
+              style: GoogleFonts.familjenGrotesk(
+                fontSize: 19,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.4,
+                color: context.textPrimary,
+                height: 1.1,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      levelTitle,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 5,
-                        backgroundColor: context.borderColor,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      'LEVEL',
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.1,
+                        color: context.textMuted,
+                        height: 1,
                       ),
                     ),
-                    const SizedBox(height: 5),
                     Text(
-                      '${_formatNumber(xpForNext - xpToNext)} / ${_formatNumber(xpForNext)} XP',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: context.textMuted,
+                      '$level',
+                      style: GoogleFonts.familjenGrotesk(
+                        fontSize: 50,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -2.0,
+                        color: AppColors.primary,
+                        height: 0.88,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 16),
-              // Streak pill
-              Column(
-                children: [
-                  const Text('🔥', style: TextStyle(fontSize: 22)),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$streak',
-                    style: GoogleFonts.familjenGrotesk(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFFF59E0B),
-                      height: 1,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${_formatNumber(xpForNext - xpToNext)} ',
+                                style: TextStyle(
+                                  color: context.textSecondary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '/ ${_formatNumber(xpForNext)} XP',
+                                style: TextStyle(
+                                  color: context.textMuted,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 4,
+                            backgroundColor: context.bgElevated,
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${_formatNumber(xpToNext)} XP to Level ${level + 1}',
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1);
       },
     );
   }
 
-  String _levelTitle(int level) {
-    const titles = [
-      'Newcomer', 'Beginner', 'Explorer', 'Practitioner',
-      'Communicator', 'Fluent Signer', 'Rising Signer',
-      'Advanced Signer', 'Expert', 'Master Signer',
-    ];
-    if (level <= 0) return 'Newcomer';
-    if (level <= titles.length) return titles[level - 1];
-    return 'Grand Master';
+  Widget _buildStatTiles(BuildContext context) {
+    return Consumer2<AuthProvider, ChallengeProvider>(
+      builder: (context, authProvider, challengeProvider, child) {
+        final user = authProvider.currentUser;
+        final streak = user?.currentStreak ?? 0;
+
+        final challenges = challengeProvider.dailyChallenges;
+        final total = challenges.length;
+        final completed = challenges.where((c) => c.isCompleted).length;
+        final pct = total > 0 ? (completed / total * 100).round() : 0;
+        final dotCount = total.clamp(0, 7);
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Streak tile — narrower (20 of 47 parts)
+            Expanded(
+              flex: 20,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: context.bgCard,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('🔥', style: TextStyle(fontSize: 16)),
+                    const SizedBox(height: 5),
+                    Text(
+                      '$streak',
+                      style: GoogleFonts.familjenGrotesk(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.8,
+                        color: context.textPrimary,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Day streak',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: context.textMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Goals tile — wider (27 of 47 parts ≈ 1.35×)
+            Expanded(
+              flex: 27,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: context.bgCard,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '$completed / $total',
+                              style: GoogleFonts.familjenGrotesk(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                                color: context.textPrimary,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "Today's goals",
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: context.textMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: context.success.withAlpha(26),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            '$pct%',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w700,
+                              color: context.success,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (dotCount > 0) ...[
+                      const SizedBox(height: 9),
+                      Row(
+                        children: List.generate(
+                          dotCount,
+                          (i) => Expanded(
+                            child: Container(
+                              height: 4,
+                              margin: EdgeInsets.only(right: i < dotCount - 1 ? 4 : 0),
+                              decoration: BoxDecoration(
+                                color: i < completed ? context.success : context.bgElevated,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1);
+      },
+    );
   }
 
   String _formatNumber(int number) {
@@ -1018,11 +1178,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Consumer2<AuthProvider, ChallengeProvider>(
       builder: (context, authProvider, challengeProvider, child) {
         final dailyChallenges = challengeProvider.dailyChallenges;
-        final totalChallenges = dailyChallenges.length;
-        final completedChallenges = dailyChallenges.where((c) => c.isCompleted).length;
-        final percentage = totalChallenges > 0 
-            ? (completedChallenges / totalChallenges).clamp(0.0, 1.0) 
-            : 0.0;
 
         if (challengeProvider.isLoading) {
           return Column(
@@ -1046,7 +1201,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             SectionHeader(
               title: 'Daily Challenges',
-              emoji: '🎯',
+              dotColor: AppColors.accent,
               trailing: TextButton(
                 onPressed: () {
                   HapticService.buttonTap();
@@ -1056,80 +1211,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Text('View All', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
               ),
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: AppDecorations.card(context).copyWith(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Today's Progress",
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: context.textSecondary,
-                            ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: completedChallenges == totalChallenges && totalChallenges > 0
-                              ? context.success.withAlpha(26)
-                              : AppColors.primary.withAlpha(26),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '$completedChallenges/$totalChallenges completed',
-                          style: TextStyle(
-                            color: completedChallenges == totalChallenges && totalChallenges > 0
-                                ? context.success
-                                : AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+            const SizedBox(height: 12),
+            if (dailyChallenges.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: context.bgCard,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Center(
+                  child: Text(
+                    'No daily challenges available',
+                    style: TextStyle(color: context.textMuted, fontSize: 13),
                   ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: percentage,
-                      minHeight: 8,
-                      backgroundColor: context.bgElevated,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        completedChallenges == totalChallenges && totalChallenges > 0
-                            ? context.success
-                            : AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  if (dailyChallenges.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Text(
-                        'No daily challenges available',
-                        style: TextStyle(color: context.textMuted),
-                      ),
-                    )
-                  else
-                    ...dailyChallenges.map((challenge) {
-                      return _buildChallengeItem(
-                        context,
-                        challenge: challenge,
-                      );
-                    }),
-                ],
-              ),
-            ),
+                ),
+              )
+            else
+              ...dailyChallenges.map((challenge) {
+                return _buildChallengeItem(context, challenge: challenge);
+              }),
           ],
         ).animate().fadeIn(delay: 500.ms);
       },
@@ -1141,88 +1242,124 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required ChallengeModel challenge,
   }) {
     final isCompleted = challenge.isCompleted;
-    
+    final tagColor = isCompleted ? context.success : challenge.typeColor;
+    final tagLabel = isCompleted
+        ? '✓ Done'
+        : (challenge.isPersonalized
+            ? '✨ For You'
+            : '${challenge.emoji} ${challenge.typeLabel}');
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: isCompleted 
-                  ? context.success.withAlpha(30) 
-                  : challenge.typeColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                challenge.emoji,
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: context.bgCard,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: context.borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tag (top-left) + XP (top-right)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  challenge.title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isCompleted ? context.textMuted : context.textPrimary,
-                        decoration: isCompleted ? TextDecoration.lineThrough : null,
-                        fontWeight: FontWeight.w600,
-                      ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: tagColor.withAlpha(26),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    tagLabel,
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                      color: tagColor,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      '${challenge.currentValue}/${challenge.targetValue}',
-                      style: TextStyle(
-                        color: context.textMuted,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: challenge.progress,
-                          minHeight: 4,
-                          backgroundColor: context.bgElevated,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            isCompleted ? context.success : challenge.typeColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                Text(
+                  '+${challenge.xpReward} XP',
+                  style: GoogleFonts.familjenGrotesk(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isCompleted ? context.success : const Color(0xFF10B981),
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: isCompleted 
-                  ? context.success.withAlpha(26) 
-                  : AppColors.primary.withAlpha(26),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '+${challenge.xpReward} XP',
-              style: TextStyle(
-                color: isCompleted ? context.success : AppColors.primary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 7),
+            // Title
+            Text(
+              challenge.title,
+              style: GoogleFonts.familjenGrotesk(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.1,
+                color: isCompleted ? context.textMuted : context.textPrimary,
+                decoration: isCompleted ? TextDecoration.lineThrough : null,
               ),
             ),
-          ),
-        ],
+            if (!isCompleted && challenge.description.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                challenge.description,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: context.textMuted,
+                  fontWeight: FontWeight.w300,
+                  height: 1.4,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            const SizedBox(height: 8),
+            // Progress bar — 3px
+            ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: challenge.progress,
+                minHeight: 3,
+                backgroundColor: context.bgElevated,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isCompleted ? context.success : challenge.typeColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 7),
+            // Footer: count + continue/begin button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${challenge.currentValue} of ${challenge.targetValue} completed',
+                  style: TextStyle(fontSize: 9, color: context.textMuted),
+                ),
+                if (!isCompleted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withAlpha(26),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.primary.withAlpha(80)),
+                    ),
+                    child: Text(
+                      challenge.progress > 0 ? 'Continue →' : 'Begin →',
+                      style: GoogleFonts.familjenGrotesk(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
