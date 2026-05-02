@@ -103,8 +103,6 @@ class _ChallengesScreenState extends State<ChallengesScreen>
             ),
           ),
           const SizedBox(width: 12),
-          const Text('🎯', style: TextStyle(fontSize: 24)),
-          const SizedBox(width: 8),
           Text(
             'Challenges',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -405,21 +403,7 @@ class _ChallengesScreenState extends State<ChallengesScreen>
         children: [
           Row(
             children: [
-              // Emoji Icon
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: challenge.typeColor.withAlpha(30),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Text(
-                    challenge.emoji,
-                    style: const TextStyle(fontSize: 28),
-                  ),
-                ),
-              ),
+              Text(challenge.emoji, style: const TextStyle(fontSize: 32)),
               const SizedBox(width: 14),
               // Info
               Expanded(

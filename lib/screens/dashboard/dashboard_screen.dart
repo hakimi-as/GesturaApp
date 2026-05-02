@@ -777,16 +777,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconBgColor.withAlpha(30),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: iconBgColor, size: 22),
-            ),
-            const SizedBox(height: 14),
+            Icon(icon, color: iconBgColor, size: 24),
+            const SizedBox(height: 12),
             Text(
               title,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -831,16 +823,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(30),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Center(child: Text('🏆', style: TextStyle(fontSize: 22))),
-                      ),
-                      const SizedBox(height: 12),
+                      const Text('🏆', style: TextStyle(fontSize: 26)),
+                      const SizedBox(height: 10),
                       Text(
                         'Leaderboard',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
@@ -874,15 +858,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Row(
                         children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withAlpha(30),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Center(child: Text('👥', style: TextStyle(fontSize: 22))),
-                          ),
+                          const Text('👥', style: TextStyle(fontSize: 26)),
                           const Spacer(),
                           FutureBuilder<int>(
                             future: FriendService.getPendingRequestCount(
@@ -1120,18 +1096,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: iconBgColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 20)),
-            ),
+          SizedBox(
+            width: 28,
+            child: Text(icon, style: const TextStyle(fontSize: 20), textAlign: TextAlign.center),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

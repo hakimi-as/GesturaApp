@@ -229,10 +229,130 @@
     .done-banner span { font-size: 12px; color: var(--grn); font-weight: 400; }
     .done-banner strong { font-weight: 600; }
 
+    /* ── Phase D ── */
+    .pd-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .pd-panel { padding: 36px 32px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .pd-panel.left  { background: var(--bg1); border-right: 1px solid var(--bdr); }
+    .pd-panel.right { background: var(--bg); }
+
+    /* BEFORE: icon-box monoculture */
+    .pd-b-screen { background: var(--bg1); }
+    .pd-b-appbar { padding: 14px 16px 10px; }
+    .pd-b-appbar-title { font-family: var(--fd); font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+
+    /* BEFORE: emoji section header */
+    .pd-b-sec { padding: 0 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+    .pd-b-sec-title { font-size: 14px; font-weight: 700; color: var(--t1); }
+    .pd-b-sec-action { font-size: 11px; color: var(--pri); }
+
+    /* BEFORE: icon-in-box list items */
+    .pd-b-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+    .pd-b-item { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+    .pd-b-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+    .pd-b-icon.a { background: var(--pri-d); }
+    .pd-b-icon.b { background: var(--pk-d); }
+    .pd-b-icon.c { background: var(--grn-d); }
+    .pd-b-icon.d { background: var(--amb-d); }
+    .pd-b-text { flex: 1; min-width: 0; }
+    .pd-b-title { font-family: var(--fd); font-size: 12px; font-weight: 600; color: var(--t1); }
+    .pd-b-sub { font-size: 10px; color: var(--t3); margin-top: 1px; }
+    .pd-b-arrow { font-size: 12px; color: var(--t3); }
+
+    /* AFTER: icon system — 4 variants */
+    .pd-a-screen { background: var(--bg1); }
+    .pd-a-appbar { padding: 14px 16px 10px; }
+    .pd-a-appbar-title { font-family: var(--fd); font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+
+    /* AFTER variant A: bare header — colored glyph, no box */
+    .pd-a-sec { padding: 0 16px 6px; display: flex; align-items: center; justify-content: space-between; }
+    .pd-a-sec-left { display: flex; align-items: center; gap: 6px; }
+    .pd-a-sec-glyph { font-size: 13px; line-height: 1; color: var(--pri); }
+    .pd-a-sec-glyph.pk { color: var(--pk); }
+    .pd-a-sec-glyph.grn { color: var(--grn); }
+    .pd-a-sec-title { font-family: var(--fd); font-size: 13px; font-weight: 700; letter-spacing: -0.01em; color: var(--t1); }
+    .pd-a-sec-action { font-size: 10px; font-weight: 500; color: var(--pri); }
+
+    /* AFTER: list items with 3 sub-variants */
+    .pd-a-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+
+    /* Sub-variant: inline (no box, icon + text side by side) */
+    .pd-a-item-inline { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 14px; padding: 11px 12px; display: flex; align-items: center; gap: 9px; }
+    .pd-a-ic-inline { font-size: 17px; line-height: 1; width: 20px; text-align: center; flex-shrink: 0; }
+    .pd-a-text { flex: 1; min-width: 0; }
+    .pd-a-title { font-family: var(--fd); font-size: 12px; font-weight: 600; color: var(--t1); }
+    .pd-a-sub { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+    /* Sub-variant: pill tag inside item */
+    .pd-a-item-pill { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 14px; padding: 11px 12px; display: flex; align-items: center; gap: 9px; }
+    .pd-a-pill { display: inline-flex; align-items: center; gap: 4px; background: var(--grn-d); border: 1px solid rgba(16,185,129,0.22); border-radius: 20px; padding: 2px 8px 2px 5px; flex-shrink: 0; }
+    .pd-a-pill-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--grn); }
+    .pd-a-pill-text { font-size: 9px; font-weight: 700; color: var(--grn); letter-spacing: 0.04em; }
+    .pd-a-pill.pk { background: var(--pk-d); border-color: rgba(236,72,153,0.22); }
+    .pd-a-pill.pk .pd-a-pill-dot { background: var(--pk); }
+    .pd-a-pill.pk .pd-a-pill-text { color: var(--pk); }
+    .pd-a-pill.amb { background: var(--amb-d); border-color: rgba(245,158,11,0.22); }
+    .pd-a-pill.amb .pd-a-pill-dot { background: var(--amb); }
+    .pd-a-pill.amb .pd-a-pill-text { color: var(--amb); }
+
+    /* Sub-variant: solid circle (primary CTA context only) */
+    .pd-a-item-solid { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 14px; padding: 11px 12px; display: flex; align-items: center; gap: 9px; }
+    .pd-a-ic-solid { width: 30px; height: 30px; border-radius: 50%; background: var(--pri); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+
+    .pd-a-arrow { font-size: 12px; color: var(--t3); }
+    .pd-a-prog { font-size: 9px; color: var(--grn); font-weight: 500; }
+
+    /* Settings row BEFORE */
+    .pd-b-settings { padding: 0 12px; display: flex; flex-direction: column; gap: 1px; margin-bottom: 16px; }
+    .pd-b-setting { background: var(--bg2); padding: 10px 12px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--bdr); }
+    .pd-b-setting:first-child { border-radius: 14px 14px 0 0; }
+    .pd-b-setting:last-child  { border-radius: 0 0 14px 14px; border-top: none; }
+    .pd-b-setting:first-child:last-child { border-radius: 14px; }
+    .pd-b-set-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .pd-b-set-icon.a { background: var(--pri-d); }
+    .pd-b-set-icon.b { background: var(--pk-d); }
+    .pd-b-set-icon.c { background: var(--grn-d); }
+    .pd-b-set-label { flex: 1; font-size: 12px; font-weight: 500; color: var(--t1); }
+    .pd-b-set-val { font-size: 10px; color: var(--t3); }
+
+    /* Settings row AFTER */
+    .pd-a-settings { padding: 0 12px; display: flex; flex-direction: column; gap: 1px; margin-bottom: 16px; }
+    .pd-a-setting { background: var(--bg2); padding: 11px 12px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--bdr); }
+    .pd-a-setting:first-child { border-radius: 14px 14px 0 0; }
+    .pd-a-setting:last-child  { border-radius: 0 0 14px 14px; border-top: none; }
+    .pd-a-set-lead { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; background: var(--t3); }
+    .pd-a-set-lead.pri { background: var(--pri); }
+    .pd-a-set-lead.pk  { background: var(--pk); }
+    .pd-a-set-lead.grn { background: var(--grn); }
+    .pd-a-set-label { flex: 1; font-size: 12px; font-weight: 500; color: var(--t1); }
+    .pd-a-set-val { font-size: 10px; color: var(--t3); }
+    .pd-a-set-chip { font-size: 9px; font-weight: 600; color: var(--pri); background: var(--pri-d); border-radius: 5px; padding: 2px 7px; }
+
+    /* Variant reference grid */
+    .pd-variants { padding: 32px 40px; border-top: 1px solid var(--bdr); }
+    .pd-variants h3 { font-family: var(--fd); font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); margin-bottom: 20px; }
+    .pd-var-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .pd-var-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rmd); padding: 18px; }
+    .pd-var-card h4 { font-family: var(--fd); font-size: 12px; font-weight: 700; color: var(--pri); letter-spacing: 0.04em; margin-bottom: 4px; text-transform: uppercase; font-size: 9px; }
+    .pd-var-card .pd-vc-name { font-family: var(--fd); font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 10px; letter-spacing: -0.01em; }
+    .pd-var-card p { font-size: 11px; color: var(--t2); font-weight: 300; line-height: 1.5; margin-bottom: 12px; }
+    .pd-vc-use { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--t3); border-top: 1px solid var(--bdr); padding-top: 10px; margin-top: 0; }
+    .pd-vc-use span { color: var(--grn); }
+
+    /* Annotation labels under phones */
+    .pd-ann { display: flex; flex-direction: column; gap: 6px; width: 288px; }
+    .pd-ann-item { display: flex; gap: 7px; align-items: flex-start; }
+    .pd-ann-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; background: var(--pri); }
+    .pd-ann-dot.red { background: #F87171; }
+    .pd-ann-dot.grn { background: var(--grn); }
+    .pd-ann p { font-size: 11px; color: var(--t2); font-weight: 300; line-height: 1.4; }
+    .pd-ann strong { color: var(--t1); font-weight: 500; }
+
     @media (max-width: 860px) {
       .comparison { grid-template-columns: 1fr; }
       .changes { grid-template-columns: 1fr; }
       .phase-c-grid { grid-template-columns: 1fr; }
+      .pd-comparison { grid-template-columns: 1fr; }
+      .pd-var-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -242,6 +362,7 @@
   <div class="tab active" onclick="show('phase-a')">Phase A — Foundation ✓</div>
   <div class="tab" onclick="show('phase-b')">Phase B — Dashboard ✓</div>
   <div class="tab" onclick="show('phase-c')">Phase C — Cards & Widgets ✓</div>
+  <div class="tab" onclick="show('phase-d')">Phase D — Icon System</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ PHASE A -->
@@ -602,6 +723,297 @@
         </ul>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PHASE D -->
+<div class="section" id="phase-d">
+  <div class="ph">
+    <div class="eyebrow">Phase D · Preview</div>
+    <h1>Icon System Overhaul</h1>
+    <p>Replace the single rounded-square-with-tint pattern (62+ instances, #1 AI tell) with a 4-variant system matched to context. Every icon slot earns its presentation instead of defaulting to the same box.</p>
+  </div>
+
+  <div class="pd-comparison">
+
+    <!-- ─── BEFORE ─── -->
+    <div class="pd-panel left">
+      <div class="panel-label before">Before — Icon-Box Monoculture</div>
+
+      <div class="phone">
+        <div class="screen pd-b-screen">
+
+          <div class="pd-b-appbar">
+            <div style="font-family:var(--fd);font-size:16px;font-weight:700;letter-spacing:-0.02em;">Learn</div>
+          </div>
+
+          <!-- Emoji section header -->
+          <div class="pd-b-sec" style="margin-top:4px;">
+            <div class="pd-b-sec-title">📚 Lessons</div>
+            <div class="pd-b-sec-action">See all</div>
+          </div>
+
+          <!-- Icon-box list — every item identical -->
+          <div class="pd-b-list">
+            <div class="pd-b-item">
+              <div class="pd-b-icon a">🤟</div>
+              <div class="pd-b-text">
+                <div class="pd-b-title">Greetings</div>
+                <div class="pd-b-sub">12 signs · 4 lessons</div>
+              </div>
+              <div class="pd-b-arrow">›</div>
+            </div>
+            <div class="pd-b-item">
+              <div class="pd-b-icon b">🔢</div>
+              <div class="pd-b-text">
+                <div class="pd-b-title">Numbers 1–20</div>
+                <div class="pd-b-sub">20 signs · 6 lessons</div>
+              </div>
+              <div class="pd-b-arrow">›</div>
+            </div>
+            <div class="pd-b-item">
+              <div class="pd-b-icon c">👨‍👩‍👧</div>
+              <div class="pd-b-text">
+                <div class="pd-b-title">Family</div>
+                <div class="pd-b-sub">18 signs · 5 lessons</div>
+              </div>
+              <div class="pd-b-arrow">›</div>
+            </div>
+            <div class="pd-b-item">
+              <div class="pd-b-icon d">🍎</div>
+              <div class="pd-b-text">
+                <div class="pd-b-title">Food & Drink</div>
+                <div class="pd-b-sub">24 signs · 7 lessons</div>
+              </div>
+              <div class="pd-b-arrow">›</div>
+            </div>
+          </div>
+
+          <!-- Emoji settings section -->
+          <div class="pd-b-sec">
+            <div class="pd-b-sec-title">⚙️ Settings</div>
+          </div>
+          <div class="pd-b-settings">
+            <div class="pd-b-setting">
+              <div class="pd-b-set-icon a">🔔</div>
+              <div class="pd-b-set-label">Notifications</div>
+              <div class="pd-b-set-val">On</div>
+            </div>
+            <div class="pd-b-setting" style="border-top:none;">
+              <div class="pd-b-set-icon b">🎨</div>
+              <div class="pd-b-set-label">Appearance</div>
+              <div class="pd-b-set-val">Dark</div>
+            </div>
+            <div class="pd-b-setting" style="border-top:none;">
+              <div class="pd-b-set-icon c">🌐</div>
+              <div class="pd-b-set-label">Language</div>
+              <div class="pd-b-set-val">English</div>
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Annotations -->
+      <div class="pd-ann">
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot red"></div>
+          <p><strong>Same container everywhere</strong> — 40px rounded square with .withAlpha(30) tint. Zero variation across 62+ instances.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot red"></div>
+          <p><strong>Emoji section headers</strong> — "📚 Lessons", "⚙️ Settings" on every screen. Screen reader announces full emoji name.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot red"></div>
+          <p><strong>No hierarchy signal</strong> — icon boxes on list items, section headers, settings rows, and primary CTAs all look identical.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── AFTER ─── -->
+    <div class="pd-panel right">
+      <div class="panel-label after">After — 4-Variant System</div>
+
+      <div class="phone">
+        <div class="screen pd-a-screen">
+
+          <div class="pd-a-appbar">
+            <div style="font-family:var(--fd);font-size:16px;font-weight:700;letter-spacing:-0.02em;">Learn</div>
+          </div>
+
+          <!-- VARIANT A: Bare header — small glyph, no box -->
+          <div class="pd-a-sec" style="margin-top:4px;">
+            <div class="pd-a-sec-left">
+              <span class="pd-a-sec-glyph">◆</span>
+              <div class="pd-a-sec-title">Lessons</div>
+            </div>
+            <div class="pd-a-sec-action">See all</div>
+          </div>
+
+          <div class="pd-a-list">
+            <!-- VARIANT B: Inline — bare icon, no container, progress hint -->
+            <div class="pd-a-item-inline">
+              <span class="pd-a-ic-inline">🤟</span>
+              <div class="pd-a-text">
+                <div class="pd-a-title">Greetings</div>
+                <div class="pd-a-sub">12 signs · 4 lessons</div>
+              </div>
+              <span class="pd-a-prog">83%</span>
+              <span class="pd-a-arrow">›</span>
+            </div>
+
+            <!-- VARIANT C: Pill tag — category status pill + inline text -->
+            <div class="pd-a-item-pill">
+              <span class="pd-a-ic-inline">🔢</span>
+              <div class="pd-a-text">
+                <div class="pd-a-title">Numbers 1–20</div>
+                <div class="pd-a-sub">20 signs · 6 lessons</div>
+              </div>
+              <span class="pd-a-pill pk">
+                <span class="pd-a-pill-dot"></span>
+                <span class="pd-a-pill-text">New</span>
+              </span>
+              <span class="pd-a-arrow">›</span>
+            </div>
+
+            <div class="pd-a-item-inline">
+              <span class="pd-a-ic-inline">👨‍👩‍👧</span>
+              <div class="pd-a-text">
+                <div class="pd-a-title">Family</div>
+                <div class="pd-a-sub">18 signs · 5 lessons</div>
+              </div>
+              <span class="pd-a-prog">40%</span>
+              <span class="pd-a-arrow">›</span>
+            </div>
+
+            <!-- VARIANT D: Solid circle — primary action (locked/CTA) only -->
+            <div class="pd-a-item-solid">
+              <div class="pd-a-ic-solid">🍎</div>
+              <div class="pd-a-text">
+                <div class="pd-a-title">Food & Drink</div>
+                <div class="pd-a-sub" style="color:var(--pri);font-weight:500;">Start this path</div>
+              </div>
+              <span class="pd-a-arrow" style="color:var(--pri);">›</span>
+            </div>
+          </div>
+
+          <!-- VARIANT A: Bare header in settings context -->
+          <div class="pd-a-sec">
+            <div class="pd-a-sec-left">
+              <span class="pd-a-sec-glyph" style="color:var(--t3);">◇</span>
+              <div class="pd-a-sec-title">Preferences</div>
+            </div>
+          </div>
+
+          <!-- Settings with minimal lead dot (no icon box at all) -->
+          <div class="pd-a-settings">
+            <div class="pd-a-setting">
+              <div class="pd-a-set-lead pri"></div>
+              <div class="pd-a-set-label">Notifications</div>
+              <div class="pd-a-set-chip">On</div>
+            </div>
+            <div class="pd-a-setting" style="border-top:none;">
+              <div class="pd-a-set-lead pk"></div>
+              <div class="pd-a-set-label">Appearance</div>
+              <div class="pd-a-set-val">Dark</div>
+            </div>
+            <div class="pd-a-setting" style="border-top:none;">
+              <div class="pd-a-set-lead grn"></div>
+              <div class="pd-a-set-label">Language</div>
+              <div class="pd-a-set-val">English</div>
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Annotations -->
+      <div class="pd-ann">
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot grn"></div>
+          <p><strong>Bare header glyph</strong> — a small colored ◆ replaces emoji. Semantic, accessible, visually lighter.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot grn"></div>
+          <p><strong>Inline + Pill variants</strong> — list items breathe without boxes. Status pills (New, In Progress) surface contextual meaning instead of decoration.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot grn"></div>
+          <p><strong>Solid only on primary</strong> — solid fill circle reserved for the single "Start this path" CTA. Scarcity restores visual weight.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot grn"></div>
+          <p><strong>Settings: lead dot only</strong> — 4px colored dot signals category without the visual weight of a 30px icon box.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Variant reference ─── -->
+  <div class="pd-variants">
+    <h3>The 4 Icon Variants — When to Use Each</h3>
+    <div class="pd-var-grid">
+
+      <div class="pd-var-card">
+        <div class="pd-var-card h4">Variant A</div>
+        <div class="pd-vc-name">Bare Glyph</div>
+        <p>A small monochrome symbol (◆ ◇ ▸) or icon at 12–14px, no container. Uses the section's accent color at full opacity.</p>
+        <div class="pd-vc-use">Use for: <span>Section headers, page titles, nav labels</span></div>
+      </div>
+
+      <div class="pd-var-card">
+        <div class="pd-var-card h4">Variant B</div>
+        <div class="pd-vc-name">Inline Icon</div>
+        <p>Emoji or icon at 16–18px placed inline with text, no container. Let the icon's natural color carry the weight.</p>
+        <div class="pd-vc-use">Use for: <span>Learn topic rows, challenge list items, profile rows</span></div>
+      </div>
+
+      <div class="pd-var-card">
+        <div class="pd-var-card h4">Variant C</div>
+        <div class="pd-vc-name">Status Pill</div>
+        <p>Horizontal pill with a 5px dot + label. Tinted background, colored text, no box. Communicates state (New, Active, Done).</p>
+        <div class="pd-vc-use">Use for: <span>Category tags, progress status, challenge type labels</span></div>
+      </div>
+
+      <div class="pd-var-card">
+        <div class="pd-var-card h4">Variant D</div>
+        <div class="pd-vc-name">Solid Circle</div>
+        <p>Solid filled circle at 28–32px. Used sparingly — one per section max. Signals the primary recommended action.</p>
+        <div class="pd-vc-use">Use for: <span>Primary CTA items only (Start, Resume, Featured)</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── What changes in code ─── -->
+  <div class="changes" style="padding-top:24px; padding-bottom:32px;">
+    <div class="change-card">
+      <h4><div class="ch-num">1</div> SectionHeader widget</h4>
+      <ul>
+        <li>Remove emoji from title string everywhere</li>
+        <li>Replace with a small colored Icon widget (16px, accent color)</li>
+        <li>Add to design_system.dart as the canonical pattern</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">2</div> Learn &amp; topic list rows</h4>
+      <ul>
+        <li>Remove 40–48px rounded-square containers</li>
+        <li>Inline emoji/icon at 18px with no background</li>
+        <li>Add StatusPill widget for New/Active/Completed state</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">3</div> Settings rows</h4>
+      <ul>
+        <li>Remove icon boxes entirely</li>
+        <li>Replace with 4px colored lead dot (category color)</li>
+        <li>Value chips replace plain text for toggled settings</li>
+      </ul>
     </div>
   </div>
 </div>

@@ -447,20 +447,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: context.borderColor),
-            ),
-            child: Icon(
-              Icons.settings,
-              color: context.textPrimary,
-            ),
-          ),
-          const SizedBox(width: 16),
+          Icon(Icons.settings, color: context.textPrimary, size: 22),
+          const SizedBox(width: 12),
           Text(
             AppLocalizations.of(context).settingsTitle,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -740,22 +728,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Column(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 20)),
-            ),
-          ),
-          const SizedBox(height: 10),
+          Text(emoji, style: const TextStyle(fontSize: 22)),
+          const SizedBox(height: 8),
           Text(
             value,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: color,
                 ),
           ),
           const SizedBox(height: 2),
@@ -1191,19 +1170,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return TapScale(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconColor.withAlpha(30),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: iconColor.withAlpha(50)),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
+            Icon(icon, color: iconColor, size: 20),
             const SizedBox(width: 14),
             Expanded(
               child: Text(

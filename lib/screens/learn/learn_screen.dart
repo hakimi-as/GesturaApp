@@ -182,20 +182,8 @@ class _LearnScreenState extends State<LearnScreen> {
               ),
               title: Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(25),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.menu_book,
-                      color: AppColors.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
+                  Icon(Icons.menu_book, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 10),
                   Text(AppLocalizations.of(context).learnTitle),
                 ],
               ),
@@ -536,7 +524,7 @@ class _LearnScreenState extends State<LearnScreen> {
           _buildLearningPathsCard(),
 
           // Section Title
-          _buildSectionTitle('📚', 'Lesson Categories'),
+          _buildSectionTitle('Lesson Categories'),
 
           // Categories Grid
           if (_categories.isEmpty)
@@ -578,10 +566,10 @@ class _LearnScreenState extends State<LearnScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String emoji, String title) {
+  Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-      child: SectionHeader(title: title, emoji: emoji),
+      child: SectionHeader(title: title),
     ).animate().fadeIn(delay: 300.ms);
   }
 
@@ -833,40 +821,27 @@ class _LearnScreenState extends State<LearnScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Text('🎯', style: TextStyle(fontSize: 18)),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Daily Challenges',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+              SectionHeader(
+                title: 'Daily Challenges',
+                dotColor: AppColors.accent,
+                trailing: TapScale(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ChallengesScreen(),
                       ),
-                    ],
-                  ),
-                  TapScale(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChallengesScreen(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'View All',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    );
+                  },
+                  child: Text(
+                    'View All',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ],
+                ),
               ),
               const SizedBox(height: 12),
               // Progress bar
@@ -995,19 +970,8 @@ class _LearnScreenState extends State<LearnScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.success.withAlpha(25),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.success.withAlpha(60)),
-              ),
-              child: const Center(
-                child: Text('🎯', style: TextStyle(fontSize: 28)),
-              ),
-            ),
-            const SizedBox(width: 16),
+            const Text('🎯', style: TextStyle(fontSize: 28)),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1026,19 +990,7 @@ class _LearnScreenState extends State<LearnScreen> {
                 ],
               ),
             ),
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: context.bgElevated,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.arrow_forward_ios,
-                color: context.textMuted,
-                size: 16,
-              ),
-            ),
+            Icon(Icons.arrow_forward_ios, color: context.textMuted, size: 16),
           ],
         ),
       ),
@@ -1052,21 +1004,12 @@ class _LearnScreenState extends State<LearnScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          // Emoji icon
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isCompleted 
-                  ? AppColors.success.withAlpha(30) 
-                  : challenge.typeColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                challenge.emoji,
-                style: const TextStyle(fontSize: 16),
-              ),
+          SizedBox(
+            width: 24,
+            child: Text(
+              challenge.emoji,
+              style: const TextStyle(fontSize: 18),
+              textAlign: TextAlign.center,
             ),
           ),
           const SizedBox(width: 12),
@@ -1154,16 +1097,7 @@ class _LearnScreenState extends State<LearnScreen> {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withAlpha(25),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.accent.withAlpha(60)),
-                  ),
-                  child: const Center(child: Text('🎯', style: TextStyle(fontSize: 22))),
-                ),
+                const Text('🎯', style: TextStyle(fontSize: 28)),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -1188,7 +1122,7 @@ class _LearnScreenState extends State<LearnScreen> {
           ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
 
           // Section Title
-          _buildSectionTitle('📝', AppLocalizations.of(context).chooseQuizType),
+          _buildSectionTitle(AppLocalizations.of(context).chooseQuizType),
 
           // Quiz Types Grid
           Padding(
@@ -1276,18 +1210,8 @@ class _LearnScreenState extends State<LearnScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: iconBgColor.withAlpha(30),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: Text(icon, style: const TextStyle(fontSize: 24)),
-              ),
-            ),
-            const SizedBox(height: 12),
+            Text(icon, style: const TextStyle(fontSize: 26)),
+            const SizedBox(height: 10),
             Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1478,18 +1402,7 @@ class _LearnScreenState extends State<LearnScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Text('📅', style: TextStyle(fontSize: 18)),
-                        const SizedBox(width: 8),
-                        Text(
-                          _getMonthYearString(),
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ],
-                    ),
+                    SectionHeader(title: _getMonthYearString()),
                     const SizedBox(height: 20),
                     _buildCalendar(),
                   ],
@@ -1520,22 +1433,13 @@ class _LearnScreenState extends State<LearnScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: iconBgColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 22)),
-            ),
-          ),
-          const SizedBox(height: 12),
+          Text(icon, style: const TextStyle(fontSize: 26)),
+          const SizedBox(height: 8),
           Text(
             value,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: iconBgColor,
                 ),
           ),
           const SizedBox(height: 2),
@@ -1671,16 +1575,7 @@ class _LearnScreenState extends State<LearnScreen> {
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withAlpha(25),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFF59E0B).withAlpha(60)),
-                      ),
-                      child: const Center(child: Text('🏆', style: TextStyle(fontSize: 22))),
-                    ),
+                    const Text('🏆', style: TextStyle(fontSize: 28)),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -1732,18 +1627,7 @@ class _LearnScreenState extends State<LearnScreen> {
               if (unlockedBadges.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                  child: Row(
-                    children: [
-                      const Text('⭐', style: TextStyle(fontSize: 18)),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Earned',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ],
-                  ),
+                  child: SectionHeader(title: 'Earned', dotColor: AppColors.success),
                 ),
 
                 // Earned badges
@@ -1753,18 +1637,7 @@ class _LearnScreenState extends State<LearnScreen> {
               // Locked Section
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                child: Row(
-                  children: [
-                    const Text('🔒', style: TextStyle(fontSize: 18)),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Locked',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ],
-                ),
+                child: SectionHeader(title: 'Locked'),
               ),
 
               // Locked badges (show first 5)
@@ -1823,24 +1696,29 @@ class _LearnScreenState extends State<LearnScreen> {
       ),
       child: Row(
         children: [
-          // Icon
           Container(
-            width: 50,
-            height: 50,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-              color: isEarned
-                  ? badge.tierColor.withAlpha(30)
-                  : context.bgElevated,
-              borderRadius: BorderRadius.circular(14),
+              shape: BoxShape.circle,
+              color: isEarned ? badge.tierColor.withAlpha(25) : context.bgElevated,
+              border: Border.all(
+                color: isEarned ? badge.tierColor : context.borderColor,
+                width: isEarned ? 1.5 : 1,
+              ),
             ),
             child: Center(
-              child: Text(
-                badge.icon,
-                style: TextStyle(
-                  fontSize: 24,
-                  color: isEarned ? null : Colors.grey,
-                ),
-              ),
+              child: isEarned
+                  ? Text(badge.icon, style: const TextStyle(fontSize: 20))
+                  : ColorFiltered(
+                      colorFilter: const ColorFilter.matrix([
+                        0.2126, 0.7152, 0.0722, 0, 0,
+                        0.2126, 0.7152, 0.0722, 0, 0,
+                        0.2126, 0.7152, 0.0722, 0, 0,
+                        0,      0,      0,      0.45, 0,
+                      ]),
+                      child: Text(badge.icon, style: const TextStyle(fontSize: 20)),
+                    ),
             ),
           ),
           const SizedBox(width: 14),
