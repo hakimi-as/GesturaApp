@@ -874,16 +874,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(20),
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primary.withAlpha(60)),
-            ),
-            child: const Center(child: Text('⭐', style: TextStyle(fontSize: 26))),
-          ),
+          const Text('⭐', style: TextStyle(fontSize: 30)),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
