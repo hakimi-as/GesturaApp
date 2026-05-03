@@ -306,23 +306,12 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: accentColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: accentColor.withAlpha(60)),
-                ),
-                child: Center(
-                  child: isAllCompleted
-                      ? Icon(Icons.check_circle, color: AppColors.success, size: 30)
-                      : Text(
-                          widget.category.icon,
-                          style: const TextStyle(fontSize: 30),
-                        ),
-                ),
-              ),
+              isAllCompleted
+                  ? const Icon(Icons.check_circle, color: AppColors.success, size: 36)
+                  : Text(
+                      widget.category.icon,
+                      style: const TextStyle(fontSize: 36),
+                    ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

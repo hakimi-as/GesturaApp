@@ -191,8 +191,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             ),
           ),
           const SizedBox(width: 12),
-          const Text('🏆', style: TextStyle(fontSize: 24)),
-          const SizedBox(width: 8),
           Text(
             AppLocalizations.of(context).leaderboard,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -248,13 +246,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
+                  shape: BoxShape.circle,
                   color: context.bgElevated,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.borderColor, width: 1.5),
+                  border: Border.all(color: AppColors.primary.withAlpha(60), width: 1.5),
                 ),
                 child: user.photoUrl != null && user.photoUrl!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
+                    ? ClipOval(
                         child: Image.network(
                           user.photoUrl!,
                           width: 44,
@@ -783,33 +780,29 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       width: 44,
       height: 44,
       decoration: BoxDecoration(
+        shape: BoxShape.circle,
         color: photoUrl == null || photoUrl.isEmpty ? avatarColor.withAlpha(20) : null,
-        borderRadius: BorderRadius.circular(12),
-        border: photoUrl == null || photoUrl.isEmpty
-            ? Border.all(color: avatarColor.withAlpha(80))
-            : null,
+        border: Border.all(
+          color: photoUrl == null || photoUrl.isEmpty
+              ? avatarColor.withAlpha(80)
+              : avatarColor.withAlpha(40),
+          width: 1.5,
+        ),
       ),
       child: photoUrl != null && photoUrl.isNotEmpty
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+          ? ClipOval(
               child: Image.network(
                 photoUrl,
                 width: 44,
                 height: 44,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  decoration: BoxDecoration(
-                    color: avatarColor.withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: TextStyle(
-                        color: avatarColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                errorBuilder: (_, __, ___) => Center(
+                  child: Text(
+                    initials,
+                    style: TextStyle(
+                      color: avatarColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
                 ),
@@ -831,25 +824,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   Widget _buildRankBadge(int rank) {
     if (rank <= 3) {
       final emojis = ['🥇', '🥈', '🥉'];
-      return Text(emojis[rank - 1], style: const TextStyle(fontSize: 24));
+      return Text(emojis[rank - 1], style: const TextStyle(fontSize: 22));
     }
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: context.bgElevated,
-        borderRadius: BorderRadius.circular(8),
+    return Text(
+      '#$rank',
+      style: TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 13,
+        color: context.textMuted,
       ),
-      child: Center(
-        child: Text(
-          '$rank',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: context.textSecondary,
-          ),
-        ),
-      ),
+      textAlign: TextAlign.center,
     );
   }
 

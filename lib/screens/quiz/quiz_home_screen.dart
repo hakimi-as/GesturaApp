@@ -140,18 +140,7 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
                   ],
                 ),
               ),
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withAlpha(20),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.accent.withAlpha(50)),
-                ),
-                child: const Center(
-                  child: Text('🎯', style: TextStyle(fontSize: 28)),
-                ),
-              ),
+              const Text('🎯', style: TextStyle(fontSize: 32)),
             ],
           ),
         ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.1);

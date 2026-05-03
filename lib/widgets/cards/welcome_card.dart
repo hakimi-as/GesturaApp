@@ -57,20 +57,7 @@ class WelcomeCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        '🎯',
-                        style: TextStyle(fontSize: 28),
-                      ),
-                    ),
-                  ),
+                  const Text('🎯', style: TextStyle(fontSize: 32)),
                 ],
               ),
               const SizedBox(height: 20),

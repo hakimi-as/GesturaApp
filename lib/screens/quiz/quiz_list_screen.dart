@@ -61,15 +61,7 @@ class _QuizListScreenState extends State<QuizListScreen> {
         ),
         title: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: _getTypeColor().withAlpha(30),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(child: Text(_getTypeEmoji(), style: const TextStyle(fontSize: 18))),
-            ),
+            Text(_getTypeEmoji(), style: const TextStyle(fontSize: 20)),
             const SizedBox(width: 12),
             Text(widget.title),
           ],
@@ -146,15 +138,7 @@ class _QuizListScreenState extends State<QuizListScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: _getTypeColor().withAlpha(30),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(child: Text(_getTypeEmoji(), style: const TextStyle(fontSize: 28))),
-            ),
+            Text(_getTypeEmoji(), style: const TextStyle(fontSize: 32)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

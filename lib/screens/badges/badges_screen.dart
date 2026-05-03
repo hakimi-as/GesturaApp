@@ -83,8 +83,6 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             ),
           ),
           const SizedBox(width: 12),
-          const Text('🏆', style: TextStyle(fontSize: 24)),
-          const SizedBox(width: 8),
           Text(
             AppLocalizations.of(context).badgesTitle,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -354,33 +352,23 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+        SectionHeader(
+          title: title,
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(26),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(26),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${badges.where((b) => unlockedIds.contains(b.id)).length}/${badges.length}',
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
+            child: Text(
+              '${badges.where((b) => unlockedIds.contains(b.id)).length}/${badges.length}',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 12),
         GridView.builder(

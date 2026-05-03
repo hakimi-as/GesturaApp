@@ -318,19 +318,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: _getTypeColor(notification.type).withAlpha(30),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    notification.displayIcon,
-                    style: const TextStyle(fontSize: 24),
-                  ),
+              SizedBox(
+                width: 32,
+                child: Text(
+                  notification.displayIcon,
+                  style: const TextStyle(fontSize: 22),
+                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(width: 14),

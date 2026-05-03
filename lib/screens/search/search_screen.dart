@@ -245,8 +245,6 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          const Text('🔍', style: TextStyle(fontSize: 24)),
-          const SizedBox(width: 8),
           Text(
             'Search',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -819,7 +817,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             child: Row(
               children: [
-                const Text('💡', style: TextStyle(fontSize: 24)),
+                Icon(Icons.lightbulb_outline, size: 20, color: AppColors.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

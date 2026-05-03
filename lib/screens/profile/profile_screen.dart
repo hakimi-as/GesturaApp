@@ -372,16 +372,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: context.bgElevated,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: context.textMuted, size: 22),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, color: context.textMuted, size: 20),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -400,16 +400,16 @@ class _LearnScreenState extends State<LearnScreen> {
       ),
       child: Row(
         children: [
-          _buildTabItem(0, '📚', 'Learn'),
-          _buildTabItem(1, '❓', 'Quiz'),
-          _buildTabItem(2, '📊', 'Progress'),
-          _buildTabItem(3, '🏆', 'Badges'),
+          _buildTabItem(0, Icons.menu_book, 'Learn'),
+          _buildTabItem(1, Icons.quiz, 'Quiz'),
+          _buildTabItem(2, Icons.show_chart, 'Progress'),
+          _buildTabItem(3, Icons.workspace_premium, 'Badges'),
         ],
       ),
     ).animate().fadeIn(delay: 100.ms);
   }
 
-  Widget _buildTabItem(int index, String emoji, String label) {
+  Widget _buildTabItem(int index, IconData icon, String label) {
     final isSelected = _selectedTabIndex == index;
 
     return Expanded(
@@ -426,8 +426,8 @@ class _LearnScreenState extends State<LearnScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 12)),
-              const SizedBox(width: 4),
+              Icon(icon, size: 14, color: isSelected ? Colors.white : context.textMuted),
+              const SizedBox(width: 5),
               Text(
                 label,
                 style: TextStyle(

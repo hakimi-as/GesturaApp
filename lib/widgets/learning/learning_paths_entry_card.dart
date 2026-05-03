@@ -36,18 +36,7 @@ class LearningPathsEntryCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Icon container
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(50),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Center(
-                child: Text('🎯', style: TextStyle(fontSize: 28)),
-              ),
-            ),
+            const Text('🎯', style: TextStyle(fontSize: 32)),
             const SizedBox(width: 16),
             
             // Text content

@@ -523,23 +523,12 @@ class _ProgressScreenState extends State<ProgressScreen>
       ),
       child: Row(
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: isEarned
-                  ? Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withValues(alpha: 0.15)
-                  : context.bgElevated,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Center(
-              child: Text(
-                isEarned ? achievement.icon : '🔒',
-                style: TextStyle(
-                  fontSize: 28,
-                  color: isEarned ? null : Colors.grey,
-                ),
-              ),
+          SizedBox(
+            width: 32,
+            child: Text(
+              isEarned ? achievement.icon : '🔒',
+              style: TextStyle(fontSize: 26, color: isEarned ? null : Colors.grey),
+              textAlign: TextAlign.center,
             ),
           ),
           const SizedBox(width: 14),
@@ -638,21 +627,10 @@ class _ProgressScreenState extends State<ProgressScreen>
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: item.isCompleted
-                          ? AppColors.success.withValues(alpha: 0.15)
-                          : AppColors.warning.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        item.isCompleted ? Icons.check_circle : Icons.access_time,
-                        color: item.isCompleted ? AppColors.success : AppColors.warning,
-                      ),
-                    ),
+                  Icon(
+                    item.isCompleted ? Icons.check_circle : Icons.access_time,
+                    color: item.isCompleted ? AppColors.success : AppColors.warning,
+                    size: 24,
                   ),
                   const SizedBox(width: 14),
                   Expanded(

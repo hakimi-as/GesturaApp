@@ -73,9 +73,10 @@ class _ChallengeCompleteDialogState extends State<ChallengeCompleteDialog> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: widget.challenge.typeColor.withAlpha(50),
-                  blurRadius: 40,
-                  spreadRadius: 10,
+                  color: widget.challenge.typeColor.withAlpha(40),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -84,7 +85,7 @@ class _ChallengeCompleteDialogState extends State<ChallengeCompleteDialog> {
               children: [
                 // Header
                 Text(
-                  '🎯 Challenge Complete!',
+                  'Challenge Complete!',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: widget.challenge.typeColor,
