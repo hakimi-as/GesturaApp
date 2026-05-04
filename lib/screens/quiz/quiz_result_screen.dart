@@ -194,60 +194,121 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           final percentage = totalQuestions > 0
               ? (correctAnswers / totalQuestions * 100).toInt()
               : 0;
-          final isPassed = percentage >= 70;
 
           return SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 40),
-
-                  _buildResultIcon(isPassed, percentage),
-                  const SizedBox(height: 24),
-
-                  Text(
-                    _getResultTitle(context, percentage),
-                    style:
-                        Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                  ).animate().fadeIn(delay: 400.ms),
-                  const SizedBox(height: 8),
-
-                  Text(
-                    _getResultSubtitle(context, percentage),
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: context.textMuted,
+                  // Top meta bar
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          widget.quizType,
+                          style: TextStyle(fontSize: 10, color: context.textMuted),
                         ),
-                    textAlign: TextAlign.center,
-                  ).animate().fadeIn(delay: 500.ms),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context).completed,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.success,
+                              letterSpacing: 0.06,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-                  const SizedBox(height: 32),
+                  // Score hero
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context).yourScore,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.14,
+                            color: context.textMuted,
+                          ),
+                        ),
+                        Text(
+                          '$percentage%',
+                          style: GoogleFonts.bricolageGrotesque(
+                            fontSize: 88,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -5.0,
+                            height: 0.85,
+                            color: _getScoreColor(percentage),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          AppLocalizations.of(context).correctOutOf(correctAnswers, totalQuestions),
+                          style: TextStyle(fontSize: 11, color: context.textMuted),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _getResultTitle(context, percentage),
+                          style: GoogleFonts.bricolageGrotesque(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                            color: _getScoreColor(percentage),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1),
 
-                  _buildScoreCard(
-                      context, correctAnswers, totalQuestions, percentage),
-                  const SizedBox(height: 16),
+                  // Stats grid
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildStatsRow(context, quizProvider),
+                  ),
+                  const SizedBox(height: 12),
 
-                  _buildXPCard(context, xpEarned, score),
-                  const SizedBox(height: 16),
-
-                  _buildStatsRow(context, quizProvider),
-                  const SizedBox(height: 16),
+                  // XP card
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildXPCard(context, xpEarned, score),
+                  ),
+                  const SizedBox(height: 12),
 
                   if (percentage == 100) ...[
-                    _buildPerfectScoreBadge(context),
-                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildPerfectScoreBadge(context),
+                    ),
+                    const SizedBox(height: 12),
                   ],
 
-                  // Wrong answer review — only shown when there are mistakes
+                  // Wrong answer review
                   if (quizProvider.hasWrongAnswers) ...[
-                    _buildReviewSection(context, quizProvider),
-                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildReviewSection(context, quizProvider),
+                    ),
+                    const SizedBox(height: 12),
                   ],
 
-                  _buildButtons(context),
-                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    child: _buildButtons(context),
+                  ),
                 ],
               ),
             ),
@@ -260,48 +321,58 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   // ── Review Section ────────────────────────────────────────────────────────
 
   Widget _buildReviewSection(BuildContext context, QuizProvider quizProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text('📝', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              AppLocalizations.of(context).reviewWrongAnswers,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+    final wrongCount = quizProvider.wrongAnswers.length;
+    return Container(
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderColor),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+            child: Row(
+              children: [
+                Text(
+                  AppLocalizations.of(context).reviewWrongAnswers,
+                  style: GoogleFonts.bricolageGrotesque(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
                   ),
-            ),
-            const Spacer(),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                AppLocalizations.of(context).missedCount(quizProvider.wrongAnswers.length),
-                style: const TextStyle(
-                  color: AppColors.error,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
                 ),
-              ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context).missedCount(wrongCount),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ).animate().fadeIn(delay: 900.ms),
-        const SizedBox(height: 12),
-        ...quizProvider.wrongAnswers.asMap().entries.map((entry) {
-          return _buildWrongAnswerCard(
-            context,
-            entry.value['question'] as QuizQuestionModel,
-            entry.value['selectedAnswer'] as String,
-            entry.key,
-          );
-        }),
-      ],
+          ).animate().fadeIn(delay: 900.ms),
+          ...quizProvider.wrongAnswers.asMap().entries.map((entry) {
+            return _buildWrongAnswerCard(
+              context,
+              entry.value['question'] as QuizQuestionModel,
+              entry.value['selectedAnswer'] as String,
+              entry.key,
+            );
+          }),
+        ],
+      ),
     );
   }
 
@@ -760,51 +831,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
 
   // ── Existing widgets ───────────────────────────────────────────────────────
 
-  Widget _buildResultIcon(bool isPassed, int percentage) {
-    String emoji;
-    Color color;
-
-    if (percentage == 100) {
-      emoji = '🏆';
-      color = const Color(0xFFFFD700);
-    } else if (percentage >= 90) {
-      emoji = '🌟';
-      color = AppColors.success;
-    } else if (percentage >= 70) {
-      emoji = '👏';
-      color = AppColors.success;
-    } else if (percentage >= 50) {
-      emoji = '💪';
-      color = AppColors.warning;
-    } else {
-      emoji = '📚';
-      color = AppColors.secondary;
-    }
-
-    return Container(
-      width: 140,
-      height: 140,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(70),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.3),
-            blurRadius: 30,
-            spreadRadius: 10,
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(emoji, style: const TextStyle(fontSize: 70)),
-      ),
-    )
-        .animate()
-        .scale(duration: 600.ms, curve: Curves.elasticOut)
-        .then()
-        .shimmer(duration: 1000.ms);
-  }
-
   String _getResultTitle(BuildContext context, int percentage) {
     final l10n = AppLocalizations.of(context);
     if (percentage == 100) return l10n.perfectScoreLabel;
@@ -812,61 +838,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     if (percentage >= 70) return l10n.greatJob;
     if (percentage >= 50) return l10n.goodEffort;
     return l10n.keepPracticing;
-  }
-
-  String _getResultSubtitle(BuildContext context, int percentage) {
-    final l10n = AppLocalizations.of(context);
-    if (percentage == 100) return l10n.perfectScoreMsg;
-    if (percentage >= 90) return l10n.excellentMsg;
-    if (percentage >= 70) return l10n.greatJobMsg;
-    if (percentage >= 50) return l10n.goodEffortMsg;
-    return l10n.keepPracticingMsg;
-  }
-
-  Widget _buildScoreCard(
-      BuildContext context, int correct, int total, int percentage) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '$percentage%',
-            style: GoogleFonts.bricolageGrotesque(
-              fontSize: 88,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -3.5,
-              height: 0.9,
-              color: _getScoreColor(percentage),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            AppLocalizations.of(context).correctOutOf(correct, total),
-            style: Theme.of(context)
-                .textTheme
-                .bodyLarge
-                ?.copyWith(color: context.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: percentage / 100,
-              minHeight: 12,
-              backgroundColor: context.bgElevated,
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(_getScoreColor(percentage)),
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2);
   }
 
   Widget _buildXPCard(BuildContext context, int xpEarned, int score) {
