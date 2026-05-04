@@ -537,14 +537,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final user = authProvider.currentUser;
         final streak = user?.currentStreak ?? 0;
         final lessons = user?.lessonsCompleted ?? 0;
-        final totalXp = user?.totalXP ?? 0;
+        final badges = user?.totalBadges ?? 0;
         return Row(
           children: [
             Expanded(child: _buildStatCard(context, emoji: '🔥', value: '$streak', label: 'Streak')),
             const SizedBox(width: 8),
             Expanded(child: _buildStatCard(context, emoji: '📚', value: '$lessons', label: 'Lessons')),
             const SizedBox(width: 8),
-            Expanded(child: _buildStatCard(context, emoji: '⭐', value: _formatNumber(totalXp), label: 'Total XP')),
+            Expanded(child: _buildStatCard(context, emoji: '🏅', value: '$badges', label: 'Badges')),
           ],
         ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1);
       },

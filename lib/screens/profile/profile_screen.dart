@@ -494,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildStatsCard(BuildContext context, user, ProgressProvider progressProvider) {
     final totalXp = user?.totalXP ?? 0;
     final lessons = user?.lessonsCompleted ?? 0;
-    final streak = user?.currentStreak ?? 0;
+    final badges = user?.totalBadges ?? 0;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -506,11 +506,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: IntrinsicHeight(
         child: Row(
           children: [
-            Expanded(child: _buildStatCell(context, value: '$totalXp', label: 'Total XP')),
-            VerticalDivider(color: context.borderColor, width: 1, thickness: 1),
             Expanded(child: _buildStatCell(context, value: '$lessons', label: 'Lessons')),
             VerticalDivider(color: context.borderColor, width: 1, thickness: 1),
-            Expanded(child: _buildStatCell(context, value: '$streak', label: 'Streak')),
+            Expanded(child: _buildStatCell(context, value: totalXp >= 1000 ? '${(totalXp / 1000).toStringAsFixed(1)}k' : '$totalXp', label: 'Total XP')),
+            VerticalDivider(color: context.borderColor, width: 1, thickness: 1),
+            Expanded(child: _buildStatCell(context, value: '$badges', label: 'Badges')),
           ],
         ),
       ),
