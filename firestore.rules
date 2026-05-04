@@ -59,6 +59,11 @@ service cloud.firestore {
       match /activeChallenges/{challengeId} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
+
+      // Per-category learning progress — owner/admin only
+      match /categoryProgress/{categoryId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
     }
 
 
@@ -99,6 +104,14 @@ service cloud.firestore {
     match /challengePool/{challengeId} {
       allow read:  if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    // Shared period-based challenge selections (e.g. daily_2026_5_3_type0)
+    // Any authenticated user can read; write is allowed so the first user
+    // to open the app on a given day can populate the selection for everyone.
+    match /activeChallenges/{periodKey} {
+      allow read:  if isAuthenticated();
+      allow write: if isAuthenticated();
     }
 
     match /badgePool/{badgeId} {

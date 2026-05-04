@@ -1,6 +1,7 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -77,7 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error loading profile image: $e');
+      if (kDebugMode) debugPrint('Error loading profile image: $e');
     }
   }
 
@@ -140,46 +141,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ? ShimmerWidgets.dashboardLoading()
               : SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildHeader(context),
-                      const SizedBox(height: 24),
-                      _buildHeroSection(context),
-                      const SizedBox(height: 16),
-                      _buildStatTiles(context),
-                      const SizedBox(height: 24),
-    
-                      // Learning Path Card
-                       Consumer<AuthProvider>(
-                        builder: (context, authProvider, child) {
-                          return CurrentPathProgressCard(
-                            userId: authProvider.currentUser?.id ?? '',
-                            onTap: () {
-                              HapticService.buttonTap();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const LearningPathsScreen(),
-                                ),
-                              );
-                            },
-                           );
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                        child: _buildHeader(context),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildHeroSection(context),
+                      ),
+                      const SizedBox(height: 14),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildStatTiles(context),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildQuickActionsSection(context),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Consumer<AuthProvider>(
+                          builder: (context, authProvider, child) {
+                            return CurrentPathProgressCard(
+                              userId: authProvider.currentUser?.id ?? '',
+                              onTap: () {
+                                HapticService.buttonTap();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LearningPathsScreen(),
+                                  ),
+                                );
+                              },
+                            );
                           },
                         ),
-                        const SizedBox(height: 24),
-    
-                        _buildQuickActionsSection(context),
-                        const SizedBox(height: 24),
-                        _buildCompetitionSection(context),
-                        const SizedBox(height: 24),
-                        _buildRecentActivitySection(context),
-                        const SizedBox(height: 24),
-                        _buildDailyGoalsSection(context),
-                        const SizedBox(height: 20),
-                      ],
-                     ),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildDailyGoalsSection(context),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildCompetitionSection(context),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildRecentActivitySection(context),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
                 ),
         ),
       ),
@@ -317,7 +335,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: (_profileImageBytes == null && user?.photoUrl == null)
-                          ? AppColors.primary.withAlpha(20)
+                          ? AppColors.primary.withValues(alpha: 0.08)
                           : null,
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -336,7 +354,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 }
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withAlpha(20),
+                                    color: AppColors.primary.withValues(alpha: 0.08),
                                   ),
                                   child: Center(
                                     child: Text(
@@ -397,6 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final progress = user?.levelProgress ?? 0.0;
         final xpToNext = user?.xpToNextLevel ?? 100;
         final xpForNext = user?.xpForNextLevel ?? 100;
+        final xpEarned = xpForNext - xpToNext;
 
         final nameParts = (user?.fullName ?? '').trim().split(' ');
         final firstName = nameParts.isNotEmpty && nameParts.first.isNotEmpty
@@ -415,246 +434,161 @@ class _DashboardScreenState extends State<DashboardScreen> {
               greeting.toUpperCase(),
               style: TextStyle(
                 fontSize: 9,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.1,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.4,
                 color: context.textMuted,
               ),
             ),
-            const SizedBox(height: 1),
-            Text(
-              '$firstName 👋',
-              style: GoogleFonts.familjenGrotesk(
-                fontSize: 19,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.4,
-                color: context.textPrimary,
-                height: 1.1,
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Level hero block
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'LEVEL',
+                      'Lv',
                       style: TextStyle(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.1,
-                        color: context.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: AppColors.primary.withValues(alpha: 0.71),
                         height: 1,
                       ),
                     ),
                     Text(
                       '$level',
-                      style: GoogleFonts.familjenGrotesk(
-                        fontSize: 50,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -2.0,
+                      style: GoogleFonts.bricolageGrotesque(
+                        fontSize: 76,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -3.0,
                         color: AppColors.primary,
-                        height: 0.88,
+                        height: 0.85,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
+                // Name + XP block
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: '${_formatNumber(xpForNext - xpToNext)} ',
-                                style: TextStyle(
-                                  color: context.textSecondary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              TextSpan(
-                                text: '/ ${_formatNumber(xpForNext)} XP',
-                                style: TextStyle(
-                                  color: context.textMuted,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        firstName,
+                        style: GoogleFonts.bricolageGrotesque(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: context.textPrimary,
+                          height: 1.1,
                         ),
-                        const SizedBox(height: 5),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(2),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 4,
-                            backgroundColor: context.bgElevated,
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(
+                            '${_formatNumber(xpEarned)}',
+                            style: TextStyle(
+                              color: context.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${_formatNumber(xpToNext)} XP to Level ${level + 1}',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: context.textMuted,
+                          Text(
+                            ' / ${_formatNumber(xpForNext)} XP',
+                            style: TextStyle(
+                              color: context.textMuted,
+                              fontSize: 11,
+                            ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 5,
+                          backgroundColor: context.bgElevated,
+                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_formatNumber(xpToNext)} XP to Level ${level + 1}',
+                        style: TextStyle(fontSize: 9, color: context.textMuted),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ],
-        ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1);
+        ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.08);
       },
     );
   }
 
   Widget _buildStatTiles(BuildContext context) {
-    return Consumer2<AuthProvider, ChallengeProvider>(
-      builder: (context, authProvider, challengeProvider, child) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
         final streak = user?.currentStreak ?? 0;
-
-        final challenges = challengeProvider.dailyChallenges;
-        final total = challenges.length;
-        final completed = challenges.where((c) => c.isCompleted).length;
-        final pct = total > 0 ? (completed / total * 100).round() : 0;
-        final dotCount = total.clamp(0, 7);
-
+        final lessons = user?.lessonsCompleted ?? 0;
+        final totalXp = user?.totalXP ?? 0;
         return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Streak tile — narrower (20 of 47 parts)
-            Expanded(
-              flex: 20,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: context.bgCard,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: context.borderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('🔥', style: TextStyle(fontSize: 16)),
-                    const SizedBox(height: 5),
-                    Text(
-                      '$streak',
-                      style: GoogleFonts.familjenGrotesk(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.8,
-                        color: context.textPrimary,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Day streak',
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: context.textMuted,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            Expanded(child: _buildStatCard(context, emoji: '🔥', value: '$streak', label: 'Streak')),
             const SizedBox(width: 8),
-            // Goals tile — wider (27 of 47 parts ≈ 1.35×)
-            Expanded(
-              flex: 27,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: context.bgCard,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: context.borderColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '$completed / $total',
-                              style: GoogleFonts.familjenGrotesk(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.5,
-                                color: context.textPrimary,
-                                height: 1,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              "Today's goals",
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: context.textMuted,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: context.success.withAlpha(26),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            '$pct%',
-                            style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w700,
-                              color: context.success,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (dotCount > 0) ...[
-                      const SizedBox(height: 9),
-                      Row(
-                        children: List.generate(
-                          dotCount,
-                          (i) => Expanded(
-                            child: Container(
-                              height: 4,
-                              margin: EdgeInsets.only(right: i < dotCount - 1 ? 4 : 0),
-                              decoration: BoxDecoration(
-                                color: i < completed ? context.success : context.bgElevated,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+            Expanded(child: _buildStatCard(context, emoji: '📚', value: '$lessons', label: 'Lessons')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildStatCard(context, emoji: '⭐', value: _formatNumber(totalXp), label: 'Total XP')),
           ],
         ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1);
       },
+    );
+  }
+
+  Widget _buildStatCard(BuildContext context, {
+    required String emoji,
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 13)),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.6,
+              color: context.textPrimary,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 8,
+              color: context.textMuted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -669,129 +603,153 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'Quick Actions', emoji: '⚡'),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildQuickActionCard(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              Container(
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Continue',
+                style: GoogleFonts.bricolageGrotesque(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.26,
+                  color: context.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () {
+                  HapticService.buttonTap();
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen(showBackButton: true)));
+                },
+                child: Text('See all', style: TextStyle(fontSize: 10, color: AppColors.primary)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _buildHCard(
                 context,
+                tag: 'Translate',
+                color: AppColors.info,
                 icon: Icons.translate,
-                iconBgColor: const Color(0xFF3B82F6),
-                title: 'Translate',
-                subtitle: 'Real-time sign translation',
+                title: 'Sign to Text',
+                subtitle: 'Real-time translation',
+                featured: true,
                 onTap: () {
                   HapticService.buttonTap();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const TranslateScreen(showBackButton: true),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TranslateScreen(showBackButton: true)));
                 },
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildQuickActionCard(
+              const SizedBox(width: 8),
+              _buildHCard(
                 context,
+                tag: 'Learn',
+                color: AppColors.secondary,
                 icon: Icons.menu_book,
-                iconBgColor: const Color(0xFF8B5CF6),
-                title: 'Learn',
-                subtitle: 'Interactive lessons',
+                title: 'Continue Lesson',
+                subtitle: 'Pick up where you left off',
+                featured: false,
                 onTap: () {
                   HapticService.buttonTap();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LearnScreen(showBackButton: true),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen(showBackButton: true)));
                 },
               ),
-            ),
-          ],
-        ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildQuickActionCard(
+              const SizedBox(width: 8),
+              _buildHCard(
                 context,
+                tag: 'Quiz',
+                color: AppColors.error,
                 icon: Icons.quiz,
-                iconBgColor: const Color(0xFFF43F5E),
-                title: 'Quiz',
-                subtitle: 'Test your knowledge',
+                title: 'Test Knowledge',
+                subtitle: 'Quiz yourself now',
+                featured: false,
                 onTap: () {
                   HapticService.buttonTap();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LearnScreen(
-                        showBackButton: true,
-                        initialTabIndex: 1,
-                      ),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen(showBackButton: true, initialTabIndex: 1)));
                 },
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildQuickActionCard(
+              const SizedBox(width: 8),
+              _buildHCard(
                 context,
+                tag: 'Progress',
+                color: AppColors.warning,
                 icon: Icons.bar_chart,
-                iconBgColor: const Color(0xFFF59E0B),
-                title: 'Progress',
-                subtitle: 'Track your stats',
+                title: 'Your Stats',
+                subtitle: 'View detailed progress',
+                featured: false,
                 onTap: () {
                   HapticService.buttonTap();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const EnhancedProgressScreen()),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const EnhancedProgressScreen()));
                 },
               ),
-            ),
-          ],
-        ).animate().fadeIn(delay: 300.ms).slideX(begin: 0.1),
+            ],
+          ),
+        ).animate().fadeIn(delay: 200.ms),
       ],
     );
   }
 
-  Widget _buildQuickActionCard(
+  Widget _buildHCard(
     BuildContext context, {
+    required String tag,
+    required Color color,
     required IconData icon,
-    required Color iconBgColor,
     required String title,
     required String subtitle,
+    required bool featured,
     required VoidCallback onTap,
   }) {
     return TapScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: AppDecorations.card(context).copyWith(
-          borderRadius: BorderRadius.circular(20),
+        width: 170,
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: featured ? const Color(0xFF1E1B4B) : context.bgCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: featured ? AppColors.primary : context.borderColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: iconBgColor, size: 24),
-            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                tag,
+                style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: color),
+              ),
+            ),
+            const SizedBox(height: 7),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 5),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.24,
+                color: context.textPrimary,
+                height: 1.2,
+              ),
             ),
             const SizedBox(height: 3),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textMuted,
-                  ),
-            ),
+            Text(subtitle, style: TextStyle(fontSize: 9, color: context.textMuted)),
           ],
         ),
       ),
@@ -870,7 +828,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.accent.withAlpha(26),
+                                  color: AppColors.accent.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -924,9 +882,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withAlpha(20),
+                    color: AppColors.accent.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.accent.withAlpha(60)),
+                    border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
                   ),
                   child: const Text('🎯', style: TextStyle(fontSize: 22)),
                 ),
@@ -959,9 +917,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.accent.withAlpha(20),
+                        color: AppColors.accent.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.accent.withAlpha(60)),
+                        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
                       ),
                       child: Text(
                         '$activeChallenges Active',
@@ -1031,10 +989,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   context,
                   icon: isQuiz ? '🎯' : (item.isCompleted ? '✅' : '📚'),
                   iconBgColor: isQuiz
-                      ? const Color(0xFFEC4899)
+                      ? AppColors.accent
                       : (item.isCompleted
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFF6366F1)),
+                          ? AppColors.success
+                          : AppColors.primary),
                   title: isQuiz
                       ? 'Completed "$title"'
                       : (item.isCompleted
@@ -1042,7 +1000,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           : 'Started "$title" Lesson'),
                   subtitle: _formatTimeAgo(item.lastAccessedAt),
                   xpText: '+$xpEarned XP',
-                  xpColor: const Color(0xFF10B981),
+                  xpColor: AppColors.success,
                 );
               }).toList(),
             );
@@ -1126,7 +1084,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: xpColor.withAlpha(26),
+              color: xpColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -1144,191 +1102,156 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDailyGoalsSection(BuildContext context) {
-    return Consumer2<AuthProvider, ChallengeProvider>(
-      builder: (context, authProvider, challengeProvider, child) {
+    return Consumer<ChallengeProvider>(
+      builder: (context, challengeProvider, child) {
         final dailyChallenges = challengeProvider.dailyChallenges;
-
-        if (challengeProvider.isLoading) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SectionHeader(title: 'Daily Challenges', emoji: '🎯'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: AppDecorations.card(context).copyWith(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: ShimmerWidgets.challengesLoading(),
-              ),
-            ],
-          );
-        }
+        final total = dailyChallenges.length;
+        final completed = dailyChallenges.where((c) => c.isCompleted).length;
+        final pct = total > 0 ? (completed / total * 100).round() : 0;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SectionHeader(
-              title: 'Daily Challenges',
-              dotColor: AppColors.accent,
-              trailing: TextButton(
-                onPressed: () {
-                  HapticService.buttonTap();
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengesScreen()));
-                },
-                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
-                child: Text('View All', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
-              ),
+            // Section header row with dot + title + pct
+            Row(
+              children: [
+                Container(
+                  width: 5, height: 5,
+                  decoration: const BoxDecoration(color: AppColors.warning, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "Today's Goals",
+                  style: GoogleFonts.bricolageGrotesque(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.26,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    HapticService.buttonTap();
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengesScreen()));
+                  },
+                  child: Text(
+                    '$pct%',
+                    style: GoogleFonts.bricolageGrotesque(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
-            if (dailyChallenges.isEmpty)
+            if (challengeProvider.isLoading)
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(13),
                 decoration: BoxDecoration(
                   color: context.bgCard,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: context.borderColor),
                 ),
-                child: Center(
-                  child: Text(
-                    'No daily challenges available',
-                    style: TextStyle(color: context.textMuted, fontSize: 13),
-                  ),
+                child: ShimmerWidgets.challengesLoading(),
+              )
+            else if (dailyChallenges.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: context.bgCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
+                  children: [
+                    const Text('🎯', style: TextStyle(fontSize: 28)),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your daily goals are loading',
+                      style: TextStyle(color: context.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Pull down to refresh',
+                      style: TextStyle(color: context.textMuted, fontSize: 12),
+                    ),
+                  ],
                 ),
               )
             else
-              ...dailyChallenges.map((challenge) {
-                return _buildChallengeItem(context, challenge: challenge);
-              }),
+              Container(
+                padding: const EdgeInsets.fromLTRB(13, 12, 13, 13),
+                decoration: BoxDecoration(
+                  color: context.bgCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: total > 0 ? completed / total : 0,
+                        minHeight: 3,
+                        backgroundColor: context.bgElevated,
+                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.warning),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    ...dailyChallenges.take(5).map((c) => _buildGoalRow(context, challenge: c)),
+                  ],
+                ),
+              ),
           ],
-        ).animate().fadeIn(delay: 500.ms);
+        ).animate().fadeIn(delay: 300.ms);
       },
     );
   }
 
-  Widget _buildChallengeItem(
-    BuildContext context, {
-    required ChallengeModel challenge,
-  }) {
+  Widget _buildGoalRow(BuildContext context, {required ChallengeModel challenge}) {
     final isCompleted = challenge.isCompleted;
-    final tagColor = isCompleted ? context.success : challenge.typeColor;
-    final tagLabel = isCompleted
-        ? '✓ Done'
-        : (challenge.isPersonalized
-            ? '✨ For You'
-            : '${challenge.emoji} ${challenge.typeLabel}');
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(
-          color: context.bgCard,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: context.borderColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Tag (top-left) + XP (top-right)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: tagColor.withAlpha(26),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Text(
-                    tagLabel,
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                      color: tagColor,
-                    ),
-                  ),
-                ),
-                Text(
-                  '+${challenge.xpReward} XP',
-                  style: GoogleFonts.familjenGrotesk(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isCompleted ? context.success : const Color(0xFF10B981),
-                  ),
-                ),
-              ],
+      padding: const EdgeInsets.only(top: 7),
+      child: Row(
+        children: [
+          Container(
+            width: 13,
+            height: 13,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isCompleted ? AppColors.success : Colors.transparent,
+              border: Border.all(
+                color: isCompleted ? AppColors.success : context.textMuted,
+                width: 1.5,
+              ),
             ),
-            const SizedBox(height: 7),
-            // Title
-            Text(
+            child: isCompleted
+                ? const Center(child: Icon(Icons.check, color: Colors.white, size: 7))
+                : null,
+          ),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
               challenge.title,
-              style: GoogleFonts.familjenGrotesk(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.1,
+              style: TextStyle(
+                fontSize: 10,
                 color: isCompleted ? context.textMuted : context.textPrimary,
                 decoration: isCompleted ? TextDecoration.lineThrough : null,
+                height: 1.3,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            if (!isCompleted && challenge.description.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Text(
-                challenge.description,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: context.textMuted,
-                  fontWeight: FontWeight.w300,
-                  height: 1.4,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            const SizedBox(height: 8),
-            // Progress bar — 3px
-            ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: LinearProgressIndicator(
-                value: challenge.progress,
-                minHeight: 3,
-                backgroundColor: context.bgElevated,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isCompleted ? context.success : challenge.typeColor,
-                ),
-              ),
-            ),
-            const SizedBox(height: 7),
-            // Footer: count + continue/begin button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${challenge.currentValue} of ${challenge.targetValue} completed',
-                  style: TextStyle(fontSize: 9, color: context.textMuted),
-                ),
-                if (!isCompleted)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withAlpha(26),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.primary.withAlpha(80)),
-                    ),
-                    child: Text(
-                      challenge.progress > 0 ? 'Continue →' : 'Begin →',
-                      style: GoogleFonts.familjenGrotesk(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '+${challenge.xpReward} XP',
+            style: TextStyle(fontSize: 9, color: context.textMuted),
+          ),
+        ],
       ),
     );
   }

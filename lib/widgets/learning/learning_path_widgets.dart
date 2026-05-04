@@ -58,19 +58,9 @@ class LearningPathMiniCard extends StatelessWidget {
             // Header Row
             Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: pathColor.withAlpha(30),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: isCompleted
-                        ? Icon(Icons.check_circle, color: const Color(0xFF10B981), size: 24)
-                        : Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 22)),
-                  ),
-                ),
+                isCompleted
+                    ? const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 28)
+                    : Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 28)),
                 const Spacer(),
                 if (isStarted)
                   Stack(
@@ -315,19 +305,9 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                   // Header Row
                   Row(
                     children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        child: Center(
-                          child: Text(
-                            _currentPath!.iconEmoji ?? '📚',
-                            style: const TextStyle(fontSize: 26),
-                          ),
-                        ),
+                      Text(
+                        _currentPath!.iconEmoji ?? '📚',
+                        style: const TextStyle(fontSize: 32),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -394,17 +374,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(30),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: Center(
-                              child: Text(nextStep.typeIcon, style: const TextStyle(fontSize: 18)),
-                            ),
-                          ),
+                          Text(nextStep.typeIcon, style: const TextStyle(fontSize: 22)),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -513,17 +483,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(30),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Center(
-                child: Text('🎯', style: TextStyle(fontSize: 28)),
-              ),
-            ),
+            const Text('🎯', style: TextStyle(fontSize: 36)),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -777,17 +737,7 @@ class LearningPathCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: context.bgCard,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 28)),
-                    ),
-                  ),
+                  Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 32)),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(

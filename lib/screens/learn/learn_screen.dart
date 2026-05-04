@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/theme.dart';
 import '../../config/design_system.dart';
@@ -161,7 +163,7 @@ class _LearnScreenState extends State<LearnScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error loading data: $e');
+      if (kDebugMode) debugPrint('Error loading data: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -337,8 +339,8 @@ class _LearnScreenState extends State<LearnScreen> {
           Text(
             'Learn BIM',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.4,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
           ),
           _buildHeaderStats(),
@@ -461,109 +463,329 @@ class _LearnScreenState extends State<LearnScreen> {
   // ==================== LEARN TAB ====================
 
   Widget _buildLearnTab() {
-    final progress = _totalLessons > 0 ? _totalCompletedLessons / _totalLessons : 0.0;
+    final inProgress = _categories.where((c) {
+      final done = _completedLessonCounts[c.id] ?? 0;
+      final total = _actualLessonCounts[c.id] ?? 0;
+      return done > 0 && done < total;
+    }).toList();
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Overall progress strip
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            decoration: AppDecorations.card(context).copyWith(
-              borderRadius: BorderRadius.circular(20),
+          // Stat sub-line
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: Text(
+              '${inProgress.length} categories in progress · $_totalCompletedLessons lessons done',
+              style: TextStyle(fontSize: 10, color: context.textMuted),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Overall Progress',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    Text(
-                      '$_totalCompletedLessons / $_totalLessons signs',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 6,
-                    backgroundColor: context.borderColor,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  progress >= 1.0
-                      ? 'All signs mastered!'
-                      : '${(progress * 100).toInt()}% complete — keep going!',
-                  style: TextStyle(fontSize: 11, color: context.textMuted),
-                ),
-              ],
-            ),
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
+          ),
 
-          const SizedBox(height: 20),
-          if (_experienceLevel != null) _buildRecommendedBanner(),
-          if (_experienceLevel != null) const SizedBox(height: 12),
-          _buildLearningPathsCard(),
+          // Categories section
+          _buildLearnSectionRow('Categories', AppColors.primary, action: 'All', onAction: () {}),
+          const SizedBox(height: 8),
+          _categories.isEmpty ? _buildEmptyState() : _buildCategoriesHScroll(),
+          const SizedBox(height: 16),
 
-          // Section Title
-          _buildSectionTitle('Lesson Categories'),
-
-          // Categories Grid
-          if (_categories.isEmpty)
-            _buildEmptyState()
-          else
+          // Resume section — first in-progress category
+          if (inProgress.isNotEmpty) ...[
+            _buildLearnSectionRow('Resume', AppColors.accent),
+            const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  // First category featured full-width
-                  _buildFeaturedCategoryCard(_categories[0], 0),
-                  const SizedBox(height: 14),
-                  // Remaining in 2-column grid
-                  if (_categories.length > 1)
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 14,
-                        crossAxisSpacing: 14,
-                        childAspectRatio: 0.95,
-                      ),
-                      itemCount: _categories.length - 1,
-                      itemBuilder: (context, index) {
-                        return _buildCategoryCard(_categories[index + 1], index + 1);
-                      },
-                    ),
-                ],
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildResumeCard(inProgress.first, _categories.indexOf(inProgress.first)),
             ),
+            const SizedBox(height: 16),
+          ],
 
-          // Daily Goals
-          _buildDailyGoalsSection(),
+          // All Lessons section
+          _buildLearnSectionRow('All Lessons', AppColors.secondary, action: 'Filter', onAction: () {}),
+          const SizedBox(height: 8),
+          _buildAllCategoriesList(),
 
           const SizedBox(height: 100),
         ],
       ),
     );
+  }
+
+  Widget _buildLearnSectionRow(String title, Color dotColor, {String? action, VoidCallback? onAction}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 5, height: 5,
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            title,
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.26,
+              color: context.textPrimary,
+            ),
+          ),
+          if (action != null) ...[
+            const Spacer(),
+            GestureDetector(
+              onTap: onAction,
+              child: Text(action, style: TextStyle(fontSize: 10, color: AppColors.primary)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoriesHScroll() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: _categories.asMap().entries.map((e) => Padding(
+          padding: EdgeInsets.only(right: e.key < _categories.length - 1 ? 8 : 0),
+          child: _buildHCategoryCard(e.value, e.key),
+        )).toList(),
+      ),
+    ).animate().fadeIn(delay: 200.ms);
+  }
+
+  Widget _buildHCategoryCard(CategoryModel category, int index) {
+    final actualCount = _actualLessonCounts[category.id] ?? 0;
+    final completedCount = _completedLessonCounts[category.id] ?? 0;
+    final progress = actualCount > 0 ? completedCount / actualCount : 0.0;
+    final catColor = _getCategoryColor(index);
+    final isActive = completedCount > 0 && completedCount < actualCount;
+
+    return TapScale(
+      onTap: () async {
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryLessonsScreen(category: category)));
+        _loadData();
+      },
+      child: Container(
+        width: 150,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF1E1B4B) : context.bgCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: isActive ? AppColors.primary : context.borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(category.icon, style: const TextStyle(fontSize: 26)),
+            const SizedBox(height: 8),
+            Text(
+              category.name,
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.24,
+                color: context.textPrimary,
+                height: 1.2,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$completedCount / $actualCount lessons',
+              style: TextStyle(fontSize: 9, color: context.textMuted),
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 3,
+                backgroundColor: context.bgElevated,
+                valueColor: AlwaysStoppedAnimation<Color>(catColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResumeCard(CategoryModel category, int index) {
+    final actualCount = _actualLessonCounts[category.id] ?? 0;
+    final completedCount = _completedLessonCounts[category.id] ?? 0;
+    final progress = actualCount > 0 ? completedCount / actualCount : 0.0;
+
+    return TapScale(
+      onTap: () async {
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryLessonsScreen(category: category)));
+        _loadData();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.borderColor.withValues(alpha: 0.39)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category.name,
+                        style: GoogleFonts.bricolageGrotesque(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                          color: context.textPrimary,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        category.description,
+                        style: TextStyle(fontSize: 10, color: context.textMuted, height: 1.5),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(category.icon, style: const TextStyle(fontSize: 28)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 3,
+                backgroundColor: context.bgElevated,
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$completedCount of $actualCount lessons · ${(progress * 100).toInt()}%',
+                  style: TextStyle(fontSize: 9, color: context.textMuted),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Resume →',
+                    style: GoogleFonts.bricolageGrotesque(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.1,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 250.ms);
+  }
+
+  Widget _buildAllCategoriesList() {
+    if (_categories.isEmpty) return _buildEmptyState();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: _categories.map((category) {
+          final actualCount = _actualLessonCounts[category.id] ?? 0;
+          final completedCount = _completedLessonCounts[category.id] ?? 0;
+          final isDone = actualCount > 0 && completedCount >= actualCount;
+
+          String pillText;
+          Color pillColor;
+          if (isDone) {
+            pillText = 'Done';
+            pillColor = AppColors.success;
+          } else if (completedCount > 0) {
+            pillText = 'Active';
+            pillColor = AppColors.primary;
+          } else {
+            pillText = 'New';
+            pillColor = AppColors.secondary;
+          }
+
+          return TapScale(
+            onTap: () async {
+              await Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryLessonsScreen(category: category)));
+              _loadData();
+            },
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: context.bgCard,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: context.borderColor),
+              ),
+              child: Row(
+                children: [
+                  Text(category.icon, style: const TextStyle(fontSize: 17)),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category.name,
+                          style: GoogleFonts.bricolageGrotesque(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: context.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          '$actualCount lessons · ${(completedCount / (actualCount > 0 ? actualCount : 1) * 100).toInt()}% done',
+                          style: TextStyle(fontSize: 9, color: context.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: pillColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      pillText,
+                      style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: pillColor),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    ).animate().fadeIn(delay: 300.ms);
   }
 
   Widget _buildSectionTitle(String title) {
@@ -596,7 +818,7 @@ class _LearnScreenState extends State<LearnScreen> {
           color: context.bgCard,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isDone ? AppColors.success.withAlpha(115) : context.borderColor,
+            color: isDone ? AppColors.success.withValues(alpha: 0.45) : context.borderColor,
             width: isDone ? 1.5 : 1,
           ),
         ),
@@ -606,9 +828,9 @@ class _LearnScreenState extends State<LearnScreen> {
               width: 58,
               height: 58,
               decoration: BoxDecoration(
-                color: catColor.withAlpha(30),
+                color: catColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(17),
-                border: Border.all(color: catColor.withAlpha(50)),
+                border: Border.all(color: catColor.withValues(alpha: 0.2)),
               ),
               child: category.hasCustomImage
                   ? ClipRRect(
@@ -705,7 +927,7 @@ class _LearnScreenState extends State<LearnScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isDone
-                ? AppColors.success.withAlpha(115)
+                ? AppColors.success.withValues(alpha: 0.45)
                 : context.borderColor,
             width: isDone ? 1.5 : 1,
           ),
@@ -717,9 +939,9 @@ class _LearnScreenState extends State<LearnScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: catColor.withAlpha(30),
+                color: catColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: catColor.withAlpha(50)),
+                border: Border.all(color: catColor.withValues(alpha: 0.2)),
               ),
               child: category.hasCustomImage
                   ? ClipRRect(
@@ -883,8 +1105,11 @@ class _LearnScreenState extends State<LearnScreen> {
                   ),
                 )
               else
-                ...dailyChallenges.map((challenge) {
-                  return _buildChallengeItem(challenge);
+                ...dailyChallenges.indexed.map((entry) {
+                  return _buildChallengeItem(entry.$2)
+                      .animate()
+                      .fadeIn(delay: Duration(milliseconds: 80 * entry.$1))
+                      .slideY(begin: 0.08, curve: Curves.easeOut);
                 }),
             ],
           ),
@@ -911,9 +1136,9 @@ class _LearnScreenState extends State<LearnScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.primary.withAlpha(20),
+          color: AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withAlpha(60)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.24)),
         ),
         child: Row(
           children: [
@@ -1062,8 +1287,8 @@ class _LearnScreenState extends State<LearnScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: isCompleted 
-                  ? AppColors.success.withAlpha(26) 
-                  : AppColors.primary.withAlpha(26),
+                  ? AppColors.success.withValues(alpha: 0.1) 
+                  : AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -1139,7 +1364,7 @@ class _LearnScreenState extends State<LearnScreen> {
                 children: [
                   _buildQuizTypeCard(
                     icon: '👁️',
-                    iconBgColor: const Color(0xFF6366F1),
+                    iconBgColor: AppColors.primary,
                     title: l10n.signToText,
                     subtitle: l10n.signToTextDesc,
                     info: '10 ${l10n.questions}',
@@ -1149,7 +1374,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   ),
                   _buildQuizTypeCard(
                     icon: '👆',
-                    iconBgColor: const Color(0xFFF59E0B),
+                    iconBgColor: AppColors.warning,
                     title: l10n.textToSign,
                     subtitle: l10n.textToSignDesc,
                     info: '10 ${l10n.questions}',
@@ -1159,7 +1384,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   ),
                   _buildQuizTypeCard(
                     icon: '⏱️',
-                    iconBgColor: const Color(0xFF10B981),
+                    iconBgColor: AppColors.success,
                     title: l10n.timedChallenge,
                     subtitle: l10n.timedChallengeDesc,
                     info: '15 ${l10n.questions}',
@@ -1169,7 +1394,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   ),
                   _buildQuizTypeCard(
                     icon: '🔤',
-                    iconBgColor: const Color(0xFFEF4444),
+                    iconBgColor: AppColors.error,
                     title: l10n.spellingQuiz,
                     subtitle: l10n.spellingQuizDesc,
                     info: '10 ${l10n.questions}',
@@ -1254,7 +1479,7 @@ class _LearnScreenState extends State<LearnScreen> {
               child: LinearProgressIndicator(
                 value: bestScore / 100,
                 minHeight: 6,
-                backgroundColor: iconBgColor.withAlpha(40),
+                backgroundColor: iconBgColor.withValues(alpha: 0.16),
                 valueColor: AlwaysStoppedAnimation<Color>(iconBgColor),
               ),
             ),
@@ -1349,25 +1574,25 @@ class _LearnScreenState extends State<LearnScreen> {
                   children: [
                     _buildStatCard(
                       icon: '🤟',
-                      iconBgColor: const Color(0xFF6366F1),
+                      iconBgColor: AppColors.primary,
                       value: '${user?.signsLearned ?? 0}',
                       label: 'Signs Learned',
                     ),
                     _buildStatCard(
                       icon: '⏱️',
-                      iconBgColor: const Color(0xFFEC4899),
+                      iconBgColor: AppColors.accent,
                       value: user?.formattedTimeSpent ?? '0m',
                       label: 'Total Time',
                     ),
                     _buildStatCard(
                       icon: '🎯',
-                      iconBgColor: const Color(0xFFF59E0B),
+                      iconBgColor: AppColors.warning,
                       value: '${_averageQuizAccuracy.toInt()}%',
                       label: 'Quiz Accuracy',
                     ),
                     _buildStatCard(
                       icon: '🔥',
-                      iconBgColor: const Color(0xFFEF4444),
+                      iconBgColor: AppColors.error,
                       value: '${user?.currentStreak ?? 0}',
                       label: 'Day Streak',
                     ),
@@ -1521,9 +1746,9 @@ class _LearnScreenState extends State<LearnScreen> {
             return Container(
               decoration: BoxDecoration(
                 color: isActive
-                    ? const Color(0xFF3B82F6)
+                    ? AppColors.info
                     : isToday
-                        ? AppColors.primary.withAlpha(50)
+                        ? AppColors.primary.withValues(alpha: 0.2)
                         : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
                 border: isToday && !isActive
@@ -1605,9 +1830,9 @@ class _LearnScreenState extends State<LearnScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(20),
+                          color: AppColors.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.primary.withAlpha(50)),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                         ),
                         child: Text(
                           'View All',
@@ -1691,7 +1916,7 @@ class _LearnScreenState extends State<LearnScreen> {
         color: context.bgCard,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isEarned ? badge.tierColor.withAlpha(100) : context.borderColor,
+          color: isEarned ? badge.tierColor.withValues(alpha: 0.39) : context.borderColor,
         ),
       ),
       child: Row(
@@ -1701,7 +1926,7 @@ class _LearnScreenState extends State<LearnScreen> {
             height: 46,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isEarned ? badge.tierColor.withAlpha(25) : context.bgElevated,
+              color: isEarned ? badge.tierColor.withValues(alpha: 0.1) : context.bgElevated,
               border: Border.all(
                 color: isEarned ? badge.tierColor : context.borderColor,
                 width: isEarned ? 1.5 : 1,
@@ -1814,14 +2039,14 @@ class _LearnScreenState extends State<LearnScreen> {
 
   Color _getCategoryColor(int index) {
     final colors = [
-      const Color(0xFF6366F1),
-      const Color(0xFF8B5CF6),
-      const Color(0xFFF59E0B),
-      const Color(0xFF3B82F6),
-      const Color(0xFFEF4444),
+      AppColors.primary,
+      AppColors.secondary,
+      AppColors.warning,
+      AppColors.info,
+      AppColors.error,
       const Color(0xFFF472B6),
       const Color(0xFF06B6D4),
-      const Color(0xFF10B981),
+      AppColors.success,
     ];
     return colors[index % colors.length];
   }

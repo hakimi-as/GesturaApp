@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/design_system.dart';
 import '../../config/theme.dart';
@@ -138,7 +139,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           userId: authProvider.userId!,
           user: authProvider.currentUser!,
           lessonsCompleted: 1,
+          signsLearned: 1,
           xpEarned: widget.lesson.xpReward,
+          categoryId: widget.lesson.categoryId,
         );
       }
 
@@ -197,8 +200,11 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             const SizedBox(height: 16),
             Text(
               'Lesson Complete!',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.88,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -370,11 +376,20 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       backgroundColor: context.bgPrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
+          icon: Icon(Icons.arrow_back_ios, color: context.textSecondary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(displayName),
+        title: Text(
+          displayName,
+          style: GoogleFonts.bricolageGrotesque(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.7,
+            color: context.textPrimary,
+          ),
+        ),
         actions: [
           // --- Phase 2: AppBar Download Button ---
           Padding(

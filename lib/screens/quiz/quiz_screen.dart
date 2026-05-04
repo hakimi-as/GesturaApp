@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -336,7 +336,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withAlpha(51),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -377,7 +377,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(120),
+                          color: Colors.black.withValues(alpha: 0.47),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Icon(Icons.zoom_in, color: Colors.white, size: 14),
@@ -396,7 +396,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 borderRadius: BorderRadius.circular(60),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withAlpha(51),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
@@ -421,7 +421,7 @@ class _QuizScreenState extends State<QuizScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.warning.withAlpha(38),
+              color: AppColors.warning.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -492,7 +492,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 duration: const Duration(milliseconds: 300),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: correct ? AppColors.success.withAlpha(30) : AppColors.error.withAlpha(30),
+                  color: correct ? AppColors.success.withValues(alpha: 0.12) : AppColors.error.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -615,7 +615,7 @@ class _QuizScreenState extends State<QuizScreen> {
                                   color: context.bgElevated,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: AppColors.accent.withAlpha(80),
+                                    color: AppColors.accent.withValues(alpha: 0.31),
                                   ),
                                 ),
                                 child: ClipRRect(
@@ -682,7 +682,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 height: 4,
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withAlpha(120),
+                  color: AppColors.accent.withValues(alpha: 0.47),
                   borderRadius: BorderRadius.circular(2),
                 ),
               );
@@ -692,7 +692,7 @@ class _QuizScreenState extends State<QuizScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.warning.withAlpha(38),
+              color: AppColors.warning.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -742,9 +742,9 @@ class _QuizScreenState extends State<QuizScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.secondary.withAlpha(20),
+              color: AppColors.secondary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.secondary.withAlpha(50)),
+              border: Border.all(color: AppColors.secondary.withValues(alpha: 0.2)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -783,16 +783,16 @@ class _QuizScreenState extends State<QuizScreen> {
 
     if (isAnswered) {
       if (isCorrect) {
-        bgColor = AppColors.success.withAlpha(38);
+        bgColor = AppColors.success.withValues(alpha: 0.15);
         borderColor = AppColors.success;
         textColor = AppColors.success;
       } else if (isSelected && !isCorrect) {
-        bgColor = AppColors.error.withAlpha(38);
+        bgColor = AppColors.error.withValues(alpha: 0.15);
         borderColor = AppColors.error;
         textColor = AppColors.error;
       }
     } else if (isSelected) {
-      bgColor = AppColors.primary.withAlpha(38);
+      bgColor = AppColors.primary.withValues(alpha: 0.15);
       borderColor = AppColors.primary;
       textColor = AppColors.primary;
     }
@@ -899,14 +899,14 @@ class _QuizScreenState extends State<QuizScreen> {
         if (isAnswered) {
           if (isCorrect) {
             borderColor = AppColors.success;
-            overlayColor = AppColors.success.withAlpha(50);
+            overlayColor = AppColors.success.withValues(alpha: 0.2);
           } else if (isSelected && !isCorrect) {
             borderColor = AppColors.error;
-            overlayColor = AppColors.error.withAlpha(50);
+            overlayColor = AppColors.error.withValues(alpha: 0.2);
           }
         } else if (isSelected) {
           borderColor = AppColors.primary;
-          overlayColor = AppColors.primary.withAlpha(30);
+          overlayColor = AppColors.primary.withValues(alpha: 0.12);
         }
 
         return TapScale(
@@ -922,7 +922,7 @@ class _QuizScreenState extends State<QuizScreen> {
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: borderColor.withAlpha(50),
+                        color: borderColor.withValues(alpha: 0.2),
                         blurRadius: 10,
                         spreadRadius: 2,
                       ),
@@ -998,7 +998,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     decoration: BoxDecoration(
                       color: isSelected || (isAnswered && isCorrect)
                           ? borderColor
-                          : context.bgElevated.withAlpha(230),
+                          : context.bgElevated.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -1068,7 +1068,7 @@ class _QuizScreenState extends State<QuizScreen> {
           color: context.bgSecondary,
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withAlpha(26),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, -5)),
           ],
@@ -1080,7 +1080,7 @@ class _QuizScreenState extends State<QuizScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: AppColors.error.withAlpha(38),
+                color: AppColors.error.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -1097,7 +1097,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   Text(
                     '${l10n.correctAnswerIs}: "${quizProvider.currentQuestion?.correctAnswer}"',
                     style: TextStyle(
-                      color: AppColors.error.withAlpha(200),
+                      color: AppColors.error.withValues(alpha: 0.78),
                       fontSize: 13,
                     ),
                     textAlign: TextAlign.center,
@@ -1172,7 +1172,7 @@ class _QuizScreenState extends State<QuizScreen> {
         color: context.bgSecondary,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withAlpha(26),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -5)),
         ],
@@ -1187,7 +1187,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: feedbackColor.withAlpha(38),
+                  color: feedbackColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(

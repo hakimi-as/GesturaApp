@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/design_system.dart';
 import '../../config/theme.dart';
@@ -276,7 +278,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.error.withAlpha(30),
+                color: AppColors.error.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -469,7 +471,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                       color: context.bgElevated,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                          color: AppColors.accent.withAlpha(80)),
+                          color: AppColors.accent.withValues(alpha: 0.31)),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(9),
@@ -696,7 +698,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.primary.withAlpha(20),
+        color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -835,10 +837,13 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         children: [
           Text(
             '$percentage%',
-            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  color: _getScoreColor(percentage),
-                  fontWeight: FontWeight.bold,
-                ),
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 88,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -3.5,
+              height: 0.9,
+              color: _getScoreColor(percentage),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -897,63 +902,68 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   }
 
   Widget _buildStatsRow(BuildContext context, QuizProvider quizProvider) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(context,
-              icon: '⏱️',
-              value: '${quizProvider.timeSpent}s',
-              label: AppLocalizations.of(context).timeSpent),
+    return Container(
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(child: _buildStatCell(context,
+                icon: '⏱️',
+                value: '${quizProvider.timeSpent}s',
+                label: AppLocalizations.of(context).timeSpent)),
+            VerticalDivider(width: 1, thickness: 1, color: context.borderColor),
+            Expanded(child: _buildStatCell(context,
+                icon: '✅',
+                value: '${quizProvider.correctAnswers}',
+                label: AppLocalizations.of(context).correct,
+                valueColor: AppColors.success)),
+            VerticalDivider(width: 1, thickness: 1, color: context.borderColor),
+            Expanded(child: _buildStatCell(context,
+                icon: '❌',
+                value: '${quizProvider.totalQuestions - quizProvider.correctAnswers}',
+                label: AppLocalizations.of(context).wrong,
+                valueColor: AppColors.error)),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(context,
-              icon: '✅',
-              value: '${quizProvider.correctAnswers}',
-              label: AppLocalizations.of(context).correct),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(context,
-              icon: '❌',
-              value:
-                  '${quizProvider.totalQuestions - quizProvider.correctAnswers}',
-              label: AppLocalizations.of(context).wrong),
-        ),
-      ],
+      ),
     ).animate().fadeIn(delay: 800.ms);
   }
 
-  Widget _buildStatCard(
+  Widget _buildStatCell(
     BuildContext context, {
     required String icon,
     required String value,
     required String label,
+    Color? valueColor,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
       child: Column(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 24)),
-          const SizedBox(height: 8),
-          Text(value,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: context.textMuted),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              textAlign: TextAlign.center),
+          Text(icon, style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: valueColor ?? context.textPrimary,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: 9, color: context.textMuted),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );

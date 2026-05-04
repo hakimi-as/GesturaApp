@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'dashboard/dashboard_screen.dart';
-import 'translate/translate_screen.dart';
 import 'learn/learn_screen.dart';
-import 'settings/settings_screen.dart';
+import 'translate/translate_screen.dart';
+import 'challenges/challenges_screen.dart';
+import 'profile/profile_screen.dart';
 import '../widgets/common/bottom_nav_bar.dart';
 import '../providers/auth_provider.dart';
 import '../services/time_tracking_service.dart';
@@ -69,9 +70,10 @@ class _MainNavigatorState extends State<MainNavigator> with WidgetsBindingObserv
         index: _currentIndex,
         children: const [
           DashboardScreen(),
-          TranslateScreen(),
           LearnScreen(),
-          SettingsScreen(),
+          TranslateScreen(),
+          ChallengesScreen(),
+          ProfileScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavBar(

@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/design_system.dart';
 import '../../config/theme.dart';
@@ -20,127 +22,72 @@ class LeaderboardScreen extends StatefulWidget {
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _LeaderboardScreenState extends State<LeaderboardScreen> {
+  int _selectedTab = 0; // 0=All-time, 1=Weekly, 2=Monthly
   String _selectedScope = 'global'; // 'global' or 'friends'
-  
+
   List<UserModel> _globalLeaderboard = [];
   List<FriendWithUser> _friendsLeaderboard = [];
   bool _isLoading = true;
-  int _currentUserGlobalRank = 0;
-  int _currentUserFriendRank = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(_onTabChanged);
     _loadLeaderboard();
   }
 
-  @override
-  void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  void _onTabChanged() {
-    if (_tabController.indexIsChanging) return;
-    _loadLeaderboard();
+  String _getSortField(int tabIndex) {
+    switch (tabIndex) {
+      case 0:
+        return 'totalXP';
+      case 1:
+        return 'currentStreak';
+      default:
+        return 'lessonsCompleted';
+    }
   }
 
   Future<void> _loadLeaderboard() async {
     setState(() => _isLoading = true);
-
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUserId = authProvider.userId ?? '';
-
       if (_selectedScope == 'global') {
-        await _loadGlobalLeaderboard(currentUserId, _tabController.index);
+        await _loadGlobalLeaderboard(currentUserId, _selectedTab);
       } else {
         await _loadFriendsLeaderboard(currentUserId);
       }
     } catch (e) {
-      debugPrint('Error loading leaderboard: $e');
+      if (kDebugMode) debugPrint('Error loading leaderboard: $e');
     }
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  /// Returns the Firestore sort field and display label for the current tab
-  String _getSortField(int tabIndex) {
-    switch (tabIndex) {
-      case 0: return 'currentStreak';
-      case 1: return 'lessonsCompleted';
-      default: return 'totalXP';
-    }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _loadGlobalLeaderboard(String currentUserId, int tabIndex) async {
     final firestore = FirebaseFirestore.instance;
     final sortField = _getSortField(tabIndex);
-
     final snapshot = await firestore
         .collection('users')
         .orderBy(sortField, descending: true)
         .limit(50)
         .get();
-
-    final users = snapshot.docs
-        .map((doc) => UserModel.fromFirestore(doc))
-        .toList();
-
-    int rank = 0;
-    for (int i = 0; i < users.length; i++) {
-      if (users[i].id == currentUserId) {
-        rank = i + 1;
-        break;
-      }
-    }
-
+    final users = snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList();
     _globalLeaderboard = users;
-    _currentUserGlobalRank = rank;
   }
 
   Future<void> _loadFriendsLeaderboard(String currentUserId) async {
     final friends = await FriendService.getLeaderboard(currentUserId);
-
-    int rank = 0;
-    for (int i = 0; i < friends.length; i++) {
-      if (friends[i].friendUser.id == currentUserId) {
-        rank = i + 1;
-        break;
-      }
-    }
-
     _friendsLeaderboard = friends;
-    _currentUserFriendRank = rank;
   }
 
-  void _toggleScope(String scope) {
-    if (_selectedScope == scope) return;
-    HapticService.buttonTap();
-    setState(() => _selectedScope = scope);
-    _loadLeaderboard();
-  }
-
-  void _openFriendProfile(String odlernId) {
+  void _openFriendProfile(String userId) {
     HapticService.buttonTap();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (odlernId == authProvider.userId) return; // Don't open own profile
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => FriendProfileScreen(friendId: odlernId),
-      ),
-    );
+    if (userId == authProvider.userId) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendId: userId)));
   }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -148,20 +95,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       backgroundColor: context.bgPrimary,
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
-            _buildCurrentUserCard(),
-            _buildScopeToggle(),
-            _buildTabBar(),
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: AppColors.primary),
-                    )
-                  : _selectedScope == 'global'
-                      ? _buildGlobalLeaderboardList()
-                      : _buildFriendsLeaderboardList(),
-            ),
+            _buildTabPills(),
+            Expanded(child: _buildContent()),
           ],
         ),
       ),
@@ -170,325 +108,377 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
       child: Row(
         children: [
-          TapScale(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: context.bgCard,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.borderColor),
-              ),
-              child: Icon(
-                Icons.arrow_back,
-                color: context.textSecondary,
-                size: 20,
+          if (Navigator.canPop(context)) ...[
+            TapScale(
+              onTap: () => Navigator.pop(context),
+              child: Icon(Icons.arrow_back_ios, color: context.textSecondary, size: 20),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: Text(
+              'Rankings',
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.04 * 22,
+                color: context.textPrimary,
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            AppLocalizations.of(context).leaderboard,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
+          _buildScopePill('global', AppLocalizations.of(context).global),
+          const SizedBox(width: 6),
+          _buildScopePill('friends', AppLocalizations.of(context).friends),
         ],
       ),
     ).animate().fadeIn(duration: 500.ms);
   }
 
-  Widget _buildCurrentUserCard() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        final user = authProvider.currentUser;
-        if (user == null) return const SizedBox.shrink();
-
-        final rank = _selectedScope == 'global' 
-            ? _currentUserGlobalRank 
-            : _currentUserFriendRank;
-
-        return Container(
-          margin: const EdgeInsets.all(20),
-          padding: const EdgeInsets.all(16),
-          decoration: AppDecorations.card(context).copyWith(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              // Rank Badge
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(20),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary.withAlpha(60)),
-                ),
-                child: Center(
-                  child: Text(
-                    rank > 0 ? '#$rank' : '-',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Profile Picture
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: context.bgElevated,
-                  border: Border.all(color: AppColors.primary.withAlpha(60), width: 1.5),
-                ),
-                child: user.photoUrl != null && user.photoUrl!.isNotEmpty
-                    ? ClipOval(
-                        child: Image.network(
-                          user.photoUrl!,
-                          width: 44,
-                          height: 44,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                user.initials,
-                                style: TextStyle(
-                                  color: context.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          user.initials,
-                          style: TextStyle(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-              ),
-              const SizedBox(width: 14),
-              // User Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _selectedScope == 'global' ? AppLocalizations.of(context).globalRanking : AppLocalizations.of(context).friendsRanking,
-                      style: TextStyle(fontSize: 12, color: context.textMuted),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      user.fullName,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              // Score for current tab
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _tabController.index == 0 ? '🔥' : _tabController.index == 1 ? '📚' : '⭐',
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                  Text(
-                    _tabController.index == 0
-                        ? '${user.currentStreak} ${AppLocalizations.of(context).daysLabel}'
-                        : _tabController.index == 1
-                            ? '${user.lessonsCompleted} ${AppLocalizations.of(context).lessonsLabel}'
-                            : '${user.totalXP} XP',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1);
+  Widget _buildScopePill(String scope, String label) {
+    final isActive = _selectedScope == scope;
+    return TapScale(
+      onTap: () {
+        if (_selectedScope == scope) return;
+        HapticService.buttonTap();
+        setState(() => _selectedScope = scope);
+        _loadLeaderboard();
       },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : context.bgCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isActive ? AppColors.primary : context.borderColor),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.bricolageGrotesque(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: isActive ? Colors.white : context.textMuted,
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildScopeToggle() {
+  Widget _buildTabPills() {
+    final tabs = [
+      AppLocalizations.of(context).allTime,
+      AppLocalizations.of(context).weekly,
+      AppLocalizations.of(context).monthly,
+    ];
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
       child: Row(
+        children: List.generate(tabs.length, (i) {
+          final isActive = _selectedTab == i;
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: i < tabs.length - 1 ? 6 : 0),
+              child: TapScale(
+                onTap: () {
+                  if (_selectedTab == i) return;
+                  HapticService.buttonTap();
+                  setState(() => _selectedTab = i);
+                  _loadLeaderboard();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  decoration: BoxDecoration(
+                    color: isActive ? AppColors.primary : context.bgCard,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isActive ? AppColors.primary : context.borderColor),
+                  ),
+                  child: Text(
+                    tabs[i],
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.bricolageGrotesque(
+                      fontSize: 10,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                      color: isActive ? Colors.white : context.textMuted,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    ).animate().fadeIn(delay: 100.ms);
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+
+    final users = _selectedScope == 'global'
+        ? _globalLeaderboard
+        : _friendsLeaderboard.map((f) => f.friendUser).toList();
+
+    if (users.isEmpty) {
+      return _selectedScope == 'global' ? _buildEmptyState() : _buildEmptyFriendsState();
+    }
+
+    final hasPodium = users.length >= 3;
+    final listUsers = hasPodium ? users.skip(3).toList() : users;
+
+    return RefreshIndicator(
+      onRefresh: _loadLeaderboard,
+      color: AppColors.primary,
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
+          if (hasPodium) ...[
+            _buildPodium(users),
+            Divider(height: 1, color: context.borderColor, indent: 16, endIndent: 16),
+            const SizedBox(height: 8),
+          ],
+          ...listUsers.asMap().entries.map((e) {
+            final rank = (hasPodium ? 4 : 1) + e.key;
+            return _buildLeaderboardRow(e.value, rank, e.key);
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ── Podium ─────────────────────────────────────────────────────────────────
+
+  Widget _buildPodium(List<UserModel> users) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserId = authProvider.userId;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(child: _buildPodiumSlot(users[1], 2, currentUserId)),
+          const SizedBox(width: 8),
           Expanded(
-            child: TapScale(
-              onTap: () => _toggleScope('global'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: _selectedScope == 'global'
-                      ? AppColors.primary
-                      : context.bgCard,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _selectedScope == 'global'
-                        ? AppColors.primary
-                        : context.borderColor,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.public,
-                      size: 18,
-                      color: _selectedScope == 'global' 
-                          ? Colors.white 
-                          : context.textMuted,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context).global,
-                      style: TextStyle(
-                        color: _selectedScope == 'global'
-                            ? Colors.white
-                            : context.textMuted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            child: Transform.translate(
+              offset: const Offset(0, -18),
+              child: _buildPodiumSlot(users[0], 1, currentUserId),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TapScale(
-              onTap: () => _toggleScope('friends'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: _selectedScope == 'friends'
-                      ? AppColors.primary
-                      : context.bgCard,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _selectedScope == 'friends'
-                        ? AppColors.primary
-                        : context.borderColor,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.people,
-                      size: 18,
-                      color: _selectedScope == 'friends' 
-                          ? Colors.white 
-                          : context.textMuted,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context).friends,
-                      style: TextStyle(
-                        color: _selectedScope == 'friends'
-                            ? Colors.white
-                            : context.textMuted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          const SizedBox(width: 8),
+          Expanded(child: _buildPodiumSlot(users[2], 3, currentUserId)),
         ],
       ),
     ).animate().fadeIn(delay: 150.ms);
   }
 
-  Widget _buildTabBar() {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: TabBar(
-        controller: _tabController,
-        indicator: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        indicatorPadding: const EdgeInsets.all(4),
-        labelColor: Colors.white,
-        unselectedLabelColor: context.textMuted,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        dividerColor: Colors.transparent,
-        tabs: [
-          Tab(text: AppLocalizations.of(context).streak),
-          Tab(text: AppLocalizations.of(context).lessonsLabel),
-          Tab(text: AppLocalizations.of(context).allTime),
+  Widget _buildPodiumSlot(UserModel user, int rank, String? currentUserId) {
+    final isMe = user.id == currentUserId;
+    const rankColors = {
+      1: Color(0xFFFFD700),
+      2: Color(0xFFC0C0C0),
+      3: Color(0xFFCD7F32),
+    };
+    final rankColor = rankColors[rank]!;
+    final avatarSize = rank == 1 ? 52.0 : 44.0;
+    final initialsSize = rank == 1 ? 16.0 : 14.0;
+
+    return TapScale(
+      onTap: () => _openFriendProfile(user.id),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$rank',
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: rankColor,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Container(
+            width: avatarSize,
+            height: avatarSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: rankColor.withValues(alpha: 0.15),
+              border: Border.all(color: isMe ? AppColors.primary : rankColor, width: 2),
+            ),
+            child: user.photoUrl != null && user.photoUrl!.isNotEmpty
+                ? ClipOval(child: Image.network(user.photoUrl!, fit: BoxFit.cover, width: avatarSize, height: avatarSize))
+                : Center(
+                    child: Text(
+                      user.initials,
+                      style: GoogleFonts.bricolageGrotesque(
+                        fontSize: initialsSize,
+                        fontWeight: FontWeight.w800,
+                        color: isMe ? AppColors.primary : rankColor,
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            isMe ? '${_shortName(user.fullName)} (You)' : _shortName(user.fullName),
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: isMe ? AppColors.primary : context.textPrimary,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            _podiumSubValue(user),
+            style: TextStyle(fontSize: 8, color: context.textMuted),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
-    ).animate().fadeIn(delay: 200.ms);
-  }
-
-  Widget _buildGlobalLeaderboardList() {
-    if (_globalLeaderboard.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadLeaderboard,
-      color: AppColors.primary,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: _globalLeaderboard.length,
-        itemBuilder: (context, index) {
-          final user = _globalLeaderboard[index];
-          final rank = index + 1;
-          return _buildGlobalLeaderboardItem(user, rank, index);
-        },
-      ),
     );
   }
 
-  Widget _buildFriendsLeaderboardList() {
-    if (_friendsLeaderboard.isEmpty) {
-      return _buildEmptyFriendsState();
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadLeaderboard,
-      color: AppColors.primary,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: _friendsLeaderboard.length,
-        itemBuilder: (context, index) {
-          final friend = _friendsLeaderboard[index];
-          final rank = index + 1;
-          return _buildFriendLeaderboardItem(friend, rank, index);
-        },
-      ),
-    );
+  String _shortName(String fullName) {
+    final parts = fullName.trim().split(' ');
+    if (parts.length == 1) return parts[0];
+    return '${parts[0]} ${parts[1][0]}.';
   }
+
+  String _podiumSubValue(UserModel user) {
+    switch (_selectedTab) {
+      case 0:
+        return '${_formatXP(user.totalXP)} XP';
+      case 1:
+        return '${user.currentStreak} streak';
+      default:
+        return '${user.lessonsCompleted} lessons';
+    }
+  }
+
+  // ── List rows ──────────────────────────────────────────────────────────────
+
+  Widget _buildLeaderboardRow(UserModel user, int rank, int animIndex) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isMe = user.id == authProvider.userId;
+
+    return TapScale(
+      onTap: () => _openFriendProfile(user.id),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 5),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+        decoration: BoxDecoration(
+          color: isMe ? AppColors.primary.withValues(alpha: 0.08) : context.bgCard,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: isMe ? AppColors.primary : context.borderColor),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 22,
+              child: Text(
+                '#$rank',
+                textAlign: TextAlign.right,
+                style: GoogleFonts.bricolageGrotesque(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isMe ? AppColors.primary : context.textMuted,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: context.bgElevated,
+                border: Border.all(
+                  color: isMe ? AppColors.primary : context.borderColor,
+                  width: 1.5,
+                ),
+              ),
+              child: user.photoUrl != null && user.photoUrl!.isNotEmpty
+                  ? ClipOval(child: Image.network(user.photoUrl!, fit: BoxFit.cover, width: 30, height: 30))
+                  : Center(
+                      child: Text(
+                        user.initials,
+                        style: GoogleFonts.bricolageGrotesque(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: isMe ? AppColors.primary : context.textSecondary,
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isMe ? '${user.fullName} (You)' : user.fullName,
+                    style: GoogleFonts.bricolageGrotesque(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: isMe ? AppColors.primary : context.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                  Text(
+                    _rowSubLabel(user),
+                    style: TextStyle(fontSize: 8, color: context.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              _rowMainValue(user),
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: isMe ? AppColors.primary : context.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: Duration(milliseconds: 40 * animIndex));
+  }
+
+  String _rowMainValue(UserModel user) {
+    switch (_selectedTab) {
+      case 0:
+        return '${_formatXP(user.totalXP)} XP';
+      case 1:
+        return '${user.currentStreak} days';
+      default:
+        return '${user.lessonsCompleted} lessons';
+    }
+  }
+
+  String _rowSubLabel(UserModel user) {
+    switch (_selectedTab) {
+      case 0:
+        return 'Streak: ${user.currentStreak}';
+      case 1:
+        return '${_formatXP(user.totalXP)} XP total';
+      default:
+        return 'Streak: ${user.currentStreak}';
+    }
+  }
+
+  String _formatXP(int xp) {
+    if (xp >= 1000) return '${(xp / 1000).toStringAsFixed(xp % 1000 == 0 ? 0 : 1)}k';
+    return '$xp';
+  }
+
+  // ── Empty states ───────────────────────────────────────────────────────────
 
   Widget _buildEmptyState() {
     return Center(
@@ -499,17 +489,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context).noRankingsYet,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: context.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             AppLocalizations.of(context).startLearningLeaderboard,
-            style: TextStyle(
-              color: context.textMuted,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: context.textMuted, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ],
@@ -526,323 +515,35 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           const SizedBox(height: 16),
           Text(
             AppLocalizations.of(context).noFriendsYet,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: context.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             AppLocalizations.of(context).addFriendsCompete,
-            style: TextStyle(
-              color: context.textMuted,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: context.textMuted, fontSize: 14),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/friends');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+          TapScale(
+            onTap: () => Navigator.pushNamed(context, '/friends'),
+            child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
+              decoration: BoxDecoration(
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
+              child: Text(
+                AppLocalizations.of(context).findFriends,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+              ),
             ),
-            child: Text(AppLocalizations.of(context).findFriends),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildGlobalLeaderboardItem(UserModel user, int rank, int index) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final isCurrentUser = user.id == authProvider.userId;
-
-    return TapScale(
-      onTap: () => _openFriendProfile(user.id),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isCurrentUser ? AppColors.primary.withAlpha(20) : context.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isCurrentUser ? AppColors.primary : context.borderColor,
-            width: isCurrentUser ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            SizedBox(width: 40, child: _buildRankBadge(rank)),
-            const SizedBox(width: 12),
-            _buildAvatar(user.photoUrl, user.initials, rank),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          user.fullName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: isCurrentUser ? AppColors.primary : context.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (isCurrentUser) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            AppLocalizations.of(context).youLabel,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          '🔥 ${user.currentStreak} ${AppLocalizations.of(context).streakStat}',
-                          style: TextStyle(color: context.textMuted, fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Flexible(
-                        child: Text(
-                          '🤟 ${user.signsLearned} ${AppLocalizations.of(context).signsStat}',
-                          style: TextStyle(color: context.textMuted, fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _tabController.index == 0
-                      ? '${user.currentStreak}'
-                      : _tabController.index == 1
-                          ? '${user.lessonsCompleted}'
-                          : '${user.totalXP}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: isCurrentUser ? AppColors.primary : context.textPrimary,
-                  ),
-                ),
-                Text(
-                  _tabController.index == 0
-                      ? AppLocalizations.of(context).daysLabel
-                      : _tabController.index == 1
-                          ? AppLocalizations.of(context).lessonsLabel
-                          : 'XP',
-                  style: TextStyle(color: context.textMuted, fontSize: 11),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)).slideX(begin: 0.1);
-  }
-
-  Widget _buildFriendLeaderboardItem(FriendWithUser friend, int rank, int index) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final friendUser = friend.friendUser; // Access the UserModel
-    final isCurrentUser = friendUser.id == authProvider.userId;
-
-    return TapScale(
-      onTap: () => _openFriendProfile(friendUser.id),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isCurrentUser ? AppColors.primary.withAlpha(20) : context.bgCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isCurrentUser ? AppColors.primary : context.borderColor,
-            width: isCurrentUser ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            SizedBox(width: 40, child: _buildRankBadge(rank)),
-            const SizedBox(width: 12),
-            _buildAvatar(friendUser.photoUrl, friendUser.initials, rank),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          friendUser.fullName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: isCurrentUser ? AppColors.primary : context.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (isCurrentUser) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            AppLocalizations.of(context).youLabel,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        '🔥 ${friendUser.currentStreak} streak',
-                        style: TextStyle(color: context.textMuted, fontSize: 12),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        '🤟 ${friendUser.signsLearned} signs',
-                        style: TextStyle(color: context.textMuted, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${friendUser.totalXP}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: isCurrentUser ? AppColors.primary : context.textPrimary,
-                  ),
-                ),
-                Text('XP', style: TextStyle(color: context.textMuted, fontSize: 11)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)).slideX(begin: 0.1);
-  }
-
-  Widget _buildAvatar(String? photoUrl, String initials, int rank) {
-    final avatarColor = _getAvatarColor(rank);
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: photoUrl == null || photoUrl.isEmpty ? avatarColor.withAlpha(20) : null,
-        border: Border.all(
-          color: photoUrl == null || photoUrl.isEmpty
-              ? avatarColor.withAlpha(80)
-              : avatarColor.withAlpha(40),
-          width: 1.5,
-        ),
-      ),
-      child: photoUrl != null && photoUrl.isNotEmpty
-          ? ClipOval(
-              child: Image.network(
-                photoUrl,
-                width: 44,
-                height: 44,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Center(
-                  child: Text(
-                    initials,
-                    style: TextStyle(
-                      color: avatarColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-            )
-          : Center(
-              child: Text(
-                initials,
-                style: TextStyle(
-                  color: avatarColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-    );
-  }
-
-  Widget _buildRankBadge(int rank) {
-    if (rank <= 3) {
-      final emojis = ['🥇', '🥈', '🥉'];
-      return Text(emojis[rank - 1], style: const TextStyle(fontSize: 22));
-    }
-    return Text(
-      '#$rank',
-      style: TextStyle(
-        fontWeight: FontWeight.w700,
-        fontSize: 13,
-        color: context.textMuted,
-      ),
-      textAlign: TextAlign.center,
-    );
-  }
-
-  Color _getAvatarColor(int rank) {
-    switch (rank) {
-      case 1: return const Color(0xFFFFD700);
-      case 2: return const Color(0xFFC0C0C0);
-      case 3: return const Color(0xFFCD7F32);
-      default: return AppColors.primary;
-    }
   }
 }

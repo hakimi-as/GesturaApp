@@ -230,7 +230,7 @@ class SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: GoogleFonts.familjenGrotesk(
+            style: GoogleFonts.bricolageGrotesque(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.2,
@@ -301,7 +301,7 @@ class GradientButton extends StatelessWidget {
                     if (icon != null) ...[icon!, const SizedBox(width: 8)],
                     Text(
                       label,
-                      style: GoogleFonts.familjenGrotesk(
+                      style: GoogleFonts.bricolageGrotesque(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ============ DARK THEME COLORS ============
@@ -106,20 +106,20 @@ class AppColors {
 
 // ============ THEME DATA ============
 class AppTheme {
-  // Body font: Lexend (accessibility-first humanist sans)
-  // Display font: Familjen Grotesk (warm geometric, for headings)
+  // Body font: Nunito (warm, rounded, highly legible)
+  // Display font: Bricolage Grotesque (expressive variable, for headings)
   static TextTheme _applyFont(TextTheme base) {
-    final body = GoogleFonts.lexendTextTheme(base);
+    final body = GoogleFonts.nunitoTextTheme(base);
     return body.copyWith(
-      headlineLarge: GoogleFonts.familjenGrotesk(textStyle: body.headlineLarge),
-      headlineMedium: GoogleFonts.familjenGrotesk(textStyle: body.headlineMedium),
-      headlineSmall: GoogleFonts.familjenGrotesk(textStyle: body.headlineSmall),
-      titleLarge: GoogleFonts.familjenGrotesk(textStyle: body.titleLarge),
-      titleMedium: GoogleFonts.familjenGrotesk(textStyle: body.titleMedium),
-      titleSmall: GoogleFonts.familjenGrotesk(textStyle: body.titleSmall),
-      labelLarge: GoogleFonts.familjenGrotesk(textStyle: body.labelLarge),
-      labelMedium: GoogleFonts.familjenGrotesk(textStyle: body.labelMedium),
-      labelSmall: GoogleFonts.familjenGrotesk(textStyle: body.labelSmall),
+      headlineLarge: GoogleFonts.bricolageGrotesque(textStyle: body.headlineLarge),
+      headlineMedium: GoogleFonts.bricolageGrotesque(textStyle: body.headlineMedium),
+      headlineSmall: GoogleFonts.bricolageGrotesque(textStyle: body.headlineSmall),
+      titleLarge: GoogleFonts.bricolageGrotesque(textStyle: body.titleLarge),
+      titleMedium: GoogleFonts.bricolageGrotesque(textStyle: body.titleMedium),
+      titleSmall: GoogleFonts.bricolageGrotesque(textStyle: body.titleSmall),
+      labelLarge: GoogleFonts.bricolageGrotesque(textStyle: body.labelLarge),
+      labelMedium: GoogleFonts.bricolageGrotesque(textStyle: body.labelMedium),
+      labelSmall: GoogleFonts.bricolageGrotesque(textStyle: body.labelSmall),
     );
   }
 
@@ -220,16 +220,16 @@ class AppTheme {
       ),
 
       textTheme: _applyFont(const TextTheme(
-        headlineLarge:  TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.8, height: 1.1),
-        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.6, height: 1.1),
-        headlineSmall:  TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.4, height: 1.15),
-        titleLarge:     TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.3, height: 1.2),
-        titleMedium:    TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColorsDark.textPrimary,   letterSpacing: -0.2, height: 1.25),
-        titleSmall:     TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColorsDark.textPrimary,   letterSpacing: -0.1, height: 1.3),
+        headlineLarge:  TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary,   letterSpacing: -1.0, height: 1.05),
+        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary,   letterSpacing: -0.7, height: 1.1),
+        headlineSmall:  TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.4, height: 1.15),
+        titleLarge:     TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.3, height: 1.2),
+        titleMedium:    TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.2, height: 1.25),
+        titleSmall:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsDark.textPrimary,   letterSpacing: -0.1, height: 1.3),
         bodyLarge:      TextStyle(fontSize: 16, color: AppColorsDark.textSecondary, height: 1.65),
         bodyMedium:     TextStyle(fontSize: 14, color: AppColorsDark.textSecondary, height: 1.6),
         bodySmall:      TextStyle(fontSize: 12, color: AppColorsDark.textMuted,     height: 1.55),
-        labelLarge:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsDark.textSecondary, letterSpacing: 0.08),
+        labelLarge:     TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColorsDark.textSecondary, letterSpacing: 0.1),
       )),
     );
   }
@@ -259,7 +259,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: AppColorsLight.bgCard,
         elevation: 2,
-        shadowColor: Colors.black.withAlpha(20),
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -331,16 +331,16 @@ class AppTheme {
       ),
 
       textTheme: _applyFont(const TextTheme(
-        headlineLarge:  TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.8, height: 1.1),
-        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.6, height: 1.1),
-        headlineSmall:  TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.4, height: 1.15),
-        titleLarge:     TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.3, height: 1.2),
-        titleMedium:    TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColorsLight.textPrimary,   letterSpacing: -0.2, height: 1.25),
-        titleSmall:     TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColorsLight.textPrimary,   letterSpacing: -0.1, height: 1.3),
+        headlineLarge:  TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary,   letterSpacing: -1.0, height: 1.05),
+        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary,   letterSpacing: -0.7, height: 1.1),
+        headlineSmall:  TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.4, height: 1.15),
+        titleLarge:     TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.3, height: 1.2),
+        titleMedium:    TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.2, height: 1.25),
+        titleSmall:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsLight.textPrimary,   letterSpacing: -0.1, height: 1.3),
         bodyLarge:      TextStyle(fontSize: 16, color: AppColorsLight.textSecondary, height: 1.65),
         bodyMedium:     TextStyle(fontSize: 14, color: AppColorsLight.textSecondary, height: 1.6),
         bodySmall:      TextStyle(fontSize: 12, color: AppColorsLight.textMuted,     height: 1.55),
-        labelLarge:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsLight.textSecondary, letterSpacing: 0.08),
+        labelLarge:     TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColorsLight.textSecondary, letterSpacing: 0.1),
       )),
     );
   }

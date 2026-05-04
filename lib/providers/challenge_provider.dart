@@ -261,35 +261,41 @@ class ChallengeProvider extends ChangeNotifier {
     required ChallengeType type,
     required int count,
   }) async {
-    // Check if we already have challenges for this period
-    final activeDoc = await _firestore.collection('activeChallenges').doc(periodKey).get();
+    // Try to load cached selection for this period
+    try {
+      final activeDoc = await _firestore.collection('activeChallenges').doc(periodKey).get();
+      if (activeDoc.exists) {
+        final data = activeDoc.data()!;
+        final challengeIds = List<String>.from(data['challengeIds'] ?? []);
 
-    if (activeDoc.exists) {
-      // Load existing challenges
-      final data = activeDoc.data()!;
-      final challengeIds = List<String>.from(data['challengeIds'] ?? []);
-      
-      List<ChallengeModel> challenges = [];
-      for (final id in challengeIds) {
-        final templateDoc = await _firestore.collection('challengePool').doc(id).get();
-        if (templateDoc.exists) {
-          final template = ChallengeTemplate.fromFirestore(templateDoc);
-          final progress = await _getUserProgress(userId, user, template.trackingField, template.categoryId);
-          challenges.add(template.toChallenge().copyWith(currentValue: progress));
+        List<ChallengeModel> challenges = [];
+        for (final id in challengeIds) {
+          try {
+            final templateDoc = await _firestore.collection('challengePool').doc(id).get();
+            if (templateDoc.exists) {
+              final template = ChallengeTemplate.fromFirestore(templateDoc);
+              final progress = await _getUserProgress(userId, user, template.trackingField, template.categoryId);
+              challenges.add(template.toChallenge().copyWith(currentValue: progress));
+            }
+          } catch (_) {
+            // Skip unavailable templates
+          }
         }
+        if (challenges.isNotEmpty) return challenges;
       }
-      return challenges;
-    } else {
-      // Select new random challenges
-      final selected = await _selectRandomChallenges(type, count, periodKey);
-      
-      List<ChallengeModel> challenges = [];
-      for (final template in selected) {
-        final progress = await _getUserProgress(userId, user, template.trackingField, template.categoryId);
-        challenges.add(template.toChallenge().copyWith(currentValue: progress));
-      }
-      return challenges;
+    } catch (_) {
+      // activeChallenges read failed — fall through to fresh selection
     }
+
+    // Select new random challenges (falls back to in-memory defaults)
+    final selected = await _selectRandomChallenges(type, count, periodKey);
+
+    List<ChallengeModel> challenges = [];
+    for (final template in selected) {
+      final progress = await _getUserProgress(userId, user, template.trackingField, template.categoryId);
+      challenges.add(template.toChallenge().copyWith(currentValue: progress));
+    }
+    return challenges;
   }
 
   Future<List<ChallengeTemplate>> _selectRandomChallenges(
@@ -298,31 +304,48 @@ class ChallengeProvider extends ChangeNotifier {
     String periodKey,
   ) async {
     try {
-      final snapshot = await _firestore
-          .collection('challengePool')
-          .where('type', isEqualTo: type.index)
-          .where('isActive', isEqualTo: true)
-          .get();
+      List<ChallengeTemplate> templates = [];
 
-      if (snapshot.docs.isEmpty) {
-        debugPrint('⚠️ No ${type.name} challenges in pool');
-        return [];
+      // Try to load from Firestore pool
+      try {
+        final snapshot = await _firestore
+            .collection('challengePool')
+            .where('type', isEqualTo: type.index)
+            .get();
+        templates = snapshot.docs
+            .map((d) => ChallengeTemplate.fromFirestore(d))
+            .where((t) => t.isActive)
+            .toList();
+      } catch (e) {
+        debugPrint('⚠️ Firestore pool unavailable, using built-in defaults: $e');
       }
 
-      final templates = snapshot.docs.map((d) => ChallengeTemplate.fromFirestore(d)).toList();
-      
+      // Fall back to in-memory defaults when pool is empty or inaccessible
+      if (templates.isEmpty) {
+        debugPrint('📦 Using built-in ${type.name} challenge templates');
+        final defaults = type == ChallengeType.daily
+            ? ChallengeTemplate.defaultDailyChallenges
+            : type == ChallengeType.weekly
+                ? ChallengeTemplate.defaultWeeklyChallenges
+                : ChallengeTemplate.defaultSpecialChallenges;
+        templates = List.from(defaults);
+      }
+
       // Use date-based seed for consistent random selection
       final random = Random(periodKey.hashCode);
       templates.shuffle(random);
-
       final selected = templates.take(count).toList();
 
-      // Save selection
-      await _firestore.collection('activeChallenges').doc(periodKey).set({
-        'challengeIds': selected.map((t) => t.id).toList(),
-        'type': type.index,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      // Best-effort: cache selection in Firestore (silently ignored if denied)
+      try {
+        await _firestore.collection('activeChallenges').doc(periodKey).set({
+          'challengeIds': selected.map((t) => t.id).toList(),
+          'type': type.index,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } catch (_) {
+        // Cache write is optional — challenges still work without it
+      }
 
       return selected;
     } catch (e) {
@@ -492,7 +515,6 @@ class ChallengeProvider extends ChangeNotifier {
         'xpThisWeek': (weeklyData['xpThisWeek'] ?? 0) + xpEarned,
         'signsThisWeek': (weeklyData['signsThisWeek'] ?? 0) + signsLearned,
         'totalQuizzes': (weeklyData['totalQuizzes'] ?? 0) + quizzesCompleted,
-        'categoriesCompleted': (weeklyData['categoriesCompleted'] ?? 0) + (categoryCompleted ? 1 : 0),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -506,8 +528,8 @@ class ChallengeProvider extends ChangeNotifier {
           newDailyProgress['signsToday_$categoryId'] = (dailyData['signsToday_$categoryId'] ?? 0) + signsLearned;
           newWeeklyProgress['signsThisWeek_$categoryId'] = (weeklyData['signsThisWeek_$categoryId'] ?? 0) + signsLearned;
         }
-        
-        // Also update category progress collection
+
+        // Update category progress collection
         await _firestore.collection('users').doc(userId)
             .collection('categoryProgress').doc(categoryId)
             .set({
@@ -515,6 +537,14 @@ class ChallengeProvider extends ChangeNotifier {
               'lessonsCompleted': FieldValue.increment(lessonsCompleted),
               'updatedAt': FieldValue.serverTimestamp(),
             }, SetOptions(merge: true));
+
+        // Auto-detect category completion — avoids callers having to know this
+        if (lessonsCompleted > 0 && !categoryCompleted) {
+          categoryCompleted = await _isCategoryCompleted(userId, categoryId);
+        }
+      }
+      if (categoryCompleted) {
+        newWeeklyProgress['categoriesCompleted'] = (weeklyData['categoriesCompleted'] ?? 0) + 1;
       }
 
       await _firestore.collection('users').doc(userId)

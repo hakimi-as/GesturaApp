@@ -8,6 +8,7 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/theme.dart';
 import '../../config/design_system.dart';
 import '../../l10n/app_localizations.dart';
@@ -93,23 +94,17 @@ class _TranslateScreenState extends State<TranslateScreen>
               backgroundColor: Colors.transparent,
               elevation: 0,
               leading: IconButton(
-                icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
+                icon: Icon(Icons.arrow_back_ios, color: context.textSecondary, size: 20),
                 onPressed: () => Navigator.pop(context),
               ),
-              title: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B35),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.translate, color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(AppLocalizations.of(context).navTranslate),
-                ],
+              title: Text(
+                AppLocalizations.of(context).navTranslate,
+                style: GoogleFonts.bricolageGrotesque(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.8,
+                  color: context.textPrimary,
+                ),
               ),
             )
           : null,
@@ -137,24 +132,15 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.translate, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            AppLocalizations.of(context).navTranslate,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: Text(
+        AppLocalizations.of(context).navTranslate,
+        style: GoogleFonts.bricolageGrotesque(
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.04 * 22,
+          color: context.textPrimary,
+        ),
       ),
     ).animate().fadeIn(duration: 500.ms);
   }
@@ -172,14 +158,14 @@ class _TranslateScreenState extends State<TranslateScreen>
       ),
       child: Row(
         children: [
-          _buildTabBtn(0, '👋', AppLocalizations.of(context).signToTextTab),
-          _buildTabBtn(1, '📝', AppLocalizations.of(context).textToSignTab),
+          _buildTabBtn(0, Icons.sign_language_outlined, AppLocalizations.of(context).signToTextTab),
+          _buildTabBtn(1, Icons.text_fields_outlined, AppLocalizations.of(context).textToSignTab),
         ],
       ),
     ).animate().fadeIn(delay: 100.ms);
   }
 
-  Widget _buildTabBtn(int index, String icon, String label) {
+  Widget _buildTabBtn(int index, IconData icon, String label) {
     final isSelected = _tabController.index == index;
     return Expanded(
       child: TapScale(
@@ -194,7 +180,7 @@ class _TranslateScreenState extends State<TranslateScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(icon, style: const TextStyle(fontSize: 14)),
+              Icon(icon, size: 16, color: isSelected ? Colors.white : context.textMuted),
               const SizedBox(width: 6),
               Text(
                 label,
@@ -251,15 +237,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: context.bgElevated,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(Icons.camera_alt_outlined, color: context.textMuted, size: 40),
-        ),
+        Icon(Icons.camera_alt_outlined, color: context.textMuted, size: 52),
         const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -784,15 +762,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withAlpha(80),
-            shape: BoxShape.circle,
-          ),
-          child: const Center(child: Text('🤟', style: TextStyle(fontSize: 50))),
-        ),
+        const Text('🤟', style: TextStyle(fontSize: 56)),
         const SizedBox(height: 20),
         Text(
           _isTranslating
