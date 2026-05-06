@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../screens/badges/badges_screen.dart';
 import '../screens/challenges/challenges_screen.dart';
 import '../screens/learn/learn_screen.dart';
-import '../screens/progress/enhanced_progress_screen.dart';
+import '../screens/progress/progress_screen.dart';
 
 /// Holds the global navigator key and maps notification payloads to screens.
 class NavigationService {
@@ -41,7 +41,7 @@ class NavigationService {
       case 'streak_milestone':
       case 'daily_goals':
       case 'level_up':
-        return const EnhancedProgressScreen();
+        return const ProgressScreen();
 
       case 'achievement':
         return const BadgesScreen();

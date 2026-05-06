@@ -293,7 +293,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   crossAxisCount: 2,
                   mainAxisSpacing: 14,
                   crossAxisSpacing: 14,
-                  childAspectRatio: 1.3,
+                  childAspectRatio: 1.15,
                   children: List.generate(4, (_) => ShimmerWidgets.statsCard()),
                 ),
                 const SizedBox(height: 24),
@@ -1454,15 +1454,18 @@ class _LearnScreenState extends State<LearnScreen> {
               ),
             ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  info,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.textMuted,
-                        fontSize: 11,
-                      ),
+                Flexible(
+                  child: Text(
+                    info,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: context.textMuted,
+                          fontSize: 11,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+                const SizedBox(width: 4),
                 Text(
                   xpReward,
                   style: TextStyle(
@@ -1570,7 +1573,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   crossAxisCount: 2,
                   mainAxisSpacing: 14,
                   crossAxisSpacing: 14,
-                  childAspectRatio: 1.3,
+                  childAspectRatio: 1.15,
                   children: [
                     _buildStatCard(
                       icon: '🤟',

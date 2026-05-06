@@ -9,9 +9,11 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../config/design_system.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/translate_provider.dart';
 import '../../services/remote_sign_service.dart';
 import '../../widgets/video/sign_player.dart';
 
@@ -38,10 +40,9 @@ class _TranslateScreenState extends State<TranslateScreen>
   bool _isListening = false;
 
   // ── Sign-to-Text state ──────────────────────────────────────────────────
+  // _sentenceWords and _translationOutput live in TranslateProvider
   bool _isCameraActive = false;
   bool _isTranslating = false;
-  String _translationOutput = '';
-  List<String> _sentenceWords = [];
   String _currentDetected = '';
   bool _isMatching = false;
 
@@ -59,9 +60,10 @@ class _TranslateScreenState extends State<TranslateScreen>
   bool _isProcessingFrame = false;
 
   // ── Text-to-Sign state ──────────────────────────────────────────────────
-  List<String> _currentSentence = [];
-  List<SignSegment> _signSegments = [];
+  // _currentSentence and _signSegments live in TranslateProvider
   final int _maxCharacters = 200;
+
+  TranslateProvider get _tp => context.read<TranslateProvider>();
 
   @override
   void initState() {
@@ -202,17 +204,19 @@ class _TranslateScreenState extends State<TranslateScreen>
   // ════════════════════════════════════════════════════════════════════════
 
   Widget _buildSignToTextTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          _buildCameraSection(),
-          const SizedBox(height: 16),
-          if (_isCameraActive) _buildCurrentDetectionBadge(),
-          if (_isCameraActive) const SizedBox(height: 16),
-          _buildTranslationOutput(),
-          const SizedBox(height: 20),
-        ],
+    return Consumer<TranslateProvider>(
+      builder: (context, tp, _) => SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            _buildCameraSection(),
+            const SizedBox(height: 16),
+            if (_isCameraActive) _buildCurrentDetectionBadge(),
+            if (_isCameraActive) const SizedBox(height: 16),
+            _buildTranslationOutput(tp),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -505,8 +509,8 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   // ── Translation output box ───────────────────────────────────────────────
 
-  Widget _buildTranslationOutput() {
-    final sentence = _sentenceWords.join(' ');
+  Widget _buildTranslationOutput(TranslateProvider tp) {
+    final sentenceWords = tp.sentenceWords;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -527,9 +531,9 @@ class _TranslateScreenState extends State<TranslateScreen>
               ),
               Row(
                 children: [
-                  if (_sentenceWords.isNotEmpty)
+                  if (sentenceWords.isNotEmpty)
                     TapScale(
-                      onTap: _undoLastWord,
+                      onTap: () => _tp.undoLastWord(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
@@ -565,7 +569,7 @@ class _TranslateScreenState extends State<TranslateScreen>
           const SizedBox(height: 16),
 
           // Word chips — each matched word as a chip
-          if (_sentenceWords.isEmpty)
+          if (sentenceWords.isEmpty)
             Text(
               AppLocalizations.of(context).waitingForGestures,
               style: TextStyle(color: context.textMuted, fontSize: 16, height: 1.5),
@@ -574,8 +578,8 @@ class _TranslateScreenState extends State<TranslateScreen>
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _sentenceWords.asMap().entries.map((entry) {
-                final isLast = entry.key == _sentenceWords.length - 1;
+              children: sentenceWords.asMap().entries.map((entry) {
+                final isLast = entry.key == sentenceWords.length - 1;
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -606,13 +610,13 @@ class _TranslateScreenState extends State<TranslateScreen>
               _buildOutputActionButton(
                 icon: Icons.volume_up,
                 label: AppLocalizations.of(context).speak,
-                onTap: _speakOutput,
+                onTap: () => _speakOutput(sentenceWords),
               ),
               const SizedBox(width: 10),
               _buildOutputActionButton(
                 icon: Icons.copy,
                 label: AppLocalizations.of(context).copy,
-                onTap: _copyOutput,
+                onTap: () => _copyOutput(sentenceWords),
               ),
               const SizedBox(width: 10),
               _buildOutputActionButton(
@@ -632,26 +636,28 @@ class _TranslateScreenState extends State<TranslateScreen>
   // ════════════════════════════════════════════════════════════════════════
 
   Widget _buildTextToSignTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          _buildTextInputSection(),
-          const SizedBox(height: 20),
-          _buildSignPreview(),
-          if (_signSegments.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _buildSegmentBreakdown(),
+    return Consumer<TranslateProvider>(
+      builder: (context, tp, _) => SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            _buildTextInputSection(tp),
+            const SizedBox(height: 20),
+            _buildSignPreview(tp),
+            if (tp.signSegments.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _buildSegmentBreakdown(tp),
+            ],
+            const SizedBox(height: 20),
+            _buildCurrentSignSection(tp),
+            const SizedBox(height: 20),
           ],
-          const SizedBox(height: 20),
-          _buildCurrentSignSection(),
-          const SizedBox(height: 20),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTextInputSection() {
+  Widget _buildTextInputSection(TranslateProvider tp) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -703,14 +709,15 @@ class _TranslateScreenState extends State<TranslateScreen>
                 label: AppLocalizations.of(context).clear,
                 onTap: () {
                   _textController.clear();
-                  setState(() { _currentSentence = []; _signSegments = []; });
+                  _tp.clearTextToSign();
+                  setState(() {});
                 },
               ),
               const Spacer(),
               TapScale(
                 onTap: _translateText,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(14),
@@ -735,16 +742,16 @@ class _TranslateScreenState extends State<TranslateScreen>
     ).animate().fadeIn(delay: 200.ms);
   }
 
-  Widget _buildSignPreview() {
+  Widget _buildSignPreview(TranslateProvider tp) {
     return Container(
       height: 480,
       width: double.infinity,
-      child: _currentSentence.isNotEmpty
+      child: tp.currentSentence.isNotEmpty
           ? SignPlayer(
-              sentence: _currentSentence,
-              key: ValueKey(_currentSentence.join()),
+              sentence: tp.currentSentence,
+              key: ValueKey(tp.currentSentence.join()),
               onLoadComplete: (segments) {
-                if (mounted) setState(() => _signSegments = segments);
+                if (mounted) _tp.setSignSegments(segments);
               },
             )
           : Container(
@@ -774,7 +781,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     );
   }
 
-  Widget _buildCurrentSignSection() {
+  Widget _buildCurrentSignSection(TranslateProvider tp) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -811,19 +818,19 @@ class _TranslateScreenState extends State<TranslateScreen>
             children: [
               Expanded(
                 child: Text(
-                  _currentSentence.isEmpty
+                  tp.currentSentence.isEmpty
                       ? AppLocalizations.of(context).typeSomethingToSee
-                      : _currentSentence.join(' ').toUpperCase(),
+                      : tp.currentSentence.join(' ').toUpperCase(),
                   style: TextStyle(
-                    color: _currentSentence.isEmpty ? context.textMuted : context.textPrimary,
+                    color: tp.currentSentence.isEmpty ? context.textMuted : context.textPrimary,
                     fontSize: 16,
-                    fontWeight: _currentSentence.isNotEmpty ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: tp.currentSentence.isNotEmpty ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ),
-              if (_currentSentence.isNotEmpty)
+              if (tp.currentSentence.isNotEmpty)
                 IconButton(
-                  onPressed: _speakCurrentSign,
+                  onPressed: () => _speakCurrentSign(tp.currentSentence),
                   icon: const Icon(Icons.volume_up, color: Colors.blueAccent),
                   tooltip: AppLocalizations.of(context).speakSign,
                 ),
@@ -834,9 +841,10 @@ class _TranslateScreenState extends State<TranslateScreen>
     ).animate().fadeIn(delay: 400.ms);
   }
 
-  Widget _buildSegmentBreakdown() {
-    final bimCount   = _signSegments.where((s) => s.type == 'bim').length;
-    final fsCount    = _signSegments.where((s) => s.type == 'fingerspell').length;
+  Widget _buildSegmentBreakdown(TranslateProvider tp) {
+    final segments = tp.signSegments;
+    final bimCount = segments.where((s) => s.type == 'bim').length;
+    final fsCount  = segments.where((s) => s.type == 'fingerspell').length;
 
     return Container(
       width: double.infinity,
@@ -856,7 +864,7 @@ class _TranslateScreenState extends State<TranslateScreen>
               if (bimCount > 0) _buildCountBadge('$bimCount BIM', Colors.green),
               if (bimCount > 0 && fsCount > 0) const SizedBox(width: 6),
               if (fsCount > 0) _buildCountBadge('$fsCount Fingerspelled', Colors.blueAccent),
-              if (_signSegments.any((s) => s.language == 'ASL')) ...[
+              if (segments.any((s) => s.language == 'ASL')) ...[
                 const SizedBox(width: 6),
                 _buildCountBadge('ASL', Colors.orange),
               ],
@@ -866,7 +874,7 @@ class _TranslateScreenState extends State<TranslateScreen>
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _signSegments.map((seg) {
+            children: segments.map((seg) {
               final Color color;
               final String emoji;
               final String tag;
@@ -972,13 +980,9 @@ class _TranslateScreenState extends State<TranslateScreen>
 
       if (matches.isNotEmpty && matches.first.confidence > 0.3) {
         final word = _capitalize(matches.first.word);
-        setState(() {
-          _currentDetected = word;
-          _sentenceWords.add(word);
-          _translationOutput = _sentenceWords.join(' ');
-        });
+        _tp.addWord(word);
+        setState(() => _currentDetected = word);
 
-        // Clear current detection badge after 1.5s
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) setState(() => _currentDetected = '');
         });
@@ -1116,30 +1120,22 @@ class _TranslateScreenState extends State<TranslateScreen>
     );
   }
 
-  void _undoLastWord() {
-    if (_sentenceWords.isEmpty) return;
-    setState(() {
-      _sentenceWords.removeLast();
-      _translationOutput = _sentenceWords.join(' ');
-    });
-  }
-
-  void _speakOutput() async {
-    final text = _sentenceWords.join(' ');
+  void _speakOutput(List<String> words) async {
+    final text = words.join(' ');
     if (text.isEmpty) return;
     await _flutterTts.setLanguage('en-US');
     await _flutterTts.speak(text);
   }
 
-  void _speakCurrentSign() async {
-    if (_currentSentence.isNotEmpty) {
+  void _speakCurrentSign(List<String> sentence) async {
+    if (sentence.isNotEmpty) {
       await _flutterTts.setLanguage('en-US');
-      await _flutterTts.speak(_currentSentence.join(' '));
+      await _flutterTts.speak(sentence.join(' '));
     }
   }
 
-  void _copyOutput() {
-    final text = _sentenceWords.join(' ');
+  void _copyOutput(List<String> words) {
+    final text = words.join(' ');
     if (text.isEmpty) return;
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1148,9 +1144,8 @@ class _TranslateScreenState extends State<TranslateScreen>
   }
 
   void _clearOutput() {
+    _tp.clearSignOutput();
     setState(() {
-      _sentenceWords.clear();
-      _translationOutput = '';
       _currentDetected = '';
       _frameBuffer.clear();
     });
@@ -1178,10 +1173,8 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   void _translateText() {
     if (_textController.text.trim().isEmpty) return;
-    setState(() {
-      _isTranslating = true;
-      _currentSentence = [_textController.text.trim()];
-    });
+    _tp.setSentence([_textController.text.trim()]);
+    setState(() => _isTranslating = true);
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() => _isTranslating = false);
     });
@@ -1193,7 +1186,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     return TapScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: context.bgElevated,
           borderRadius: BorderRadius.circular(10),
@@ -1215,7 +1208,7 @@ class _TranslateScreenState extends State<TranslateScreen>
     return TapScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: isActive ? Colors.red.withValues(alpha: 0.2) : context.bgElevated,
           borderRadius: BorderRadius.circular(10),

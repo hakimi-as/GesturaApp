@@ -3,229 +3,346 @@
 <img src="assets/icons/AppIcon.png" alt="Gestura Logo" width="120" height="120" />
 
 # Gestura
+
 ### *Break Silence, Build Bridges*
 
-**A full-featured Malaysian Sign Language (BIM) learning and translation mobile application**
+A production-grade mobile application for learning and translating Malaysian Sign Language (BIM), built with Flutter, Firebase, and a custom cloud-hosted sign recognition API.
+
+<br/>
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com)
 [![Dart](https://img.shields.io/badge/Dart-3.5-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green?style=for-the-badge)](https://flutter.dev)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-4CAF50?style=for-the-badge&logo=android&logoColor=white)](https://flutter.dev)
+[![ML Kit](https://img.shields.io/badge/ML_Kit-Pose_Detection-FF6F00?style=for-the-badge&logo=google&logoColor=white)](https://developers.google.com/ml-kit)
 
 </div>
 
 ---
 
-## About
+## What Is Gestura?
 
-**Gestura** is a mobile application designed to make Malaysian Sign Language (Bahasa Isyarat Malaysia / BIM) accessible to everyone. It bridges the communication gap between the hearing and deaf communities through structured lessons, gamified learning, real-time sign-to-text translation, and a social experience — all in one app.
+Gestura is a **full-stack, production-ready mobile application** that bridges the communication gap between the hearing and Deaf communities in Malaysia. It combines **structured sign language education**, **real-time AI-powered sign recognition**, and a **gamified social learning experience** in a single, cohesive product.
 
-The app is paired with a cloud-hosted **Sign Recognition API** (FastAPI on Railway) that performs Dynamic Time Warping (DTW) matching of body pose landmark sequences against a library of 2,000+ signs sourced from the WLASL dataset and the MFD Sign Bank.
+The application is backed by a **cloud-hosted Sign Recognition API** (FastAPI on Railway) that performs Dynamic Time Warping (DTW) matching of body pose landmark sequences captured live by the device camera against a library of 2,000+ signs — sourced from the WLASL dataset and the MFD BIM Sign Bank.
 
-> Sign language assets and content in this application are used with direct permission from the **Malaysian Federation of the Deaf (MFD)** from their official BIM Sign Bank. We are deeply grateful for their collaboration and support in making this project possible.
+> Sign language assets and content in this application are used with direct permission from the **Malaysian Federation of the Deaf (MFD)** from their official BIM Sign Bank. We are deeply grateful for their collaboration and support.
 
 ---
 
-## Features
+## Why This Project Stands Out
+
+| Dimension | What Was Built |
+|---|---|
+| **Full-stack scope** | Flutter mobile app + FastAPI ML backend + Firebase cloud infrastructure |
+| **Real ML pipeline** | On-device ML Kit pose detection → frame buffering → cloud DTW matching with on-device fallback |
+| **Production architecture** | Provider pattern, paginated Firestore queries, role-based access control, offline-first Hive sync |
+| **Gamification system** | XP, streaks, streak freezes, dynamic badges, daily/weekly/personalised challenges |
+| **Admin CMS** | Full content management for lessons, quizzes, badges, challenges, users, and sign library |
+| **Social layer** | Friends, leaderboards, activity feeds, QR-code friend connections |
+| **Offline support** | Hive-based lesson caching with automatic background sync on reconnect |
+| **Multilingual** | English and Bahasa Malaysia, user-switchable at runtime |
+
+---
+
+## Feature Breakdown
 
 ### Learning System
-- **Structured Lessons** — Category-based BIM sign lessons with video demonstrations
-- **Learning Paths** — Guided Beginner → Intermediate → Advanced progression
-- **Onboarding Preferences** — Learning goal and experience level collected at onboarding; filters daily goals and surfaces a recommended learning path banner on the Learn screen
-- **Quizzes** — Five quiz modes: Sign-to-Text, Text-to-Sign, Timed Challenge, Spelling, and **Fill in the Blank** (type the sign name from an image)
-- **Certificates** — Auto-generated PDF completion certificates per category
+- **Structured Lessons** — Category-based BIM sign lessons with Cloudinary-hosted video demonstrations
+- **Learning Paths** — Curated Beginner → Intermediate → Advanced progression with auto-generated PDF completion certificates
+- **Onboarding Preferences** — Learning goal and experience level collected at first launch; personalises the recommended path banner and daily goal targets
+- **Five Quiz Modes** — Sign-to-Text, Text-to-Sign, Timed Challenge, Spelling, and Fill-in-the-Blank
+- **Lesson Detail** — Video player with playback controls, XP award, badge/challenge hooks on completion
 
 ### Gamification
-- **XP & Levelling** — Earn experience points for completing lessons and quizzes
-- **Streak System** — Daily learning streaks with freeze protection
-- **Badges & Achievements** — Unlock badges for milestones reached
-- **Challenges** — Daily, weekly, and special challenges — including **personalised daily challenges** auto-generated from the user's weakest categories (marked ✨ For You)
-
-### Social & Community
-- **Friends System** — Add friends, send/accept requests, view profiles
-- **Leaderboard** — Global and friends-only XP rankings
-- **Activity Feed** — See friends' progress and achievements
+- **XP & Levelling** — Earn experience for every lesson and quiz; levels computed from cumulative XP
+- **Daily Streaks** — Consecutive-day tracking with configurable auto-use streak-freeze protection
+- **Streak Freezes** — Purchasable with XP; auto-applies or manually triggered
+- **Dynamic Badges** — Badge pool seeded to Firestore; criteria evaluated against live user stats on each unlock check
+- **Challenges** — Daily, weekly, special, and ✨ personalised challenges auto-generated from the user's weakest sign categories
 
 ### Sign Translation
-- **Sign-to-Text** — Live camera feed with on-device ML Kit pose detection. User signs a word, taps **Capture Sign**, and the app sends pose landmark frames to the recognition API for DTW matching. Detected words build a sentence word-by-word.
-- **Text-to-Sign** — Convert typed or spoken text into BIM sign animations with a skeleton-based sign player.
+- **Sign-to-Text** — Live front-camera feed processed by ML Kit Pose Detection at ~15 fps; 30-frame rolling buffer; user taps Capture Sign to send landmark sequences to the recognition API; detected words build a sentence chip-by-chip
+- **Text-to-Sign** — Typed or spoken input converted to BIM sign animations via a skeleton-based `SignPlayer` widget; speech input via `speech_to_text`
+- **Offline fallback** — If the remote API is unreachable, on-device DTW matching kicks in automatically with no user-visible error
 
-### Analytics
-- **Learning Velocity** — 4-week XP earned comparison chart
-- **Accuracy by Category** — Per-category accuracy breakdown from lesson completion history
-- **Signs to Practice** — Auto-identified weak signs (below 70% accuracy), sorted by lowest accuracy first
+### Analytics & Progress
+- **Activity Timeline** — Filterable (All / Lessons / Quizzes), grouped by Today / Yesterday / This week / This month / Earlier; real Firestore data
+- **4-Week XP Velocity** — `fl_chart` bar chart showing XP earned per week over the last 28 days
+- **Per-Category Accuracy** — Breakdown from lesson completion history
+- **Signs to Practice** — Auto-identified weak signs (below 70% accuracy), sorted ascending
 
-### Technical Highlights
-- **Offline Support** — Full lesson caching with Hive; syncs when back online
-- **Push Notifications** — FCM-powered reminders, streak alerts, and achievement notifications
-- **Admin Dashboard** — Full CMS for managing lessons, quizzes, badges, and users
-- **Dark / Light Mode** — Full theme support with persistence
-- **QR Code** — Generate and scan QR codes for friend connections
+### Social & Community
+- **Friends System** — Send/accept friend requests; view friend profiles and stats
+- **Leaderboard** — Global and friends-only rankings by XP, Streak, or Lessons Completed
+- **Activity Feed** — Friends' recent completions and achievements
+- **QR Codes** — Generate and scan QR codes for instant friend connections
+
+### Infrastructure & Quality
+- **Offline-first** — Hive boxes cache lessons, progress, and user data; pending sync queue automatically flushes when connectivity is restored
+- **Push Notifications** — Firebase Cloud Messaging with per-type opt-in settings
+- **Role-Based Admin Panel** — `isAdmin` flag gated at both navigation and screen level; full CMS for all data types
+- **Paginated Search** — Firestore cursor-based pagination (50 lessons/page) with infinite scroll; no full-collection dumps
+- **Dark / Light / System Theme** — Persisted via SharedPreferences; switches at runtime
+- **Bilingual UI** — All strings abstracted into `AppLocalizations`; English and Malay
 
 ---
 
 ## Tech Stack
 
-### Mobile App
+### Mobile Application
 
-| Layer | Technology |
-|---|---|
-| **Framework** | Flutter 3.x (Dart) |
-| **State Management** | Provider + ChangeNotifier |
-| **Backend & Database** | Firebase Firestore |
-| **Authentication** | Firebase Auth |
-| **File Storage** | Firebase Storage + Cloudinary |
-| **Push Notifications** | Firebase Cloud Messaging + flutter_local_notifications |
-| **Local Storage / Offline** | Hive + SharedPreferences |
-| **Camera** | camera (Flutter CameraX) |
-| **Pose Detection** | Google ML Kit Pose Detection (on-device) |
-| **Media Playback** | video_player + chewie + flutter_cache_manager |
-| **Charts** | fl_chart |
-| **PDF Generation** | pdf + printing |
-| **QR Code** | qr_flutter + mobile_scanner |
-| **Speech** | speech_to_text + flutter_tts |
-| **UI & Animations** | flutter_animate + shimmer + google_fonts |
+| Layer | Technology | Purpose |
+|---|---|---|
+| Framework | Flutter 3.x (Dart) | Cross-platform UI |
+| State Management | Provider + ChangeNotifier | App-wide reactive state |
+| Database | Cloud Firestore | Real-time NoSQL backend |
+| Authentication | Firebase Auth | Email/password auth |
+| File Storage | Firebase Storage + Cloudinary | Video & image hosting |
+| Local Storage | Hive + SharedPreferences | Offline cache + settings |
+| Push Notifications | Firebase Cloud Messaging | Streak reminders, achievements |
+| Camera | Flutter CameraX (`camera`) | Live pose capture |
+| Pose Detection | Google ML Kit (on-device) | 33-landmark body keypoints |
+| Media Playback | `video_player` + `chewie` + `flutter_cache_manager` | Lesson videos |
+| Charts | `fl_chart` | XP velocity & accuracy charts |
+| PDF | `pdf` + `printing` | Completion certificates |
+| QR Code | `qr_flutter` + `mobile_scanner` | Friend connections |
+| Speech | `speech_to_text` + `flutter_tts` | Voice input & TTS output |
+| Animations | `flutter_animate` + `shimmer` | Micro-interactions & loading |
+| Fonts | `google_fonts` | Bricolage Grotesque + Nunito |
 
 ### Sign Recognition API
 
-| Layer | Technology |
-|---|---|
-| **Framework** | FastAPI (Python) |
-| **Hosting** | Railway |
-| **Sign Matching** | Dynamic Time Warping (DTW) with Sakoe-Chiba band |
-| **Feature Extraction** | Pose-only 12-dim vectors (shoulders, elbows, wrists) |
-| **Sign Library** | Firebase Firestore (RAM-cached on startup) |
-| **Dataset** | WLASL 2000 + MFD BIM Sign Bank |
+| Layer | Technology | Purpose |
+|---|---|---|
+| Framework | FastAPI (Python) | REST API |
+| Hosting | Railway | Zero-config cloud deployment |
+| Matching | Dynamic Time Warping (DTW) | Temporal sequence comparison |
+| Band | Sakoe-Chiba | Constrained DTW warping path |
+| Features | 12-dim pose vectors (shoulders, elbows, wrists) | Compact sign representation |
+| Library | Firebase Firestore (RAM-cached on startup) | 2,000+ sign sequences |
+| Dataset | WLASL 2000 + MFD BIM Sign Bank | Ground-truth sign data |
 
 ---
 
 ## Architecture
 
-### Mobile App
+### Project Structure
 
 ```
 lib/
-├── config/          # Theme, design system constants
-├── models/          # Firestore data models (User, Lesson, Quiz, Badge, ...)
-├── providers/       # State management (Auth, Progress, Badge, Theme, ...)
+├── config/
+│   ├── theme.dart           # Light/dark themes, color tokens, typography
+│   ├── design_system.dart   # Reusable decorations, TapScale, SectionHeader
+│   └── constants.dart       # Collection names, XP values, quiz settings
+│
+├── models/                  # Typed Firestore models with fromFirestore / toMap
+│   ├── user_model.dart      # XP, streaks, badges, preferences
+│   ├── lesson_model.dart
+│   ├── quiz_model.dart
+│   ├── badge_model.dart     # Dynamic badge pool (no hardcoded badges)
+│   ├── challenge_model.dart
+│   ├── progress_model.dart  # LearningProgressModel, UserStatsModel
+│   └── notification_model.dart
+│
+├── providers/               # ChangeNotifier state containers
+│   ├── auth_provider.dart
+│   ├── lesson_provider.dart
+│   ├── quiz_provider.dart
+│   ├── progress_provider.dart
+│   ├── badge_provider.dart
+│   ├── challenge_provider.dart
+│   ├── notification_provider.dart   # Unread count, mark-as-read, clear-all
+│   ├── translate_provider.dart      # Sentence words, sign segments (tab-persistent)
+│   ├── connectivity_provider.dart   # Online/offline + auto-sync on reconnect
+│   ├── theme_provider.dart
+│   └── locale_provider.dart
+│
+├── services/
+│   ├── firestore_service.dart       # Core CRUD, paginated queries, seeding
+│   ├── offline_service.dart         # Hive caching + pending sync queue
+│   ├── remote_sign_service.dart     # DTW API client with on-device fallback
+│   ├── dtw_service.dart             # On-device DTW matching
+│   ├── badge_service.dart           # Dynamic badge unlock evaluation
+│   ├── challenge_service.dart       # Challenge assignment & completion
+│   ├── notification_service.dart    # FCM initialisation & routing
+│   ├── navigation_service.dart      # Global navigator key + FCM deep links
+│   ├── cloudinary_service.dart      # Optimised image/video URLs
+│   ├── friend_service.dart          # Social graph operations
+│   ├── learning_path_service.dart   # Path progress tracking
+│   ├── certificate_service.dart     # PDF certificate generation
+│   ├── time_tracking_service.dart   # Session duration tracking
+│   └── haptic_service.dart          # Platform haptics
+│
 ├── screens/
-│   ├── admin/       # CMS: lessons, quizzes, badges, users, sign library
-│   ├── auth/        # Login, register, forgot password
-│   ├── badges/      # Achievement gallery
-│   ├── challenges/  # Daily / weekly / special challenges
-│   ├── dashboard/   # Home screen with XP, streaks, quick actions
-│   ├── learn/       # Categories, lessons, learning paths, lesson detail
-│   ├── leaderboard/ # Global and friends XP rankings
-│   ├── notifications/
-│   ├── onboarding/  # Intro slides + preference selection
-│   ├── profile/     # User profile and stats
-│   ├── progress/    # XP history chart, streak stats, enhanced analytics
-│   ├── quiz/        # Quiz home, list, session, results
-│   ├── search/      # Sign library search
-│   ├── settings/    # Theme, notifications, offline settings
-│   ├── social/      # Friends, requests, friend profiles, activity feed
-│   └── translate/   # Sign-to-text and text-to-sign translation
-├── services/        # Business logic (Firestore, Auth, Notifications, Offline, DTW, Sign Recognition)
-├── widgets/         # Reusable UI components
-│   ├── badges/      # Badge cards and unlock dialogs
-│   ├── cards/       # Stat, welcome, and action cards
-│   ├── common/      # Shared UI (bottom nav, shimmer, skeleton, emoji picker)
-│   ├── gamification/# Streak freeze and XP chart widgets
-│   ├── learning/    # Learning path widgets and entry cards
-│   ├── offline/     # Offline banners and download widgets
-│   ├── share/       # Progress sharing card
-│   ├── social/      # Activity feed widget
-│   └── video/       # Cached video player and sign animation player
-└── utils/           # Helper utilities
+│   ├── auth/                # Login · Register · Forgot Password
+│   ├── onboarding/          # Intro slides + preference selection
+│   ├── dashboard/           # Home: XP, streaks, challenges, quick actions
+│   ├── learn/               # Categories · Lesson Detail · Learning Paths
+│   ├── quiz/                # Quiz Home · Session · Results (5 modes)
+│   ├── translate/           # Sign-to-Text · Text-to-Sign
+│   ├── progress/            # Activity timeline with date grouping & filters
+│   ├── badges/              # Badge gallery (All / Unlocked tabs)
+│   ├── challenges/          # Daily · Weekly · Special · Personalised
+│   ├── leaderboard/         # Global and friends rankings
+│   ├── social/              # Friends · Requests · Profiles · Activity Feed
+│   ├── notifications/       # Notification list (provider-driven)
+│   ├── search/              # Paginated sign library search
+│   ├── settings/            # Theme · Language · Offline · Admin access
+│   ├── profile/             # User profile · Certificates · Stats
+│   └── admin/               # CMS: Lessons · Quizzes · Badges · Challenges · Users
+│
+└── widgets/
+    ├── common/              # BottomNavBar · shimmer · skeleton · emoji picker
+    ├── badges/              # BadgeCard · BadgeUnlockDialog
+    ├── cards/               # StatCard · WelcomeCard · QuickActionCard
+    ├── gamification/        # StreakFreezeCard · XpChartWidget
+    ├── learning/            # LearningPathCard · PathEntryCard
+    ├── offline/             # OfflineBanner · DownloadWidget · SyncStatus
+    ├── share/               # ShareProgressCard
+    ├── social/              # ActivityFeedWidget
+    └── video/               # CachedVideoPlayer · SignPlayer · VideoPlayerWidget
 ```
 
-### Sign Recognition API
+### State Management Pattern
+
+Every feature area owns a `ChangeNotifier` provider. Screens consume state via `Consumer<T>` or `context.read<T>()` — never calling Firestore directly from widget code. This keeps screens thin and testable.
 
 ```
-sign_api/
-├── main.py          # FastAPI app, endpoints: GET /health, GET /words, POST /match
-├── dtw_engine.py    # Feature extraction (96-dim or 12-dim) + DTW matching
-├── sign_library.py  # Firestore loader, RAM cache, pose-only compression
-├── Procfile         # Railway deployment: uvicorn main:app
-└── requirements.txt # fastapi, uvicorn, firebase-admin, pydantic
+AuthProvider ─────────────── all auth-dependent screens
+LessonProvider ────────────── Learn screens
+QuizProvider ──────────────── Quiz screens
+ProgressProvider ──────────── Progress, Dashboard, Lesson Detail
+BadgeProvider ─────────────── Badges, Dashboard, Lesson Detail
+ChallengeProvider ─────────── Challenges, Dashboard, Lesson Detail
+NotificationProvider ──────── Notifications screen + Dashboard bell badge
+TranslateProvider ─────────── Translate screen (persists across tab switches)
+ConnectivityProvider ──────── Offline banner + auto-sync trigger on reconnect
+ThemeProvider ─────────────── Theme-aware widgets
+LocaleProvider ────────────── Language selector
 ```
 
-### Sign Data Pipeline
+### Sign Recognition Pipeline
 
 ```
-sign_processing/
-├── download_wlasl.py   # Download WLASL 2000 dataset videos
-├── extract_wlasl.py    # Extract MediaPipe holistic landmarks from videos
-├── extract_all.py      # Batch landmark extraction
-├── upload_wlasl.py     # Upload processed landmark data to Firestore
-└── run_pipeline.bat    # End-to-end: download → extract → upload
+Camera frame (CameraX, ~15 fps)
+       │
+       ▼
+ML Kit Pose Detection  ◄── on-device, no network required
+(33 landmarks, x/y normalised to frame dimensions)
+       │
+       ▼
+Frame Buffer  (rolling 30-frame window, minimum 12 frames required)
+       │
+       ▼  ← user taps "Capture Sign"
+POST /match ──────────────► Sign Recognition API (FastAPI / Railway)
+                                    │
+                                    ▼
+                           Feature Extraction
+                           (pose landmarks 11–16:
+                            shoulders, elbows, wrists → 12-dim vector)
+                                    │
+                                    ▼
+                           Sequence Normalisation
+                           (translate by shoulder midpoint,
+                            scale by shoulder width)
+                                    │
+                                    ▼
+                           DTW Matching
+                           (Sakoe-Chiba band,
+                            path-length normalised distance)
+                                    │
+                                    ▼
+                           Top-K matches + confidence scores
+                                    │
+       ◄────────────────────────────┘
+       │
+  On-device fallback ◄── if server unreachable (DtwService)
+       │
+Detected word appended to sentence as a chip
+```
+
+### Offline Architecture
+
+```
+User completes lesson (offline)
+       │
+       ▼
+OfflineService.saveProgressLocally()
+  ├── writes to Hive _progressBox
+  └── enqueues item in Hive _pendingSyncBox
+
+Device regains connectivity
+       │
+       ▼
+ConnectivityProvider._updateConnectionStatus()
+  └── detects offline→online transition
+       └── calls OfflineService.syncPendingItems()
+              ├── reads all items from _pendingSyncBox
+              ├── fires Firestore writes (progress, lessonComplete, quizComplete)
+              ├── removes synced items from queue
+              └── retries failed items up to 5 times before dropping
 ```
 
 ---
 
-## Sign Recognition Pipeline
+## Screens Overview
 
-```
-Camera frame (CameraX)
-       │
-       ▼
-ML Kit Pose Detection (on-device, ~15fps)
-       │  33 pose landmarks (x, y normalized)
-       ▼
-Frame Buffer (rolling 30-frame window)
-       │
-       ▼  user taps "Capture Sign"
-POST /match  ──►  Sign Recognition API (Railway)
-                       │
-                       ▼
-              Feature extraction
-              (pose indices 11–16: shoulders, elbows, wrists → 12-dim)
-                       │
-                       ▼
-              Normalise sequence
-              (translate by shoulder midpoint, scale by shoulder width)
-                       │
-                       ▼
-              DTW matching against sign library
-              (Sakoe-Chiba band, path-length normalised)
-                       │
-                       ▼
-              Top-K matches + confidence scores
-                       │
-       ◄───────────────┘
-       │
-Detected word appended to sentence
-```
+| Screen | Highlights |
+|---|---|
+| **Onboarding** | 4-page intro with learning goal + experience level; drives personalisation |
+| **Dashboard** | Live XP, streak, daily goal progress, challenge cards, quick actions |
+| **Learn** | Category grid, lesson list, learning path entry card, progress calendar |
+| **Lesson Detail** | Video player, completion tracking, XP + badge + challenge hooks |
+| **Quiz** | 5 modes; timed; per-question feedback; wrong-answer review on results screen |
+| **Challenges** | Daily / Weekly / Special tabs + ✨ AI-personalised from weak categories |
+| **Translate** | Sign-to-Text (live camera + DTW) and Text-to-Sign (skeleton animation player) |
+| **Progress** | Date-grouped activity timeline; All / Lessons / Quizzes filter chips |
+| **Analytics** | 4-week XP velocity chart, per-category accuracy, weak-sign list |
+| **Badges** | All badges (with locked state) + Unlocked tab; category filter chips |
+| **Leaderboard** | Global and friends-only; XP / Streak / Lessons tabs |
+| **Social** | Friends list, incoming requests, friend profiles, activity feed |
+| **Notifications** | Provider-driven; dismissible cards; mark-as-read; clear all |
+| **Search** | Paginated (50/page) + infinite scroll; highlighted match text; recent history |
+| **Settings** | Theme, language, sign language, streak freeze, offline cache, logout |
+| **Admin** | Role-guarded CMS — lessons, quizzes, badges, challenges, users, sign library |
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- Flutter SDK `^3.5.0`
-- Dart SDK `^3.5.0`
-- Android Studio / VS Code with Flutter extension
-- Firebase project with Firestore, Auth, Storage, and FCM enabled
-- (Optional) Railway account for hosting the Sign Recognition API
+
+- Flutter SDK `^3.5.0` / Dart `^3.5.0`
+- Android Studio or VS Code with Flutter extension
+- Firebase project with **Firestore, Auth, Storage, Analytics, and FCM** enabled
+- *(Optional)* Railway account for the Sign Recognition API
 
 ### Mobile App Setup
 
 ```bash
-# 1. Clone the repository
+# 1. Clone
 git clone https://github.com/hakimi-as/GesturaApp.git
 cd GesturaApp
 
 # 2. Install dependencies
 flutter pub get
 
-# 3. Add your Firebase config
-# Android: place google-services.json in android/app/
-# iOS:     place GoogleService-Info.plist in ios/Runner/
+# 3. Add Firebase config
+#    Android → android/app/google-services.json
+#    iOS     → ios/Runner/GoogleService-Info.plist
 
-# 4. Run the app
+# 4. Run
 flutter run
+
+# 5. (Optional) Pass API credentials at build time
+flutter run \
+  --dart-define=SIGN_SERVER_URL=https://your-api.up.railway.app \
+  --dart-define=SIGN_API_KEY=your_secret_key
 ```
+
+> **Note:** If no API credentials are supplied, the app falls back to on-device DTW matching automatically. No configuration is required to run the app in this mode.
 
 ### Sign Recognition API Setup
 
@@ -235,88 +352,100 @@ cd sign_api
 # 1. Install Python dependencies
 pip install -r requirements.txt
 
-# 2. Add Firebase service account
-# Place serviceAccount.json in sign_api/
+# 2. Add Firebase service account key
+#    Place serviceAccount.json in sign_api/
 
-# 3. Set environment variables
-export API_KEY=your_secret_key      # optional — leave blank to disable auth
+# 3. Configure environment
+export API_KEY=your_secret_key            # optional
 export FIREBASE_CREDENTIALS=serviceAccount.json
 
 # 4. Run locally
 uvicorn main:app --reload --port 8000
 ```
 
-**Deploy to Railway:**
-1. Push `sign_api/` to a Railway service
-2. Set `API_KEY` and `FIREBASE_CREDENTIALS` env vars in Railway dashboard
-3. Railway auto-detects the `Procfile` and starts the server
+**Deploy to Railway:** push `sign_api/` to a Railway project, set `API_KEY` and `FIREBASE_CREDENTIALS` in the Railway dashboard, and Railway auto-detects the `Procfile`.
 
-**API Endpoints:**
+#### API Reference
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Liveness check + library status |
+|---|---|---|
+| `GET` | `/health` | Liveness check + library size |
 | `GET` | `/words?limit=50` | Sample of available sign words |
-| `POST` | `/match` | Match landmark frames, returns top-K sign matches |
+| `POST` | `/match` | Match landmark frames → top-K signs |
 
-**POST /match request body:**
+**POST /match payload:**
 ```json
 {
   "frames": [
     {
-      "pose":       [{"x": 0.5, "y": 0.3}, ...],
-      "left_hand":  [{"x": 0.4, "y": 0.6}, ...],
-      "right_hand": null
+      "pose":       [{"x": 0.52, "y": 0.31}, "...33 landmarks"],
+      "left_hand":  null,
+      "right_hand": [{"x": 0.48, "y": 0.67}, "...21 landmarks"]
     }
   ],
   "top_k": 3
 }
 ```
 
-### Wire the app to your API
+**Response:**
+```json
+{
+  "matches": [
+    {"word": "hello",  "confidence": 0.87, "distance": 0.13},
+    {"word": "wave",   "confidence": 0.71, "distance": 0.29},
+    {"word": "greet",  "confidence": 0.54, "distance": 0.46}
+  ],
+  "latency_ms": 42,
+  "library_size": 2048
+}
+```
 
-In `lib/services/remote_sign_service.dart`, set your Railway URL before calling the translate screen:
+### Sign Data Pipeline
 
-```dart
-RemoteSignService.serverUrl = 'https://your-app.up.railway.app';
-RemoteSignService.apiKey    = 'your_secret_key'; // if API_KEY is set
+The WLASL landmark extraction pipeline lives in `sign_processing/`:
+
+```bash
+cd sign_processing
+
+# End-to-end: download WLASL videos → extract landmarks → upload to Firestore
+run_pipeline.bat
+
+# Or run steps individually
+python download_wlasl.py   # Download WLASL 2000 dataset videos
+python extract_wlasl.py    # Extract MediaPipe holistic landmarks
+python upload_wlasl.py     # Upload processed data to Firestore
 ```
 
 ---
 
-## Screens Overview
+## Engineering Notes
 
-| Screen | Description |
-|---|---|
-| Onboarding | 4-page introduction with learning goal + experience level preference selection |
-| Dashboard | XP stats, daily streak, quick actions, learning path entry card |
-| Learn | Browse categories, lessons by category, recommended path banner based on experience level |
-| Lesson Detail | Video demonstration with controls and completion tracking |
-| Quiz | 5 modes: Sign-to-Text, Text-to-Sign, Timed Challenge, Spelling, Fill in the Blank |
-| Quiz Results | Score breakdown, XP earned, wrong-answer review, retry option |
-| Challenges | Daily / weekly / special challenges + ✨ personalised challenges from weak spots |
-| Progress | Overview, Activity, Badges, and Analytics tabs |
-| Analytics | 4-week XP velocity chart, accuracy per category, weak signs list |
-| Translate | Sign-to-text (live camera + DTW matching) and text-to-sign animation |
-| Leaderboard | Global and friends-only XP rankings |
-| Social | Friends list, friend requests, friend profiles, activity feed |
-| Badges | Full achievement gallery with unlock conditions |
-| Profile | User stats, certificates, edit profile |
-| Settings | Theme toggle, notification prefs, offline cache management |
-| Admin | Full CMS — lessons, quizzes, badges, challenges, users, sign library |
+### Key Design Decisions
+
+**Provider-per-feature, not a monolithic store.** Each domain (auth, progress, badges, challenges, notifications, translate, connectivity) owns its own `ChangeNotifier`. Screens are thin consumers. This makes it trivial to test a provider in isolation and swap its implementation without touching UI.
+
+**Paginated Firestore queries everywhere.** The search screen, lesson lists, and notification feeds all use `limit()` + `startAfterDocument()` cursors. No screen dumps an entire collection into memory.
+
+**Single connectivity singleton, auto-sync on reconnect.** `ConnectivityProvider` is a singleton registered in the Provider tree. When it detects an offline→online transition it fires `OfflineService.syncPendingItems()` automatically — no polling loop, no user action required.
+
+**API key injection via `--dart-define`.** `RemoteSignService.serverUrl` and `.apiKey` are populated from build-time environment variables. Nothing sensitive is hardcoded or committed.
+
+**Role-based admin access — double-gated.** The admin navigation entry is hidden from non-admins in `SettingsScreen`. `AdminDashboardScreen.build()` independently checks `isAdmin` and renders an access-denied screen — so deep-linked or notification-routed navigations are also blocked.
+
+**Dynamic badge and challenge pools.** No badge or challenge is hardcoded in the app binary. They are seeded to Firestore collections (`badgePool`, `challengePool`) and evaluated at runtime against live user stats. Adding a new badge requires only a Firestore document — no app update needed.
 
 ---
 
 ## Acknowledgements
 
-A special thanks to the **Malaysian Federation of the Deaf (MFD)** for granting permission to use their official **Bahasa Isyarat Malaysia (BIM) Sign Bank** as the foundation of all sign language content in this application. This project would not be possible without their support and dedication to the deaf community.
+A special thanks to the **Malaysian Federation of the Deaf (MFD)** for granting permission to use their official **Bahasa Isyarat Malaysia (BIM) Sign Bank** as the foundation of all sign language content in this application. This project would not be possible without their support and dedication to the Deaf community in Malaysia.
 
 ---
 
 <div align="center">
 
-Built with Flutter &nbsp;•&nbsp; Powered by Firebase &nbsp;•&nbsp; Sign recognition by DTW on Railway
+Built with Flutter &nbsp;·&nbsp; Powered by Firebase &nbsp;·&nbsp; Sign recognition via DTW on Railway
 
-Made for the BIM community
+*Made for the BIM community*
 
 </div>

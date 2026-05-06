@@ -14,9 +14,11 @@ import 'providers/progress_provider.dart';
 import 'providers/badge_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/challenge_provider.dart';
+import 'providers/notification_provider.dart';
+import 'providers/translate_provider.dart';
 
 // --- Phase 2 Integration: New Imports ---
-import 'providers/connectivity_provider.dart'; // Contains ConnectivityService
+import 'providers/connectivity_provider.dart';
 import 'providers/locale_provider.dart';
 import 'services/offline_service.dart';        // Handles Hive & Caching
 
@@ -50,12 +52,18 @@ void main() async {
   await OfflineService.initialize();
   
   // Initialize Connectivity Service (Start listening to network status)
-  await ConnectivityService.initialize();
+  await ConnectivityProvider.init();
   // ------------------------------------------
 
-  // Configure sign recognition API
-  RemoteSignService.serverUrl = 'https://gesturaapp-production.up.railway.app';
-  RemoteSignService.apiKey    = '';
+  // Configure sign recognition API — keys injected at build time via --dart-define
+  RemoteSignService.serverUrl = const String.fromEnvironment(
+    'SIGN_SERVER_URL',
+    defaultValue: 'https://gesturaapp-production.up.railway.app',
+  );
+  RemoteSignService.apiKey = const String.fromEnvironment(
+    'SIGN_API_KEY',
+    defaultValue: '',
+  );
 
   // Check if user has seen onboarding
   final prefs = await SharedPreferences.getInstance();
@@ -94,8 +102,10 @@ class MyApp extends StatelessWidget {
         
         // --- Phase 2 Integration: Connectivity Provider ---
         // Provides real-time online/offline status to the widget tree
-        ChangeNotifierProvider(create: (_) => ConnectivityService.instance),
-        
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider.instance),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => TranslateProvider()),
+
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],

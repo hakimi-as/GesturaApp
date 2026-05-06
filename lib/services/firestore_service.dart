@@ -348,6 +348,30 @@ class FirestoreService {
     }
   }
 
+  /// Paginated lesson fetch. Returns lessons and the last Firestore document
+  /// so the caller can pass it back as [startAfter] for the next page.
+  Future<({List<LessonModel> lessons, DocumentSnapshot? lastDoc})> getLessonsPaginated({
+    int limit = 50,
+    DocumentSnapshot? startAfter,
+  }) async {
+    try {
+      Query query = _firestore
+          .collection(AppConstants.lessonsCollection)
+          .orderBy('signName')
+          .limit(limit);
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+      final snapshot = await query.get();
+      final lessons = snapshot.docs.map((doc) => LessonModel.fromFirestore(doc)).toList();
+      final lastDoc = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+      return (lessons: lessons, lastDoc: lastDoc);
+    } catch (e) {
+      debugPrint('Error getting lessons paginated: $e');
+      return (lessons: <LessonModel>[], lastDoc: null);
+    }
+  }
+
   Future<void> addLesson(Map<String, dynamic> data) async {
     try {
       await _firestore.collection(AppConstants.lessonsCollection).add(data);

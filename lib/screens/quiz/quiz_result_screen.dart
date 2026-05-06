@@ -96,7 +96,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     }
 
     if (authProvider.userId != null) {
-      if (ConnectivityService.isOffline) {
+      if (ConnectivityProvider.staticIsOffline) {
         // Queue quiz completion for later sync
         await OfflineService.queueQuizComplete(
           userId: authProvider.userId!,

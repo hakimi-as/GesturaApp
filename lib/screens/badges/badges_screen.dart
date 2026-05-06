@@ -378,7 +378,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
+            childAspectRatio: 0.75,
           ),
           itemCount: badges.length,
           itemBuilder: (context, index) {
@@ -414,7 +414,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
+            childAspectRatio: 0.75,
           ),
           itemCount: sortedBadges.length,
           itemBuilder: (context, index) {

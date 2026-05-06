@@ -57,7 +57,7 @@ class BottomNavBar extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isActive ? AppColors.primary.withAlpha(30) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),

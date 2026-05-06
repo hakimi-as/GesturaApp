@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -14,6 +13,7 @@ import '../../config/design_system.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../providers/challenge_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../services/haptic_service.dart';
@@ -26,7 +26,6 @@ import '../translate/translate_screen.dart';
 import '../learn/learn_screen.dart';
 import '../progress/progress_screen.dart';
 import '../profile/profile_screen.dart';
-import '../progress/enhanced_progress_screen.dart';
 import '../search/search_screen.dart';
 import '../leaderboard/leaderboard_screen.dart';
 import '../challenges/challenges_screen.dart';
@@ -90,7 +89,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         Provider.of<ProgressProvider>(context, listen: false)
             .loadUserProgress(authProvider.userId!);
-        
+        Provider.of<NotificationProvider>(context, listen: false)
+            .loadNotifications(authProvider.userId!);
+
         final user = authProvider.currentUser;
         if (user != null) {
           Provider.of<ChallengeProvider>(context, listen: false)
@@ -232,8 +233,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   compact: true,
                   onTap: () => _showFreezeInfo(),
                 ),
-                const SizedBox(width: 10),
-                
+                const SizedBox(width: 8),
+
                 TapScale(
                   onTap: () {
                     HapticService.buttonTap();
@@ -256,7 +257,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 TapScale(
                   onTap: () {
                     HapticService.buttonTap();
@@ -280,25 +281,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             size: 24,
                           ),
                         ),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('notifications')
-                              .where('userId', isEqualTo: Provider.of<AuthProvider>(context, listen: false).userId)
-                              .where('isRead', isEqualTo: false)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            final unreadCount = snapshot.data?.docs.length ?? 0;
+                        Consumer<NotificationProvider>(
+                          builder: (context, notifProvider, _) {
+                            final unreadCount = notifProvider.unreadCount;
                             if (unreadCount == 0) return const SizedBox();
-                            
                             return Positioned(
                               right: 8,
                               top: 8,
                               child: Container(
                                 padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
-                                ),
+                                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                                 decoration: const BoxDecoration(
                                   color: AppColors.error,
                                   shape: BoxShape.circle,
@@ -320,7 +312,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 TapScale(
                   onTap: () async {
                     HapticService.buttonTap();
@@ -691,7 +683,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 featured: false,
                 onTap: () {
                   HapticService.buttonTap();
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const EnhancedProgressScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ProgressScreen()));
                 },
               ),
             ],
