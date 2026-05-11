@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -12,6 +12,7 @@ import '../../config/theme.dart';
 import '../../config/design_system.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/remote_sign_service.dart';
+import '../../services/dtw_service.dart';
 import '../../widgets/video/sign_player.dart';
 
 class TranslateScreen extends StatefulWidget {
@@ -52,10 +53,12 @@ class _TranslateScreenState extends State<TranslateScreen>
   List<double>? _prevWristPos;
   bool _isReady = false; // true once buffer has enough frames
 
-  // Camera & ML Kit
-  CameraController? _cameraController;
-  PoseDetector? _poseDetector;
-  bool _isProcessingFrame = false;
+  // Real-time auto-detection cooldown
+  static const int _stillThreshold = 8; // ~0.5s at 15fps
+  DateTime? _lastMatchTime;
+
+  // WebView for MediaPipe Holistic
+  InAppWebViewController? _webViewController;
 
   // ── Text-to-Sign state ──────────────────────────────────────────────────
   List<String> _currentSentence = [];
@@ -71,8 +74,7 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   @override
   void dispose() {
-    _cameraController?.dispose();
-    _poseDetector?.close();
+    _webViewController = null;
     _tabController.dispose();
     _textController.dispose();
     _flutterTts.stop();
@@ -314,28 +316,44 @@ class _TranslateScreenState extends State<TranslateScreen>
   }
 
   Widget _buildWebCameraView() {
-    final controller = _cameraController;
-    if (controller == null || !controller.value.isInitialized) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
-    }
     return Stack(
       fit: StackFit.expand,
       children: [
-        // ── Native camera preview ──────────────────────────────────────
-        ClipRRect(
-          child: OverflowBox(
-            alignment: Alignment.center,
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: controller.value.previewSize!.height,
-                height: controller.value.previewSize!.width,
-                child: CameraPreview(controller),
-              ),
-            ),
+        // ── MediaPipe Holistic WebView ─────────────────────────────────
+        InAppWebView(
+          initialFile: 'assets/holistic_camera.html',
+          initialSettings: InAppWebViewSettings(
+            mediaPlaybackRequiresUserGesture: false,
+            allowsInlineMediaPlayback: true,
+            javaScriptEnabled: true,
           ),
+          onWebViewCreated: (controller) {
+            _webViewController = controller;
+
+            // Handler: MediaPipe sends landmarks every frame (~15fps)
+            controller.addJavaScriptHandler(
+              handlerName: 'onLandmarks',
+              callback: (args) {
+                if (args.isNotEmpty && args[0] is Map) {
+                  _onLandmarksFromWeb(args[0] as Map<String, dynamic>);
+                }
+              },
+            );
+
+            // Handler: MediaPipe is ready
+            controller.addJavaScriptHandler(
+              handlerName: 'onReady',
+              callback: (args) {
+                debugPrint('MediaPipe Holistic is ready');
+              },
+            );
+          },
+          onPermissionRequest: (controller, request) async {
+            return PermissionResponse(
+              resources: request.resources,
+              action: PermissionResponseAction.GRANT,
+            );
+          },
         ),
 
         // ── Recording indicator ────────────────────────────────────────
@@ -995,7 +1013,22 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   void _onStillFrame() {
     _stillFrameCount++;
-    // No auto-trigger — user taps "Capture Sign" manually.
+
+    // ── Real-time auto-trigger ──────────────────────────────────────────
+    // When the user holds a sign still for ~0.5s and we have enough frames,
+    // automatically send to the server for matching.
+    // A 2-second cooldown prevents spamming after each detection.
+    if (_stillFrameCount >= _stillThreshold &&
+        _frameBuffer.length >= _minFrames &&
+        !_isMatching) {
+      final now = DateTime.now();
+      final cooldownOk = _lastMatchTime == null ||
+          now.difference(_lastMatchTime!).inMilliseconds > 2000;
+      if (cooldownOk) {
+        _lastMatchTime = now;
+        _triggerMatch();
+      }
+    }
   }
 
   void _captureSign() {
@@ -1027,7 +1060,7 @@ class _TranslateScreenState extends State<TranslateScreen>
       final matches = await RemoteSignService.instance.match(framesToMatch, topK: 3);
       if (!mounted) return;
 
-      if (matches.isNotEmpty && matches.first.confidence > 0.3) {
+      if (matches.isNotEmpty && matches.first.confidence > 0.15) {
         final word = _capitalize(matches.first.word);
         setState(() {
           _currentDetected = word;
@@ -1039,9 +1072,21 @@ class _TranslateScreenState extends State<TranslateScreen>
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) setState(() => _currentDetected = '');
         });
+      } else {
+        if (mounted) {
+          final libSize = DtwService.instance.librarySize;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(matches.isEmpty 
+              ? 'No matches found (Library size: $libSize)' 
+              : 'Low confidence: ${matches.first.confidence.toStringAsFixed(2)}'),
+          ));
+        }
       }
     } catch (e) {
       debugPrint('RemoteSignService error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isMatching = false);
     }
@@ -1071,63 +1116,13 @@ class _TranslateScreenState extends State<TranslateScreen>
     _currentDetected = '';
     _isReady = false;
 
-    _poseDetector = PoseDetector(
-      options: PoseDetectorOptions(mode: PoseDetectionMode.stream),
-    );
-
-    final cameras = await availableCameras();
-    final camera = cameras.firstWhere(
-      (c) => c.lensDirection == CameraLensDirection.front,
-      orElse: () => cameras.first,
-    );
-
-    final controller = CameraController(
-      camera,
-      ResolutionPreset.medium,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.nv21,
-    );
-
-    await controller.initialize();
-
-    if (!mounted) {
-      controller.dispose();
-      return;
-    }
-
-    _cameraController = controller;
+    // The InAppWebView in _buildWebCameraView() handles camera + MediaPipe.
+    // We just need to set the state to show it.
     setState(() => _isCameraActive = true);
-
-    controller.startImageStream((CameraImage image) async {
-      if (_isProcessingFrame) return;
-      _isProcessingFrame = true;
-      try {
-        final inputImage = _toInputImage(image, camera);
-        if (inputImage == null) return;
-
-        final poses = await _poseDetector!.processImage(inputImage);
-        if (!mounted) return;
-
-        if (poses.isEmpty) {
-          _onStillFrame();
-        } else {
-          _onPoseDetected(poses.first, image.width, image.height);
-        }
-      } catch (e) {
-        debugPrint('Pose detection error: $e');
-      } finally {
-        _isProcessingFrame = false;
-      }
-    });
   }
 
   void _stopCamera() {
-    _cameraController?.stopImageStream().catchError((_) {});
-    _cameraController?.dispose();
-    _cameraController = null;
-    _poseDetector?.close();
-    _poseDetector = null;
-    _isProcessingFrame = false;
+    _webViewController = null;
     _frameBuffer.clear();
     setState(() {
       _isCameraActive = false;
@@ -1137,40 +1132,20 @@ class _TranslateScreenState extends State<TranslateScreen>
     });
   }
 
-  // ── ML Kit helpers ───────────────────────────────────────────────────────
+  // ── MediaPipe WebView handler ────────────────────────────────────────────
 
-  void _onPoseDetected(Pose pose, int imgW, int imgH) {
-    // Build a 33-element list sorted by landmark type index
-    final poseLandmarks = List<Map<String, dynamic>>.filled(33, {'x': 0.0, 'y': 0.0});
-    for (final entry in pose.landmarks.entries) {
-      final idx = entry.key.index;
-      if (idx < 33) {
-        poseLandmarks[idx] = {
-          'x': entry.value.x / imgW,
-          'y': entry.value.y / imgH,
-        };
-      }
-    }
+  void _onLandmarksFromWeb(Map<String, dynamic> data) {
+    // MediaPipe Holistic sends: { pose: [...], leftHand: [...], rightHand: [...] }
+    // Convert to the format expected by _onFrame: { pose, left_hand, right_hand }
+    final pose = data['pose'] as List?;
+    final leftHand = data['leftHand'] as List?;
+    final rightHand = data['rightHand'] as List?;
 
-    _onFrame({'pose': poseLandmarks, 'left_hand': null, 'right_hand': null});
-  }
-
-  InputImage? _toInputImage(CameraImage image, CameraDescription camera) {
-    final rotation = InputImageRotationValue.fromRawValue(camera.sensorOrientation);
-    if (rotation == null) return null;
-    final format = InputImageFormatValue.fromRawValue(image.format.raw);
-    if (format == null) return null;
-
-    final plane = image.planes.first;
-    return InputImage.fromBytes(
-      bytes: plane.bytes,
-      metadata: InputImageMetadata(
-        size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: rotation,
-        format: format,
-        bytesPerRow: plane.bytesPerRow,
-      ),
-    );
+    _onFrame({
+      'pose': pose?.map((lm) => {'x': (lm['x'] as num).toDouble(), 'y': (lm['y'] as num).toDouble()}).toList(),
+      'left_hand': leftHand?.map((lm) => {'x': (lm['x'] as num).toDouble(), 'y': (lm['y'] as num).toDouble()}).toList(),
+      'right_hand': rightHand?.map((lm) => {'x': (lm['x'] as num).toDouble(), 'y': (lm['y'] as num).toDouble()}).toList(),
+    });
   }
 
   void _undoLastWord() {

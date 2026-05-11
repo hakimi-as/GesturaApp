@@ -95,6 +95,7 @@ flutter:
     - assets/signs/
     - assets/icons/AppIcon.png
     - assets/signwriting_viewer.html
+    - assets/holistic_camera.html
 
 flutter_launcher_icons:
   android: true

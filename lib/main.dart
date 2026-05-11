@@ -52,9 +52,9 @@ void main() async {
   await ConnectivityService.initialize();
   // ------------------------------------------
 
-  // Configure sign recognition API
-  RemoteSignService.serverUrl = 'https://gesturaapp-production.up.railway.app';
-  RemoteSignService.apiKey    = '';
+  // Configure sign recognition API (Disabled to use local MSL data via DtwService)
+  // RemoteSignService.serverUrl = 'https://gesturaapp-production.up.railway.app';
+  // RemoteSignService.apiKey    = '';
 
   // Check if user has seen onboarding
   final prefs = await SharedPreferences.getInstance();

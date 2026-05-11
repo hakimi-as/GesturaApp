@@ -405,7 +405,7 @@ class AppLocalizations {
       'signToTextTab': 'Sign → Text',
       'textToSignTab': 'Text → Sign',
       'translationOutput': 'TRANSLATION OUTPUT',
-      'aslToEnglish': 'ASL → English',
+      'aslToEnglish': 'MSL → English',
       'waitingForGestures': 'Waiting for gestures...',
       'speak': 'Speak',
       'copy': 'Copy',
