@@ -31,11 +31,7 @@ class ShareProgressCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: AppColors.primary,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(24),
                 topRight: Radius.circular(24),
@@ -148,17 +144,7 @@ class ShareProgressCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(30),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(icon, style: const TextStyle(fontSize: 24)),
-              ),
-            ),
+            Text(icon, style: const TextStyle(fontSize: 28)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

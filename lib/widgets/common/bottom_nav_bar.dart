@@ -28,10 +28,11 @@ class BottomNavBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(context: context, index: 0, label: loc.navHome,      painter: _HomeIconPainter()),
-              _buildNavItem(context: context, index: 1, label: loc.navTranslate, painter: _SignIconPainter()),
-              _buildNavItem(context: context, index: 2, label: loc.navLearn,     painter: _LearnIconPainter()),
-              _buildNavItem(context: context, index: 3, label: loc.navSettings,  painter: _MeIconPainter()),
+              _buildNavItem(context: context, index: 0, label: loc.navHome,       painter: _HomeIconPainter()),
+              _buildNavItem(context: context, index: 1, label: loc.navLearn,      painter: _LearnIconPainter()),
+              _buildNavItem(context: context, index: 2, label: loc.navTranslate,  painter: _SignIconPainter()),
+              _buildNavItem(context: context, index: 3, label: 'Challenges',      painter: _ChallengesIconPainter()),
+              _buildNavItem(context: context, index: 4, label: loc.navProfile,    painter: _MeIconPainter()),
             ],
           ),
         ),
@@ -47,12 +48,16 @@ class BottomNavBar extends StatelessWidget {
   }) {
     final isActive = currentIndex == index;
 
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
+    return Semantics(
+      label: label,
+      button: true,
+      selected: isActive,
+      child: GestureDetector(
+        onTap: () => onTap(index),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isActive ? AppColors.primary.withAlpha(30) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -82,6 +87,7 @@ class BottomNavBar extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -233,4 +239,63 @@ class _MeIconPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_MeIconPainter old) => false;
+}
+
+class _ChallengesIconPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..style = PaintingStyle.fill;
+    final s = size.width / 40;
+
+    // Trophy cup body
+    final cup = Path()
+      ..moveTo(12 * s, 6 * s)
+      ..lineTo(28 * s, 6 * s)
+      ..lineTo(28 * s, 18 * s)
+      ..quadraticBezierTo(28 * s, 27 * s, 20 * s, 27 * s)
+      ..quadraticBezierTo(12 * s, 27 * s, 12 * s, 18 * s)
+      ..close();
+    canvas.drawPath(cup, p);
+
+    // Left handle
+    final leftHandle = Path()
+      ..moveTo(12 * s, 10 * s)
+      ..quadraticBezierTo(5 * s, 10 * s, 5 * s, 16 * s)
+      ..quadraticBezierTo(5 * s, 22 * s, 12 * s, 22 * s);
+    canvas.drawPath(leftHandle, Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5 * s
+      ..strokeCap = StrokeCap.round);
+
+    // Right handle
+    final rightHandle = Path()
+      ..moveTo(28 * s, 10 * s)
+      ..quadraticBezierTo(35 * s, 10 * s, 35 * s, 16 * s)
+      ..quadraticBezierTo(35 * s, 22 * s, 28 * s, 22 * s);
+    canvas.drawPath(rightHandle, Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5 * s
+      ..strokeCap = StrokeCap.round);
+
+    // Stem
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(18 * s, 27 * s, 4 * s, 6 * s),
+        const Radius.circular(2),
+      ),
+      p,
+    );
+
+    // Base
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(13 * s, 33 * s, 14 * s, 3.5 * s),
+        const Radius.circular(2),
+      ),
+      p,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ChallengesIconPainter old) => false;
 }

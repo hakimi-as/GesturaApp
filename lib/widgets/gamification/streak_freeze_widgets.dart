@@ -64,37 +64,30 @@ class StreakFreezeWidget extends StatelessWidget {
   }
 
   Widget _buildFull(BuildContext context) {
+    const cyan = Color(0xFF06B6D4);
+
     return TapScale(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: freezeCount > 0
-              ? const LinearGradient(
-                  colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: freezeCount == 0 ? context.bgCard : null,
+          color: context.bgCard,
           borderRadius: BorderRadius.circular(16),
-          border: freezeCount == 0 
-              ? Border.all(color: context.borderColor)
-              : null,
+          border: Border.all(
+            color: freezeCount > 0 ? cyan.withAlpha(100) : context.borderColor,
+          ),
         ),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: freezeCount > 0 
-                    ? Colors.white.withAlpha(51)
-                    : const Color(0xFF06B6D4).withAlpha(26),
-                borderRadius: BorderRadius.circular(12),
+                color: cyan.withAlpha(26),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Center(
-                child: Text('🧊', style: TextStyle(fontSize: 24)),
+                child: Text('🧊', style: TextStyle(fontSize: 22)),
               ),
             ),
             const SizedBox(width: 14),
@@ -105,9 +98,9 @@ class StreakFreezeWidget extends StatelessWidget {
                   Text(
                     'Streak Freezes',
                     style: TextStyle(
-                      color: freezeCount > 0 ? Colors.white : context.textPrimary,
+                      color: context.textPrimary,
                       fontWeight: FontWeight.w600,
-                      fontSize: 15,
+                      fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -116,46 +109,31 @@ class StreakFreezeWidget extends StatelessWidget {
                         ? 'Protects your streak if you miss a day'
                         : 'Earn freezes by maintaining 7-day streaks',
                     style: TextStyle(
-                      color: freezeCount > 0 
-                          ? Colors.white.withAlpha(180)
-                          : context.textMuted,
+                      color: context.textMuted,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            // Freeze indicators
-            Row(
-              children: List.generate(maxFreezes, (index) {
-                final isActive = index < freezeCount;
-                return Container(
-                  margin: const EdgeInsets.only(left: 4),
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? Colors.white.withAlpha(51)
-                        : (freezeCount > 0 
-                            ? Colors.white.withAlpha(26)
-                            : context.bgElevated),
-                    borderRadius: BorderRadius.circular(8),
-                    border: !isActive
-                        ? Border.all(
-                            color: freezeCount > 0
-                                ? Colors.white.withAlpha(77)
-                                : context.borderColor,
-                          )
-                        : null,
-                  ),
-                  child: Center(
-                    child: Text(
-                      isActive ? '🧊' : '',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ),
-                );
-              }),
+            // Freeze count badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: freezeCount > 0 ? cyan.withAlpha(26) : context.bgElevated,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: freezeCount > 0 ? cyan.withAlpha(80) : context.borderColor,
+                ),
+              ),
+              child: Text(
+                '$freezeCount / $maxFreezes',
+                style: TextStyle(
+                  color: freezeCount > 0 ? cyan : context.textMuted,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ],
         ),

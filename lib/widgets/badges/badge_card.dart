@@ -51,24 +51,12 @@ class BadgeCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                gradient: isUnlocked
-                    ? LinearGradient(
-                        colors: [badge.tierGradientStart, badge.tierGradientEnd],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: isUnlocked ? null : context.bgElevated,
+                color: isUnlocked ? badge.tierColor.withAlpha(30) : context.bgElevated,
                 shape: BoxShape.circle,
-                boxShadow: isUnlocked
-                    ? [
-                        BoxShadow(
-                          color: badge.tierColor.withAlpha(50),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ]
-                    : null,
+                border: Border.all(
+                  color: isUnlocked ? badge.tierColor.withAlpha(120) : context.borderColor,
+                  width: isUnlocked ? 2 : 1,
+                ),
               ),
               child: Center(
                 child: Text(
@@ -108,17 +96,7 @@ class BadgeCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isUnlocked ? badge.tierColor.withAlpha(100) : context.borderColor,
-            width: isUnlocked ? 2 : 1,
           ),
-          boxShadow: isUnlocked
-              ? [
-                  BoxShadow(
-                    color: badge.tierColor.withAlpha(30),
-                    blurRadius: 20,
-                    spreadRadius: 0,
-                  ),
-                ]
-              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -127,70 +105,25 @@ class BadgeCard extends StatelessWidget {
             Stack(
               alignment: Alignment.center,
               children: [
-                // Outer glow for unlocked
-                if (isUnlocked)
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          badge.tierColor.withAlpha(50),
-                          badge.tierColor.withAlpha(0),
-                        ],
-                      ),
-                    ),
-                  ),
-                // Tier ring
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: isUnlocked
-                        ? LinearGradient(
-                            colors: [badge.tierGradientStart, badge.tierGradientEnd],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: isUnlocked ? null : context.bgElevated,
-                  ),
-                  padding: const EdgeInsets.all(4),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isUnlocked ? context.bgCard : context.bgElevated,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        isUnlocked ? badge.icon : (badge.isSecret ? '❓' : '🔒'),
-                        style: TextStyle(
-                          fontSize: isUnlocked ? 32 : 28,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // Tier badge
+                // Tier ring — border-only (no solid fill)
+                _buildIconRing(context),
+                // Tier pill at bottom
                 if (isUnlocked)
                   Positioned(
                     bottom: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [badge.tierGradientStart, badge.tierGradientEnd],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
+                        color: badge.tierColor,
+                        borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
                         badge.tierName,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ),
@@ -249,6 +182,40 @@ class BadgeCard extends StatelessWidget {
     );
   }
 
+  Widget _buildIconRing(BuildContext context) {
+    final ring = Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isUnlocked ? badge.tierColor.withAlpha(30) : context.bgElevated,
+        border: Border.all(
+          color: isUnlocked ? badge.tierColor : context.borderColor,
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          isUnlocked ? badge.icon : (badge.isSecret ? '❓' : '🔒'),
+          style: TextStyle(fontSize: isUnlocked ? 32 : 26),
+        ),
+      ),
+    );
+
+    if (isUnlocked) return ring;
+
+    // Locked: desaturate + reduce opacity
+    return ColorFiltered(
+      colorFilter: const ColorFilter.matrix([
+        0.2126, 0.7152, 0.0722, 0, 0,
+        0.2126, 0.7152, 0.0722, 0, 0,
+        0.2126, 0.7152, 0.0722, 0, 0,
+        0,      0,      0,      0.45, 0,
+      ]),
+      child: ring,
+    );
+  }
+
   void _showBadgeDetails(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -279,35 +246,16 @@ class BadgeCard extends StatelessWidget {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: isUnlocked
-                    ? LinearGradient(
-                        colors: [badge.tierGradientStart, badge.tierGradientEnd],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: isUnlocked ? null : context.bgElevated,
-                boxShadow: isUnlocked
-                    ? [
-                        BoxShadow(
-                          color: badge.tierColor.withAlpha(100),
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                        ),
-                      ]
-                    : null,
-              ),
-              padding: const EdgeInsets.all(4),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: context.bgCard,
-                  shape: BoxShape.circle,
+                color: isUnlocked ? badge.tierColor.withAlpha(30) : context.bgElevated,
+                border: Border.all(
+                  color: isUnlocked ? badge.tierColor : context.borderColor,
+                  width: 2.5,
                 ),
-                child: Center(
-                  child: Text(
-                    isUnlocked ? badge.icon : '🔒',
-                    style: const TextStyle(fontSize: 48),
-                  ),
+              ),
+              child: Center(
+                child: Text(
+                  isUnlocked ? badge.icon : '🔒',
+                  style: const TextStyle(fontSize: 48),
                 ),
               ),
             ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
@@ -315,20 +263,21 @@ class BadgeCard extends StatelessWidget {
 
             // Tier Badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isUnlocked
-                      ? [badge.tierGradientStart, badge.tierGradientEnd]
-                      : [context.bgElevated, context.bgElevated],
+                color: isUnlocked ? badge.tierColor.withAlpha(26) : context.bgElevated,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isUnlocked ? badge.tierColor.withAlpha(80) : context.borderColor,
                 ),
-                borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                badge.tierName,
+                badge.tierName.toUpperCase(),
                 style: TextStyle(
-                  color: isUnlocked ? Colors.white : context.textMuted,
-                  fontWeight: FontWeight.bold,
+                  color: isUnlocked ? badge.tierColor : context.textMuted,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                  letterSpacing: 0.8,
                 ),
               ),
             ),
@@ -447,14 +396,7 @@ class MiniBadge extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: isUnlocked
-            ? LinearGradient(
-                colors: [badge.tierGradientStart, badge.tierGradientEnd],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
-        color: isUnlocked ? null : context.bgElevated,
+        color: isUnlocked ? badge.tierColor.withAlpha(40) : context.bgElevated,
         border: Border.all(
           color: isUnlocked ? badge.tierColor : context.borderColor,
           width: 2,

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/notification_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -16,237 +16,129 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  bool _isLoading = true;
-  List<NotificationModel> _notifications = [];
-
   @override
   void initState() {
     super.initState();
-    _loadNotifications();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  Future<void> _loadNotifications() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      final userId = Provider.of<AuthProvider>(context, listen: false).userId;
-      if (userId == null) return;
-
-      final snapshot = await _firestore
-          .collection('notifications')
-          .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .limit(50)
-          .get();
-
-      setState(() {
-        _notifications = snapshot.docs
-            .map((doc) => NotificationModel.fromFirestore(doc))
-            .toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      debugPrint('Error loading notifications: $e');
-      setState(() => _isLoading = false);
+  void _load() {
+    final userId = context.read<AuthProvider>().userId;
+    if (userId != null) {
+      context.read<NotificationProvider>().loadNotifications(userId);
     }
   }
 
-  Future<void> _markAsRead(NotificationModel notification) async {
-    if (notification.isRead) return;
-    
-    try {
-      await _firestore
-          .collection('notifications')
-          .doc(notification.id)
-          .update({'isRead': true});
-
-      setState(() {
-        final index = _notifications.indexWhere((n) => n.id == notification.id);
-        if (index != -1) {
-          _notifications[index] = notification.copyWith(isRead: true);
-        }
-      });
-    } catch (e) {
-      debugPrint('Error marking as read: $e');
-    }
-  }
-
-  Future<void> _markAllAsRead() async {
-    try {
-      final userId = Provider.of<AuthProvider>(context, listen: false).userId;
-      if (userId == null) return;
-
-      final batch = _firestore.batch();
-      for (var notification in _notifications.where((n) => !n.isRead)) {
-        batch.update(
-          _firestore.collection('notifications').doc(notification.id),
-          {'isRead': true},
-        );
-      }
-      await batch.commit();
-
-      setState(() {
-        _notifications = _notifications
-            .map((n) => n.copyWith(isRead: true))
-            .toList();
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('All notifications marked as read'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error marking all as read: $e');
-    }
-  }
-
-  Future<void> _deleteNotification(NotificationModel notification) async {
-    try {
-      await _firestore.collection('notifications').doc(notification.id).delete();
-      
-      setState(() {
-        _notifications.removeWhere((n) => n.id == notification.id);
-      });
-    } catch (e) {
-      debugPrint('Error deleting notification: $e');
-    }
-  }
-
-  Future<void> _clearAllNotifications() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.bgCard,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear All Notifications'),
-        content: const Text('Are you sure you want to delete all notifications?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Clear All'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    try {
-      final userId = Provider.of<AuthProvider>(context, listen: false).userId;
-      if (userId == null) return;
-
-      final batch = _firestore.batch();
-      for (var notification in _notifications) {
-        batch.delete(_firestore.collection('notifications').doc(notification.id));
-      }
-      await batch.commit();
-
-      setState(() => _notifications.clear());
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('All notifications cleared'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error clearing notifications: $e');
-    }
-  }
-
-  void _handleNotificationTap(NotificationModel notification) {
-    _markAsRead(notification);
-    
-    // Handle navigation based on actionRoute
+  void _handleTap(NotificationModel notification) {
+    context.read<NotificationProvider>().markAsRead(notification.id);
     if (notification.actionRoute != null) {
-      // For now, just close and let dashboard handle it
-      // Could implement navigation here if needed
       Navigator.pop(context, notification.actionRoute);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _notifications.where((n) => !n.isRead).length;
+    return Consumer<NotificationProvider>(
+      builder: (context, provider, _) {
+        final unreadCount = provider.unreadCount;
 
-    return Scaffold(
-      backgroundColor: context.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: context.bgPrimary,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Notifications',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          if (_notifications.isNotEmpty) ...[
-            if (unreadCount > 0)
-              TextButton.icon(
-                onPressed: _markAllAsRead,
-                icon: const Icon(Icons.done_all, size: 18),
-                label: const Text('Read All'),
-              ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              color: context.bgCard,
-              onSelected: (value) {
-                if (value == 'clear') _clearAllNotifications();
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'clear',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-                      SizedBox(width: 8),
-                      Text('Clear All', style: TextStyle(color: AppColors.error)),
-                    ],
+        return Scaffold(
+          backgroundColor: context.bgPrimary,
+          appBar: AppBar(
+            backgroundColor: context.bgPrimary,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              'Notifications',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            actions: [
+              if (provider.notifications.isNotEmpty) ...[
+                if (unreadCount > 0)
+                  TextButton.icon(
+                    onPressed: provider.markAllAsRead,
+                    icon: const Icon(Icons.done_all, size: 18),
+                    label: const Text('Read All'),
                   ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  color: context.bgCard,
+                  onSelected: (value) async {
+                    if (value == 'clear') {
+                      final confirm = await _confirmClear();
+                      if (confirm == true && mounted) {
+                        await provider.clearAll();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('All notifications cleared'),
+                              backgroundColor: AppColors.success,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'clear',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                          SizedBox(width: 8),
+                          Text('Clear All', style: TextStyle(color: AppColors.error)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : _notifications.isEmpty
-              ? _buildEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _loadNotifications,
-                  color: AppColors.primary,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _notifications.length,
-                    itemBuilder: (context, index) {
-                      final notification = _notifications[index];
-                      return _buildNotificationCard(notification, index);
-                    },
-                  ),
-                ),
+            ],
+          ),
+          body: provider.isLoading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              : provider.notifications.isEmpty
+                  ? _buildEmptyState()
+                  : RefreshIndicator(
+                      onRefresh: () async => _load(),
+                      color: AppColors.primary,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: provider.notifications.length,
+                        itemBuilder: (context, index) {
+                          final notification = provider.notifications[index];
+                          return _buildCard(notification, index, provider);
+                        },
+                      ),
+                    ),
+        );
+      },
     );
   }
+
+  Future<bool?> _confirmClear() => showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: context.bgCard,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Clear All Notifications'),
+          content: const Text('Are you sure you want to delete all notifications?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+              child: const Text('Clear All'),
+            ),
+          ],
+        ),
+      );
 
   Widget _buildEmptyState() {
     return Center(
@@ -260,32 +152,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               color: AppColors.primary.withAlpha(30),
               borderRadius: BorderRadius.circular(50),
             ),
-            child: const Icon(
-              Icons.notifications_none,
-              size: 50,
-              color: AppColors.primary,
-            ),
+            child: const Icon(Icons.notifications_none, size: 50, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
           Text(
             'No Notifications',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
-            'You\'re all caught up! Check back later.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: context.textMuted,
-            ),
+            "You're all caught up! Check back later.",
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.textMuted),
           ),
         ],
       ),
     ).animate().fadeIn(duration: 300.ms);
   }
 
-  Widget _buildNotificationCard(NotificationModel notification, int index) {
+  Widget _buildCard(NotificationModel notification, int index, NotificationProvider provider) {
     return Dismissible(
       key: Key(notification.id),
       direction: DismissDirection.endToStart,
@@ -298,9 +182,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      onDismissed: (_) => _deleteNotification(notification),
+      onDismissed: (_) => provider.deleteNotification(notification.id),
       child: TapScale(
-        onTap: () => _handleNotificationTap(notification),
+        onTap: () => _handleTap(notification),
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -318,24 +202,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: _getTypeColor(notification.type).withAlpha(30),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    notification.displayIcon,
-                    style: const TextStyle(fontSize: 24),
-                  ),
+              SizedBox(
+                width: 32,
+                child: Text(
+                  notification.displayIcon,
+                  style: const TextStyle(fontSize: 22),
+                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(width: 14),
-              
-              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,10 +221,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           child: Text(
                             notification.title,
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: notification.isRead
-                                  ? FontWeight.w500
-                                  : FontWeight.bold,
-                            ),
+                                  fontWeight: notification.isRead ? FontWeight.w500 : FontWeight.bold,
+                                ),
                           ),
                         ),
                         if (!notification.isRead)
@@ -366,9 +239,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       notification.message,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: context.textMuted,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.textMuted),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -376,48 +247,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Text(
                       notification.timeAgo,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.textMuted,
-                        fontSize: 11,
-                      ),
+                            color: context.textMuted,
+                            fontSize: 11,
+                          ),
                     ),
                   ],
                 ),
               ),
-              
-              // Chevron if has action
               if (notification.actionRoute != null)
-                Icon(
-                  Icons.chevron_right,
-                  color: context.textMuted,
-                  size: 20,
-                ),
+                Icon(Icons.chevron_right, color: context.textMuted, size: 20),
             ],
           ),
         ),
       ),
-    ).animate().fadeIn(
-      delay: Duration(milliseconds: 50 * index),
-    ).slideX(begin: 0.1);
-  }
-
-  Color _getTypeColor(NotificationType type) {
-    switch (type) {
-      case NotificationType.achievement:
-        return AppColors.warning;
-      case NotificationType.streak:
-        return Colors.orange;
-      case NotificationType.levelUp:
-        return AppColors.accent;
-      case NotificationType.challenge:
-        return AppColors.primary;
-      case NotificationType.milestone:
-        return AppColors.success;
-      case NotificationType.reminder:
-        return Colors.blue;
-      case NotificationType.newContent:
-        return Colors.green;
-      case NotificationType.system:
-        return Colors.grey;
-    }
+    ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)).slideX(begin: 0.1);
   }
 }

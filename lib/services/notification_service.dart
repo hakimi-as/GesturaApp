@@ -7,6 +7,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
+import 'navigation_service.dart';
+
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -177,12 +179,12 @@ class NotificationService {
 
   void _handleMessageOpenedApp(RemoteMessage message) {
     debugPrint('📬 Message opened app: ${message.notification?.title}');
-    // TODO: Handle navigation based on message data
+    NavigationService.navigateFromFcmData(message.data);
   }
 
   void _onNotificationTapped(NotificationResponse response) {
     debugPrint('🔔 Notification tapped: ${response.payload}');
-    // TODO: Handle navigation based on payload
+    NavigationService.navigateToPayload(response.payload ?? '');
   }
 
   // ============ PUBLIC METHODS ============

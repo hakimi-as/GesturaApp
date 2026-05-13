@@ -240,9 +240,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               controller: _tabController,
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                ),
+                color: AppColors.primary,
               ),
               labelColor: Colors.white,
               unselectedLabelColor: context.textMuted,
@@ -384,10 +382,9 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: user.photoUrl == null
-                    ? const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                      )
+                color: user.photoUrl == null ? AppColors.primary.withAlpha(20) : null,
+                border: user.photoUrl == null
+                    ? Border.all(color: AppColors.primary.withAlpha(60))
                     : null,
               ),
               child: ClipRRect(
@@ -410,7 +407,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                         child: Text(
                           user.initials,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
@@ -528,10 +525,9 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                 height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: user.photoUrl == null
-                      ? const LinearGradient(
-                          colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                        )
+                  color: user.photoUrl == null ? AppColors.primary.withAlpha(20) : null,
+                  border: user.photoUrl == null
+                      ? Border.all(color: AppColors.primary.withAlpha(60))
                       : null,
                 ),
                 child: ClipRRect(
@@ -545,7 +541,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                           child: Text(
                             user.initials,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -609,9 +605,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                      ),
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
@@ -736,20 +730,19 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              ),
+              color: AppColors.primary.withAlpha(20),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withAlpha(80)),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.qr_code_scanner, color: Colors.white, size: 18),
+                Icon(Icons.qr_code_scanner, color: AppColors.primary, size: 18),
                 SizedBox(width: 8),
                 Text(
                   'Add by QR Code',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -792,10 +785,9 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                   height: 50,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: user.photoUrl == null
-                        ? const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                          )
+                    color: user.photoUrl == null ? AppColors.primary.withAlpha(20) : null,
+                    border: user.photoUrl == null
+                        ? Border.all(color: AppColors.primary.withAlpha(60))
                         : null,
                   ),
                   child: ClipRRect(
@@ -809,7 +801,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                             child: Text(
                               user.initials,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -907,9 +899,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              ),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Text(
@@ -928,9 +918,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              ),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Row(
@@ -987,9 +975,7 @@ class _FriendsScreenState extends State<FriendsScreen> with SingleTickerProvider
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                    ),
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

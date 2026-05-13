@@ -58,21 +58,9 @@ class LearningPathMiniCard extends StatelessWidget {
             // Header Row
             Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [pathColor.withAlpha(40), pathColor.withAlpha(20)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: isCompleted
-                        ? Icon(Icons.check_circle, color: const Color(0xFF10B981), size: 24)
-                        : Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 22)),
-                  ),
-                ),
+                isCompleted
+                    ? const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 28)
+                    : Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 28)),
                 const Spacer(),
                 if (isStarted)
                   Stack(
@@ -270,15 +258,11 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [pathColor, pathColor.withAlpha(200)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: pathColor,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: pathColor.withAlpha(80),
+              color: pathColor.withAlpha(70),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -321,19 +305,9 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                   // Header Row
                   Row(
                     children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Center(
-                          child: Text(
-                            _currentPath!.iconEmoji ?? '📚',
-                            style: const TextStyle(fontSize: 26),
-                          ),
-                        ),
+                      Text(
+                        _currentPath!.iconEmoji ?? '📚',
+                        style: const TextStyle(fontSize: 32),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -400,17 +374,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(30),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(nextStep.typeIcon, style: const TextStyle(fontSize: 18)),
-                            ),
-                          ),
+                          Text(nextStep.typeIcon, style: const TextStyle(fontSize: 22)),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -507,11 +471,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: const Color(0xFF6366F1),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -523,17 +483,7 @@ class _CurrentPathProgressCardState extends State<CurrentPathProgressCard> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(30),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Center(
-                child: Text('🎯', style: TextStyle(fontSize: 28)),
-              ),
-            ),
+            const Text('🎯', style: TextStyle(fontSize: 36)),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -629,16 +579,11 @@ class LearningPathStepItem extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: isCompleted
-                      ? const LinearGradient(
-                          colors: [Color(0xFF10B981), Color(0xFF059669)],
-                        )
+                  color: isCompleted
+                      ? const Color(0xFF10B981)
                       : isCurrent
-                          ? LinearGradient(
-                              colors: [AppColors.primary, AppColors.primary.withAlpha(200)],
-                            )
-                          : null,
-                  color: (isCompleted || isCurrent) ? null : context.bgElevated,
+                          ? AppColors.primary
+                          : context.bgElevated,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: (isCompleted || isCurrent)
                       ? [
@@ -784,12 +729,7 @@ class LearningPathCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    pathColor.withAlpha(30),
-                    pathColor.withAlpha(10),
-                  ],
-                ),
+                color: pathColor.withAlpha(20),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -797,17 +737,7 @@ class LearningPathCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: context.bgCard,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 28)),
-                    ),
-                  ),
+                  Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 32)),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../services/offline_service.dart';
 
 /// Connection status enum
 enum ConnectionStatus {
@@ -9,7 +10,9 @@ enum ConnectionStatus {
   unknown,
 }
 
-/// Provider to manage network connectivity state
+/// Provider to manage network connectivity state.
+/// Also exposes static accessors via [ConnectivityProvider.instance] so
+/// non-widget code can read connectivity without a BuildContext.
 class ConnectivityProvider extends ChangeNotifier {
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<ConnectivityResult>? _subscription;
@@ -38,6 +41,22 @@ class ConnectivityProvider extends ChangeNotifier {
   
   /// Whether initialized
   bool get isInitialized => _isInitialized;
+
+  // ── Static singleton ────────────────────────────────────────────────────────
+
+  static final ConnectivityProvider _instance = ConnectivityProvider();
+
+  /// The shared singleton used both as a ChangeNotifier in the Provider tree
+  /// and for static access throughout the app.
+  static ConnectivityProvider get instance => _instance;
+
+  static Future<void> init() => _instance.initialize();
+
+  static bool get staticIsOnline => _instance.isOnline;
+  static bool get staticIsOffline => _instance.isOffline;
+  static ConnectionStatus get staticStatus => _instance.status;
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   /// Initialize the connectivity provider
   Future<void> initialize() async {
@@ -81,12 +100,15 @@ class ConnectivityProvider extends ChangeNotifier {
     
     final isNowOnline = _status == ConnectionStatus.online;
     
-    // Log status changes
+    // Log status changes and trigger sync on reconnect
     if (wasOnline != isNowOnline) {
       debugPrint('📶 Connection changed: ${isNowOnline ? "ONLINE" : "OFFLINE"}');
       debugPrint('   Type: ${result.name}');
+      if (isNowOnline) {
+        _triggerPendingSync();
+      }
     }
-    
+
     notifyListeners();
   }
 
@@ -122,23 +144,20 @@ class ConnectivityProvider extends ChangeNotifier {
     }
   }
 
+  /// Fire-and-forget: sync any queued offline data when coming back online.
+  void _triggerPendingSync() {
+    OfflineService.syncPendingItems().then((result) {
+      if (result.synced > 0 || result.failed > 0) {
+        debugPrint('🔄 Auto-sync: ${result.synced} synced, ${result.failed} failed, ${result.pending} pending');
+      }
+    }).catchError((e) {
+      debugPrint('Auto-sync error: $e');
+    });
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();
     super.dispose();
   }
-}
-
-
-/// Singleton instance for easy access
-class ConnectivityService {
-  static final ConnectivityProvider _instance = ConnectivityProvider();
-  
-  static ConnectivityProvider get instance => _instance;
-  
-  static Future<void> initialize() => _instance.initialize();
-  
-  static bool get isOnline => _instance.isOnline;
-  static bool get isOffline => _instance.isOffline;
-  static ConnectionStatus get status => _instance.status;
 }

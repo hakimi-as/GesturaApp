@@ -153,9 +153,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
               controller: _tabController,
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                ),
+                color: AppColors.primary,
               ),
               labelColor: Colors.white,
               unselectedLabelColor: context.textMuted,
@@ -410,9 +408,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                   height: 70,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                    ),
+                    color: user?.photoUrl == null ? AppColors.primary.withAlpha(20) : null,
+                    border: user?.photoUrl == null
+                        ? Border.all(color: AppColors.primary.withAlpha(60), width: 2)
+                        : null,
                     image: user?.photoUrl != null
                         ? DecorationImage(
                             image: NetworkImage(user!.photoUrl!),
@@ -425,7 +424,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                           child: Text(
                             user?.initials ?? 'U',
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: AppColors.primary,
                               fontWeight: FontWeight.bold,
                               fontSize: 24,
                             ),
@@ -705,21 +704,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: _isLoading
-                      ? [context.textMuted, context.textMuted]
-                      : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
-                ),
+                color: _isLoading ? context.bgElevated : AppColors.primary,
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: _isLoading
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: const Color(0xFF6366F1).withAlpha(60),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                border: _isLoading ? Border.all(color: context.borderColor) : null,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -728,7 +715,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
                     const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
                     )
                   else
                     const Row(

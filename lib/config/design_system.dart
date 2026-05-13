@@ -4,7 +4,20 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'theme.dart';
+
+// ─── Radius system ───────────────────────────────────────────────────────────
+
+/// Shared border-radius constants. Use these instead of magic numbers so
+/// changing the visual language is a one-line edit.
+class AppRadius {
+  AppRadius._();
+  static const double sm = 8;   // buttons, chips, small tiles
+  static const double md = 14;  // compact cards, input fields
+  static const double lg = 20;  // standard content cards
+  static const double xl = 28;  // dialogs, hero containers, sheets
+}
 
 // ─── Decorations ─────────────────────────────────────────────────────────────
 
@@ -14,15 +27,22 @@ class AppDecorations {
   /// Standard content card — bordered, slight shadow.
   static BoxDecoration card(BuildContext context) => BoxDecoration(
         color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.06),
-            blurRadius: 16,
+            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.22 : 0.05),
+            blurRadius: 18,
             offset: const Offset(0, 4),
           ),
         ],
+      );
+
+  /// Compact tile card — tighter radius for stat tiles and list items.
+  static BoxDecoration tileCard(BuildContext context) => BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: context.borderColor),
       );
 
   /// Card with a faint primary-colour glow border.
@@ -42,21 +62,17 @@ class AppDecorations {
         ],
       );
 
-  /// Full-width hero gradient card (welcome card, etc.).
+  /// Solid-color hero card — for banners and feature CTAs.
   static BoxDecoration heroCard({
-    List<Color> colors = const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-    double radius = 24,
+    Color color = AppColors.primary,
+    double radius = AppRadius.xl,
   }) =>
       BoxDecoration(
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: color,
         borderRadius: BorderRadius.circular(radius),
         boxShadow: [
           BoxShadow(
-            color: colors.first.withValues(alpha: 0.35),
+            color: color.withValues(alpha: 0.30),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -175,48 +191,51 @@ class AppCard extends StatelessWidget {
 
 // ─── SectionHeader ────────────────────────────────────────────────────────────
 
-/// Consistent section heading used throughout the app.
+/// Section heading with dot accent. If [emoji] is provided it replaces the dot.
+/// Use [dotColor] to contextualise the section — pink for active/primary,
+/// primary for standard, success for progress areas.
 class SectionHeader extends StatelessWidget {
   final String title;
   final Widget? trailing;
   final String? emoji;
+  final Color? dotColor;
 
   const SectionHeader({
     super.key,
     required this.title,
     this.trailing,
     this.emoji,
+    this.dotColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Accent bar
-        Container(
-          width: 4,
-          height: 20,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.secondary],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 10),
         if (emoji != null) ...[
           Text(emoji!, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
+        ] else ...[
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: dotColor ?? AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 9),
         ],
         Expanded(
           child: Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                ),
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              color: context.textPrimary,
+            ),
           ),
         ),
         if (trailing != null) trailing!,
@@ -252,24 +271,15 @@ class GradientButton extends StatelessWidget {
         width: double.infinity,
         height: height,
         decoration: BoxDecoration(
-          gradient: onTap == null && !loading
-              ? LinearGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.5),
-                    AppColors.secondary.withValues(alpha: 0.5),
-                  ],
-                )
-              : const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-          borderRadius: BorderRadius.circular(16),
+          color: onTap == null && !loading
+              ? AppColors.primary.withValues(alpha: 0.4)
+              : AppColors.primary,
+          borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: onTap != null && !loading
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                    blurRadius: 16,
+                    color: AppColors.primary.withValues(alpha: 0.28),
+                    blurRadius: 18,
                     offset: const Offset(0, 6),
                   )
                 ]
@@ -291,11 +301,11 @@ class GradientButton extends StatelessWidget {
                     if (icon != null) ...[icon!, const SizedBox(width: 8)],
                     Text(
                       label,
-                      style: const TextStyle(
+                      style: GoogleFonts.bricolageGrotesque(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
+                        letterSpacing: -0.1,
                       ),
                     ),
                   ],
@@ -365,21 +375,17 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDarkMode;
     return Container(
       padding: padding ?? const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black)
-            .withValues(alpha: isDark ? 0.06 : 0.03),
+        color: context.bgCard,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.60),
-        ),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.08),
-            blurRadius: 32,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.20 : 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
       ),

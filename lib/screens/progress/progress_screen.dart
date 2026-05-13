@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/design_system.dart';
 import '../../config/theme.dart';
-import '../../l10n/app_localizations.dart';
+import '../../models/progress_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
-import '../../models/achievement_model.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -16,694 +16,579 @@ class ProgressScreen extends StatefulWidget {
   State<ProgressScreen> createState() => _ProgressScreenState();
 }
 
-class _ProgressScreenState extends State<ProgressScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ProgressScreenState extends State<ProgressScreen> {
+  String _filter = 'all'; // 'all' | 'lessons' | 'quizzes'
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.userId != null) {
+        Provider.of<ProgressProvider>(context, listen: false)
+            .loadUserProgress(auth.userId!);
+      }
+    });
   }
 
-  Future<void> _loadData() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final progressProvider = Provider.of<ProgressProvider>(context, listen: false);
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
-    if (authProvider.userId != null) {
-      await progressProvider.loadUserProgress(authProvider.userId!);
-      await progressProvider.loadAchievements(authProvider.userId!);
-      // Wire actual today's lesson count into daily goals
-      final lessonsToday = authProvider.currentUser?.lessonsCompletedToday ?? 0;
-      progressProvider.refreshDailyGoals(lessonsToday);
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'yesterday';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  String _groupLabel(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final d = DateTime(dt.year, dt.month, dt.day);
+    final diff = today.difference(d).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    if (diff < 7) return 'This week';
+    if (diff < 30) return 'This month';
+    return 'Earlier';
+  }
+
+  List<LearningProgressModel> _filtered(List<LearningProgressModel> all) {
+    List<LearningProgressModel> list;
+    if (_filter == 'lessons') {
+      list = all.where((p) => !p.isQuiz).toList();
+    } else if (_filter == 'quizzes') {
+      list = all.where((p) => p.isQuiz).toList();
+    } else {
+      list = List.from(all);
     }
+    list.sort((a, b) => b.lastAccessedAt.compareTo(a.lastAccessedAt));
+    return list;
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  Map<String, List<LearningProgressModel>> _group(
+      List<LearningProgressModel> items) {
+    final Map<String, List<LearningProgressModel>> grouped = {};
+    const order = ['Today', 'Yesterday', 'This week', 'This month', 'Earlier'];
+    for (final item in items) {
+      final label = _groupLabel(item.lastAccessedAt);
+      grouped.putIfAbsent(label, () => []).add(item);
+    }
+    // Preserve chronological group order
+    return Map.fromEntries(
+      order
+          .where(grouped.containsKey)
+          .map((k) => MapEntry(k, grouped[k]!)),
+    );
   }
+
+  // ── Real stats from progress list ─────────────────────────────────────────
+
+  int _totalLessons(List<LearningProgressModel> list) =>
+      list.where((p) => !p.isQuiz && p.isCompleted).length;
+
+  int _totalQuizzes(List<LearningProgressModel> list) =>
+      list.where((p) => p.isQuiz && p.isCompleted).length;
+
+  int _totalXpEarned(List<LearningProgressModel> list) =>
+      list.fold(0, (sum, p) => sum + p.xpEarned);
+
+  double _bestAccuracy(List<LearningProgressModel> list) {
+    final quizzes = list.where((p) => p.isQuiz && p.bestAccuracy > 0).toList();
+    if (quizzes.isEmpty) return 0;
+    return quizzes.map((p) => p.bestAccuracy).reduce((a, b) => a > b ? a : b);
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(AppLocalizations.of(context).myProgressTitle),
-      ),
-      body: Column(
-        children: [
-          // Stats Summary Card
-          _buildStatsSummary(context),
+      body: SafeArea(
+        child: Consumer2<AuthProvider, ProgressProvider>(
+          builder: (context, auth, progressProvider, _) {
+            final all = progressProvider.progressList;
+            final filtered = _filtered(all);
+            final grouped = _group(filtered);
 
-          // Tab Bar
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              labelColor: Colors.white,
-              unselectedLabelColor: context.textMuted,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-              tabs: [
-                Tab(text: AppLocalizations.of(context).progressOverviewTab),
-                Tab(text: AppLocalizations.of(context).progressAchievementsTab),
-                Tab(text: AppLocalizations.of(context).progressHistoryTab),
-              ],
-            ),
-          ).animate().fadeIn(delay: 300.ms),
-
-          const SizedBox(height: 20),
-
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildOverviewTab(context),
-                _buildAchievementsTab(context),
-                _buildHistoryTab(context),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsSummary(BuildContext context) {
-    return Consumer2<AuthProvider, ProgressProvider>(
-      builder: (context, authProvider, progressProvider, child) {
-        final user = authProvider.currentUser;
-        final stats = progressProvider.userStats;
-
-        return Container(
-          margin: const EdgeInsets.all(20),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildSummaryItem('⭐', '${user?.totalXP ?? 0}', AppLocalizations.of(context).totalXP),
-                  _buildSummaryItem('🔥', '${user?.currentStreak ?? 0}', AppLocalizations.of(context).dayStreakLabel),
-                  _buildSummaryItem('📚', '${stats.totalSignsLearned}', AppLocalizations.of(context).signsLearned),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Level Progress
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${AppLocalizations.of(context).level} ${user?.level ?? 1}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${user?.xpToNextLevel ?? 100} ${AppLocalizations.of(context).xpToLevel} ${(user?.level ?? 1) + 1}',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: user?.levelProgress ?? 0,
-                      minHeight: 8,
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.1);
-      },
-    );
-  }
-
-  Widget _buildSummaryItem(String emoji, String value, String label) {
-    return Column(
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 28)),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOverviewTab(BuildContext context) {
-    return Consumer<ProgressProvider>(
-      builder: (context, progressProvider, child) {
-        final stats = progressProvider.userStats;
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Weekly Activity
-              Text(
-                AppLocalizations.of(context).weeklyActivity,
-                style: Theme.of(context).textTheme.titleLarge,
-              ).animate().fadeIn(delay: 400.ms),
-              const SizedBox(height: 12),
-              _buildWeeklyActivity(context),
-              const SizedBox(height: 24),
-
-              // Detailed Stats
-              Text(
-                AppLocalizations.of(context).detailedStats,
-                style: Theme.of(context).textTheme.titleLarge,
-              ).animate().fadeIn(delay: 500.ms),
-              const SizedBox(height: 12),
-              _buildDetailedStats(context, stats),
-              const SizedBox(height: 24),
-
-              // Daily Goals
-              Text(
-                AppLocalizations.of(context).dailyGoalsSection,
-                style: Theme.of(context).textTheme.titleLarge,
-              ).animate().fadeIn(delay: 600.ms),
-              const SizedBox(height: 12),
-              _buildDailyGoals(context),
-              const SizedBox(height: 40),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildWeeklyActivity(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final days = [l10n.monDay, l10n.tueDay, l10n.wedDay, l10n.thuDay, l10n.friDay, l10n.satDay, l10n.sunDay];
-    final today = DateTime.now().weekday - 1;
-
-    return Consumer<ProgressProvider>(
-      builder: (context, progressProvider, child) {
-        final weeklyData = progressProvider.getWeeklyLessonsCount();
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: days.asMap().entries.map((entry) {
-          final index = entry.key;
-          final day = entry.value;
-          final isToday = index == today;
-          final isActive = weeklyData[index] > 0;
-
-          return Column(
-            children: [
-              Text(
-                day,
-                style: TextStyle(
-                  color: isToday ? AppColors.primary : context.textMuted,
-                  fontSize: 12,
-                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? (isToday ? AppColors.primary : AppColors.success.withValues(alpha: 0.2))
-                      : context.bgElevated,
-                  borderRadius: BorderRadius.circular(10),
-                  border: isToday
-                      ? Border.all(color: AppColors.primary, width: 2)
-                      : null,
-                ),
-                child: Center(
-                  child: isActive
-                      ? Icon(
-                          Icons.check,
-                          color: isToday ? Colors.white : AppColors.success,
-                          size: 18,
-                        )
-                      : null,
-                ),
-              ),
-            ],
-          );
-        }).toList(),
-      ),
-    ).animate().fadeIn(delay: 450.ms);
-      },
-    );
-  }
-
-  Widget _buildDetailedStats(BuildContext context, stats) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          _buildStatRow(context, '⏱️', AppLocalizations.of(context).totalLearningTime, '${stats.totalTimeHours.toStringAsFixed(1)} ${AppLocalizations.of(context).hoursLabel}'),
-          Divider(color: context.borderColor, height: 24),
-          _buildStatRow(context, '🎯', AppLocalizations.of(context).quizAccuracy, '${stats.averageAccuracy.toInt()}%'),
-          Divider(color: context.borderColor, height: 24),
-          _buildStatRow(context, '📝', AppLocalizations.of(context).quizzesCompleted, '${stats.quizzesCompleted}'),
-          Divider(color: context.borderColor, height: 24),
-          _buildStatRow(context, '🏆', AppLocalizations.of(context).perfectQuizzes, '${stats.perfectQuizzes}'),
-          Divider(color: context.borderColor, height: 24),
-          _buildStatRow(context, '🔥', AppLocalizations.of(context).longestStreakLabel, '${stats.longestStreak} ${AppLocalizations.of(context).daysLabel}'),
-        ],
-      ),
-    ).animate().fadeIn(delay: 550.ms);
-  }
-
-  Widget _buildStatRow(BuildContext context, String emoji, String label, String value) {
-    return Row(
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 24)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDailyGoals(BuildContext context) {
-    return Consumer<ProgressProvider>(
-      builder: (context, progressProvider, child) {
-        final goals = progressProvider.dailyGoals;
-
-        if (goals.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: Text(
-                AppLocalizations.of(context).noGoalsToday,
-                style: TextStyle(color: context.textMuted),
-              ),
-            ),
-          );
-        }
-
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.bgCard,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: goals.map((goal) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // ── Header ──────────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Row(
                       children: [
-                        Icon(
-                          goal.isCompleted ? Icons.check_circle : Icons.circle_outlined,
-                          color: goal.isCompleted ? AppColors.success : context.textMuted,
-                          size: 20,
+                        TapScale(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: context.bgCard,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: context.borderColor),
+                            ),
+                            child: Icon(Icons.arrow_back,
+                                color: context.textSecondary, size: 20),
+                          ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
+                        const SizedBox(width: 14),
+                        Text(
+                          'Activity',
+                          style: GoogleFonts.bricolageGrotesque(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.6,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: context.bgCard,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: context.borderColor),
+                          ),
                           child: Text(
-                            goal.title,
+                            '${all.length} entries',
                             style: TextStyle(
-                              color: goal.isCompleted
-                                  ? context.textMuted
-                                  : context.textPrimary,
-                              decoration: goal.isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
+                              fontSize: 11,
+                              color: context.textMuted,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
-                        Text(
-                          '+${goal.xpReward} XP',
-                          style: TextStyle(
-                            color: goal.isCompleted
-                                ? AppColors.success
-                                : AppColors.warning,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: goal.progress.clamp(0.0, 1.0),
-                        minHeight: 6,
-                        backgroundColor: context.bgElevated,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          goal.isCompleted ? AppColors.success : AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ).animate().fadeIn(duration: 400.ms),
                 ),
-              );
-            }).toList(),
-          ),
-        ).animate().fadeIn(delay: 650.ms);
-      },
+
+                // ── Stat strip ───────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: _buildStatStrip(context, all)
+                      .animate()
+                      .fadeIn(delay: 80.ms)
+                      .slideY(begin: 0.06),
+                ),
+
+                // ── Filter chips ─────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                    child: Row(
+                      children: [
+                        _chip('All', 'all'),
+                        const SizedBox(width: 8),
+                        _chip('Lessons', 'lessons'),
+                        const SizedBox(width: 8),
+                        _chip('Quizzes', 'quizzes'),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 140.ms),
+                ),
+
+                // ── Empty state ──────────────────────────────────────────
+                if (progressProvider.isLoading)
+                  SliverToBoxAdapter(child: _buildLoading(context))
+                else if (filtered.isEmpty)
+                  SliverToBoxAdapter(child: _buildEmpty(context))
+
+                // ── Grouped list ─────────────────────────────────────────
+                else
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, sectionIdx) {
+                        final group =
+                            grouped.entries.elementAt(sectionIdx);
+                        return _buildSection(
+                            context, group.key, group.value, sectionIdx);
+                      },
+                      childCount: grouped.length,
+                    ),
+                  ),
+
+                const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildAchievementsTab(BuildContext context) {
-    return Consumer<ProgressProvider>(
-      builder: (context, progressProvider, child) {
-        final earned = progressProvider.earnedAchievementsList;
-        final locked = progressProvider.lockedAchievementsList;
+  // ── Stat strip ────────────────────────────────────────────────────────────
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Earned Achievements
-              Text(
-                '${AppLocalizations.of(context).earnedLabel} (${earned.length})',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              if (earned.isEmpty)
-                _buildEmptyAchievements(context, AppLocalizations.of(context).noAchievementsEarned)
-              else
-                ...earned.asMap().entries.map((entry) =>
-                    _buildAchievementCard(context, entry.value, true, entry.key)),
-              const SizedBox(height: 24),
+  Widget _buildStatStrip(
+      BuildContext context, List<LearningProgressModel> all) {
+    final lessons = _totalLessons(all);
+    final quizzes = _totalQuizzes(all);
+    final xp = _totalXpEarned(all);
+    final acc = _bestAccuracy(all);
 
-              // Locked Achievements
-              Text(
-                '${AppLocalizations.of(context).lockedLabel} (${locked.length})',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              ...locked.asMap().entries.map((entry) =>
-                  _buildAchievementCard(context, entry.value, false, entry.key)),
-              const SizedBox(height: 40),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyAchievements(BuildContext context, String message) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      padding: const EdgeInsets.symmetric(vertical: 18),
       decoration: BoxDecoration(
         color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          const Text('🏆', style: TextStyle(fontSize: 40)),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: context.textMuted,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAchievementCard(
-    BuildContext context,
-    AchievementModel achievement,
-    bool isEarned,
-    int index,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isEarned
-            ? context.bgCard
-            : context.bgCard.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-        border: isEarned
-            ? Border.all(
-                color: Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withValues(alpha: 0.5),
-                width: 2,
-              )
-            : null,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.borderColor),
       ),
       child: Row(
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: isEarned
-                  ? Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withValues(alpha: 0.15)
-                  : context.bgElevated,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Center(
-              child: Text(
-                isEarned ? achievement.icon : '🔒',
-                style: TextStyle(
-                  fontSize: 28,
-                  color: isEarned ? null : Colors.grey,
-                ),
-              ),
+          _statCell(context, '$lessons', 'Lessons', AppColors.primary),
+          _vertDivider(context),
+          _statCell(context, '$quizzes', 'Quizzes', AppColors.accent),
+          _vertDivider(context),
+          _statCell(context, '+$xp', 'XP Earned', AppColors.success),
+          _vertDivider(context),
+          _statCell(
+            context,
+            acc > 0 ? '${acc.toInt()}%' : '—',
+            'Best Quiz',
+            AppColors.warning,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statCell(
+      BuildContext context, String value, String label, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: color,
+              height: 1,
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  achievement.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: isEarned ? context.textPrimary : context.textMuted,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  achievement.description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textMuted,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              color: context.textMuted,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.2,
             ),
           ),
-          Column(
+        ],
+      ),
+    );
+  }
+
+  Widget _vertDivider(BuildContext context) => Container(
+        width: 1,
+        height: 32,
+        color: context.borderColor,
+      );
+
+  // ── Filter chip ───────────────────────────────────────────────────────────
+
+  Widget _chip(String label, String value) {
+    final active = _filter == value;
+    return TapScale(
+      onTap: () => setState(() => _filter = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: active ? AppColors.primary : context.bgCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: active ? AppColors.primary : context.borderColor,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: active ? Colors.white : context.textMuted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Section ───────────────────────────────────────────────────────────────
+
+  Widget _buildSection(
+    BuildContext context,
+    String label,
+    List<LearningProgressModel> items,
+    int sectionIdx,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+          child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                width: 5,
+                height: 5,
                 decoration: BoxDecoration(
-                  color: Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  achievement.tierDisplayName,
-                  style: TextStyle(
-                    color: Color(int.parse(achievement.tierColor.replaceFirst('#', '0xFF'))),
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  color: _sectionDotColor(label),
+                  shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(width: 7),
               Text(
-                '+${achievement.xpReward} XP',
-                style: TextStyle(
-                  color: isEarned ? AppColors.success : context.textMuted,
+                label,
+                style: GoogleFonts.bricolageGrotesque(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                  color: context.textMuted,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${items.length}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: context.textMuted.withValues(alpha: 0.5),
                 ),
               ),
             ],
           ),
-        ],
-      ),
-    ).animate().fadeIn(delay: Duration(milliseconds: 100 * index));
-  }
-
-  Widget _buildHistoryTab(BuildContext context) {
-    return Consumer<ProgressProvider>(
-      builder: (context, progressProvider, child) {
-        final progress = progressProvider.progressList;
-
-        if (progress.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('📜', style: TextStyle(fontSize: 60)),
-                const SizedBox(height: 16),
-                Text(
-                  AppLocalizations.of(context).noLearningHistory,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  AppLocalizations.of(context).completeLessonsHistory,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: context.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: progress.length,
-          itemBuilder: (context, index) {
-            final item = progress[index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.bgCard,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: item.isCompleted
-                          ? AppColors.success.withValues(alpha: 0.15)
-                          : AppColors.warning.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        item.isCompleted ? Icons.check_circle : Icons.access_time,
-                        color: item.isCompleted ? AppColors.success : AppColors.warning,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${AppLocalizations.of(context).lessonLabel}: ${item.lessonId}',
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.isCompleted ? AppLocalizations.of(context).completedActivity : AppLocalizations.of(context).inProgressLabel,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: context.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    _formatHistoryDate(item.lastAccessedAt, context),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: context.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(delay: Duration(milliseconds: 50 * index));
-          },
-        );
-      },
+        ),
+        ...items.asMap().entries.map((e) {
+          final delay = Duration(
+              milliseconds: 60 * sectionIdx + 30 * e.key);
+          return _buildItem(context, e.value)
+              .animate()
+              .fadeIn(delay: delay)
+              .slideX(begin: 0.04, duration: 300.ms);
+        }),
+      ],
     );
   }
 
-  String _formatHistoryDate(DateTime date, BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final now = DateTime.now();
-    final diff = now.difference(date);
+  Color _sectionDotColor(String label) {
+    switch (label) {
+      case 'Today':
+        return AppColors.primary;
+      case 'Yesterday':
+        return AppColors.accent;
+      case 'This week':
+        return AppColors.success;
+      default:
+        return AppColors.warning;
+    }
+  }
 
-    if (diff.inDays == 0) return l10n.today;
-    if (diff.inDays == 1) return l10n.yesterday;
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${date.day}/${date.month}';
+  // ── Activity item ─────────────────────────────────────────────────────────
+
+  Widget _buildItem(BuildContext context, LearningProgressModel item) {
+    final isQuiz = item.isQuiz;
+    final title = item.displayTitle.isNotEmpty ? item.displayTitle : 'Lesson';
+    final xp = item.xpEarned;
+    final cat = item.categoryName;
+
+    // Color accent per type
+    final accent = isQuiz ? AppColors.accent : AppColors.primary;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 6),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Icon pill
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Center(
+                child: Text(
+                  isQuiz ? '🎯' : (item.isCompleted ? '✅' : '📖'),
+                  style: const TextStyle(fontSize: 17),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Title + meta
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
+                      height: 1.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      // Time ago
+                      Text(
+                        _timeAgo(item.lastAccessedAt),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: context.textMuted,
+                        ),
+                      ),
+                      // Category badge (if available)
+                      if (cat.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            cat,
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: accent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                      // Accuracy badge for quizzes
+                      if (isQuiz && item.bestAccuracy > 0) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '${item.bestAccuracy.toInt()}%',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: _accuracyColor(item.bestAccuracy),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // XP chip
+            if (xp > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '+$xp XP',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _accuracyColor(double acc) {
+    if (acc >= 80) return AppColors.success;
+    if (acc >= 60) return AppColors.warning;
+    return AppColors.error;
+  }
+
+  // ── States ────────────────────────────────────────────────────────────────
+
+  Widget _buildLoading(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 60),
+      child: Center(
+        child: Column(
+          children: [
+            const CircularProgressIndicator(
+              color: AppColors.primary,
+              strokeWidth: 2,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading activity…',
+              style: TextStyle(color: context.textMuted, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty(BuildContext context) {
+    final label = _filter == 'quizzes'
+        ? 'No quiz history yet'
+        : _filter == 'lessons'
+            ? 'No lessons completed yet'
+            : 'No activity yet';
+    final sub = _filter == 'all'
+        ? 'Start a lesson or quiz to see your progress here.'
+        : 'Switch filter to see other activity.';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(40, 60, 40, 0),
+      child: Column(
+        children: [
+          Text(
+            _filter == 'quizzes' ? '🎯' : '📖',
+            style: const TextStyle(fontSize: 44),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            label,
+            style: TextStyle(
+              color: context.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            sub,
+            style: TextStyle(
+                color: context.textMuted, fontSize: 13, height: 1.5),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 }

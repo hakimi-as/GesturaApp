@@ -1,9 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/design_system.dart';
 import '../../config/theme.dart';
@@ -13,6 +15,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
+import '../settings/settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -26,7 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final FirestoreService _firestoreService = FirestoreService();
   
-  String _selectedSignLanguage = 'ASL';
+  String _selectedSignLanguage = 'BIM';
   String _selectedUserType = AppConstants.userTypeLearner;
   bool _isEditing = false;
   bool _isSaving = false;
@@ -52,7 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading profile image: $e');
+      if (kDebugMode) debugPrint('Error loading profile image: $e');
     }
   }
 
@@ -62,7 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     
     if (user != null) {
       _nameController.text = user.fullName;
-      _selectedSignLanguage = user.preferredSignLanguage ?? 'ASL';
+      _selectedSignLanguage = user.preferredSignLanguage ?? 'BIM';
       _selectedUserType = user.userType;
     }
   }
@@ -111,8 +114,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _isSaving = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
+          const SnackBar(
+            content: Text('Could not save profile. Please check your connection and try again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -126,18 +129,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: context.bgPrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Text(AppLocalizations.of(context).myProfile),
         actions: [
-          if (!_isEditing)
+          if (!_isEditing) ...[
             IconButton(
-              icon: const Icon(Icons.edit, color: AppColors.primary),
+              icon: Icon(Icons.settings_outlined, color: context.textMuted),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
               onPressed: () => setState(() => _isEditing = true),
-            )
-          else
+            ),
+          ] else
             IconButton(
               icon: Icon(Icons.close, color: context.textMuted),
               onPressed: () {
@@ -156,20 +169,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
             child: Form(
               key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildAvatarSection(context, user.initials),
-                  const SizedBox(height: 32),
-                  _buildUserInfoCard(context, user),
-                  const SizedBox(height: 24),
+                  // Hero: centered avatar + name + pills
+                  _buildAvatarSection(context, user),
+                  const SizedBox(height: 16),
+                  // 3-col stats grid
                   _buildStatsCard(context, user, progressProvider),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+                  // Profile section label
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                    child: Text(
+                      'PROFILE',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.0,
+                        color: context.textMuted,
+                      ),
+                    ),
+                  ),
+                  _buildUserInfoCard(context, user),
+                  const SizedBox(height: 20),
+                  // Preferences section
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                    child: Text(
+                      'PREFERENCES',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.0,
+                        color: context.textMuted,
+                      ),
+                    ),
+                  ),
                   _buildPreferencesCard(context),
-                  const SizedBox(height: 24),
-                  if (_isEditing) _buildSaveButton(),
+                  const SizedBox(height: 20),
+                  if (_isEditing)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildSaveButton(),
+                    ),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -180,104 +227,123 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAvatarSection(BuildContext context, String initials) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.currentUser;
+  Widget _buildAvatarSection(BuildContext context, user) {
     final hasPhotoUrl = user?.photoUrl != null && user!.photoUrl!.isNotEmpty;
-    
-    return Column(
-      children: [
-        Stack(
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: (_profileImageBytes == null && !hasPhotoUrl) 
-                    ? AppColors.primaryGradient 
-                    : null,
-                borderRadius: BorderRadius.circular(35),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(35),
-                child: hasPhotoUrl
-                    ? Image.network(
-                        CloudinaryService.getOptimizedImage(user.photoUrl!, width: 240, height: 240),
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          if (_profileImageBytes != null) {
-                            return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
-                          }
-                          return Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          if (_profileImageBytes != null) {
-                            return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
-                          }
-                          return _buildInitialsAvatar(initials);
-                        },
-                      )
-                    : _profileImageBytes != null
-                        ? Image.memory(
-                            _profileImageBytes!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildInitialsAvatar(initials);
-                            },
-                          )
-                        : _buildInitialsAvatar(initials),
-              ),
-            ),
-            if (_isEditing)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.bgPrimary, width: 3),
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+    final initials = user?.initials ?? 'U';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      child: Column(
+        children: [
+          // Avatar
+          Stack(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primary, width: 2.5),
+                ),
+                child: ClipOval(
+                  child: hasPhotoUrl
+                      ? Image.network(
+                          CloudinaryService.getOptimizedImage(user.photoUrl!, width: 144, height: 144),
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            if (_profileImageBytes != null) {
+                              return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
+                            }
+                            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            if (_profileImageBytes != null) {
+                              return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
+                            }
+                            return _buildInitialsAvatar(initials);
+                          },
+                        )
+                      : _profileImageBytes != null
+                          ? Image.memory(_profileImageBytes!, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _buildInitialsAvatar(initials))
+                          : _buildInitialsAvatar(initials),
                 ),
               ),
-          ],
+              if (_isEditing)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: context.bgPrimary, width: 2),
+                    ),
+                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 12),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Name
+          Text(
+            user?.fullName ?? '',
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.6,
+              color: context.textPrimary,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Pills: Level + Streak
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildProfilePill('🔥 ${user?.currentStreak ?? 0} Streak', AppColors.success, AppColors.success),
+              const SizedBox(width: 6),
+              _buildProfilePill('Lv ${user?.level ?? 1}', AppColors.primary, AppColors.primary),
+            ],
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 500.ms);
+  }
+
+  Widget _buildProfilePill(String text, Color bg, Color fg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.06 * 9,
+          color: fg,
         ),
-      ],
-    ).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.8, 0.8));
+      ),
+    );
   }
 
   Widget _buildInitialsAvatar(String initials) {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        color: AppColors.primary.withValues(alpha: 0.08),
       ),
       child: Center(
         child: Text(
           initials,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.primary,
             fontSize: 42,
             fontWeight: FontWeight.bold,
           ),
@@ -288,34 +354,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildUserInfoCard(BuildContext context, user) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.borderColor),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppLocalizations.of(context).profileTitle,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          _buildInfoField(
+          _buildProfileFieldRow(
             context,
+            icon: '👤',
             label: AppLocalizations.of(context).fullName,
-            icon: Icons.person_outline,
-            child: _isEditing
+            valueWidget: _isEditing
                 ? TextFormField(
                     controller: _nameController,
-                    style: TextStyle(color: context.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context).enterFullName,
+                    style: TextStyle(color: context.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
+                    decoration: const InputDecoration(
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
                       isDense: true,
@@ -329,74 +384,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   )
                 : Text(
                     user.fullName,
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    style: GoogleFonts.bricolageGrotesque(fontSize: 12, fontWeight: FontWeight.w600, color: context.textPrimary),
                   ),
+            showChevron: !_isEditing,
+            showDivider: true,
           ),
-          const Divider(height: 32),
-
-          _buildInfoField(
+          _buildProfileFieldRow(
             context,
+            icon: '✉️',
             label: AppLocalizations.of(context).email,
-            icon: Icons.email_outlined,
-            child: Text(
+            valueWidget: Text(
               user.email,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: context.textMuted,
-              ),
+              style: GoogleFonts.bricolageGrotesque(fontSize: 12, fontWeight: FontWeight.w600, color: context.textMuted),
             ),
+            showChevron: false,
+            showDivider: true,
           ),
-          const Divider(height: 32),
-
-          _buildInfoField(
+          _buildProfileFieldRow(
             context,
+            icon: '🧑‍🤝‍🧑',
             label: AppLocalizations.of(context).iAmA,
-            icon: Icons.diversity_3_outlined,
-            child: _isEditing
+            valueWidget: _isEditing
                 ? _buildUserTypeSelector()
                 : Text(
                     _getUserTypeDisplay(_selectedUserType),
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    style: GoogleFonts.bricolageGrotesque(fontSize: 12, fontWeight: FontWeight.w600, color: context.textPrimary),
                   ),
+            showChevron: !_isEditing,
+            showDivider: false,
           ),
         ],
       ),
-    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
+    ).animate().fadeIn(delay: 200.ms);
   }
 
-  Widget _buildInfoField(
+  Widget _buildProfileFieldRow(
     BuildContext context, {
+    required String icon,
     required String label,
-    required IconData icon,
-    required Widget child,
+    required Widget valueWidget,
+    required bool showChevron,
+    required bool showDivider,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: context.bgElevated,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: context.textMuted, size: 22),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          child: Row(
             children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.textMuted,
+              Text(icon, style: const TextStyle(fontSize: 15)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: TextStyle(fontSize: 9, color: context.textMuted, height: 1.2)),
+                    const SizedBox(height: 1),
+                    valueWidget,
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              child,
+              if (showChevron)
+                Text('›', style: TextStyle(fontSize: 16, color: context.textMuted)),
             ],
           ),
         ),
+        if (showDivider)
+          Divider(height: 1, thickness: 1, color: context.borderColor),
       ],
     );
   }
@@ -438,126 +492,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildStatsCard(BuildContext context, user, ProgressProvider progressProvider) {
+    final totalXp = user?.totalXP ?? 0;
+    final lessons = user?.lessonsCompleted ?? 0;
+    final badges = user?.totalBadges ?? 0;
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.borderColor),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppLocalizations.of(context).myStats,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  context,
-                  emoji: '⭐',
-                  value: '${user.totalXP}',
-                  label: AppLocalizations.of(context).totalXP,
-                ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  context,
-                  emoji: '🏆',
-                  value: 'Lv ${user.level}',
-                  label: AppLocalizations.of(context).level,
-                ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  context,
-                  emoji: '🔥',
-                  value: '${user.currentStreak}',
-                  label: AppLocalizations.of(context).streak,
-                ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  context,
-                  emoji: '📚',
-                  value: '${progressProvider.userStats.totalSignsLearned}',
-                  label: AppLocalizations.of(context).signsLabel,
-                ),
-              ),
-            ],
-          ),
-        ],
+      clipBehavior: Clip.hardEdge,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(child: _buildStatCell(context, value: '$lessons', label: 'Lessons')),
+            VerticalDivider(color: context.borderColor, width: 1, thickness: 1),
+            Expanded(child: _buildStatCell(context, value: totalXp >= 1000 ? '${(totalXp / 1000).toStringAsFixed(1)}k' : '$totalXp', label: 'Total XP')),
+            VerticalDivider(color: context.borderColor, width: 1, thickness: 1),
+            Expanded(child: _buildStatCell(context, value: '$badges', label: 'Badges')),
+          ],
+        ),
       ),
-    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1);
+    ).animate().fadeIn(delay: 200.ms);
   }
 
-  Widget _buildStatItem(
-    BuildContext context, {
-    required String emoji,
-    required String value,
-    required String label,
-  }) {
-    return Column(
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 24)),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+  Widget _buildStatCell(BuildContext context, {required String value, required String label}) {
+    return Container(
+      color: context.bgCard,
+      padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.04 * 22,
+              color: context.textPrimary,
+              height: 1,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: context.textMuted,
-          ),
-        ),
-      ],
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(fontSize: 8, color: context.textMuted), textAlign: TextAlign.center),
+        ],
+      ),
     );
   }
 
   Widget _buildPreferencesCard(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.borderColor),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppLocalizations.of(context).preferences,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          _buildInfoField(
-            context,
-            label: AppLocalizations.of(context).preferredSignLanguage,
-            icon: Icons.sign_language,
-            child: _isEditing
-                ? _buildSignLanguageSelector()
-                : Text(
-                    _getSignLanguageDisplay(_selectedSignLanguage),
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-          ),
-        ],
+      child: _buildProfileFieldRow(
+        context,
+        icon: '🤟',
+        label: AppLocalizations.of(context).preferredSignLanguage,
+        valueWidget: _isEditing
+            ? _buildSignLanguageSelector()
+            : Text(
+                _getSignLanguageDisplay(_selectedSignLanguage),
+                style: GoogleFonts.bricolageGrotesque(fontSize: 12, fontWeight: FontWeight.w600, color: context.textPrimary),
+              ),
+        showChevron: !_isEditing,
+        showDivider: false,
       ),
-    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1);
+    ).animate().fadeIn(delay: 300.ms);
   }
 
   Widget _buildSignLanguageSelector() {

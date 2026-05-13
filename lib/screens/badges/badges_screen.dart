@@ -83,8 +83,6 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             ),
           ),
           const SizedBox(width: 12),
-          const Text('🏆', style: TextStyle(fontSize: 24)),
-          const SizedBox(width: 8),
           Text(
             AppLocalizations.of(context).badgesTitle,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -107,12 +105,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
         return Container(
           margin: const EdgeInsets.all(20),
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+          decoration: AppDecorations.card(context).copyWith(
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
@@ -126,19 +119,14 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
                     children: [
                       Text(
                         AppLocalizations.of(context).yourCollection,
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(200),
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(fontSize: 13, color: context.textMuted),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '$unlocked / $total ${AppLocalizations.of(context).badgesLabel}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ],
                   ),
@@ -146,14 +134,15 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(50),
+                      color: AppColors.primary.withAlpha(20),
                       shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primary.withAlpha(60)),
                     ),
                     child: Center(
                       child: Text(
                         '$percentage%',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -162,19 +151,19 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Progress bar
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: percentage / 100,
-                  minHeight: 10,
-                  backgroundColor: Colors.white.withAlpha(50),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  minHeight: 8,
+                  backgroundColor: context.borderColor,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // Tier counts
               Row(
@@ -208,7 +197,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             child: Text(
               '$count',
               style: TextStyle(
-                color: Colors.white,
+                color: color,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -219,7 +208,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
         Text(
           tier,
           style: TextStyle(
-            color: Colors.white.withAlpha(180),
+            color: context.textMuted,
             fontSize: 10,
           ),
           overflow: TextOverflow.ellipsis,
@@ -363,33 +352,23 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+        SectionHeader(
+          title: title,
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(26),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(26),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${badges.where((b) => unlockedIds.contains(b.id)).length}/${badges.length}',
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
+            child: Text(
+              '${badges.where((b) => unlockedIds.contains(b.id)).length}/${badges.length}',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 12),
         GridView.builder(
@@ -399,7 +378,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
+            childAspectRatio: 0.75,
           ),
           itemCount: badges.length,
           itemBuilder: (context, index) {
@@ -435,7 +414,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
+            childAspectRatio: 0.75,
           ),
           itemCount: sortedBadges.length,
           itemBuilder: (context, index) {

@@ -111,17 +111,9 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
         final user = authProvider.currentUser;
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: AppColors.accentGradient,
+          padding: const EdgeInsets.all(18),
+          decoration: AppDecorations.card(context).copyWith(
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
           ),
           child: Row(
             children: [
@@ -131,37 +123,24 @@ class _QuizHomeScreenState extends State<QuizHomeScreen> {
                   children: [
                     Text(
                       l10n.testKnowledge,
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
+                      style: TextStyle(fontSize: 13, color: context.textMuted),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       l10n.quizHeaderSubtitle,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${l10n.totalXP}: ${user?.totalXP ?? 0}',
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9), fontSize: 14),
+                      style: TextStyle(fontSize: 13, color: context.textMuted),
                     ),
                   ],
                 ),
               ),
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Center(
-                  child: Text('🎯', style: TextStyle(fontSize: 32)),
-                ),
-              ),
+              const Text('🎯', style: TextStyle(fontSize: 32)),
             ],
           ),
         ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.1);

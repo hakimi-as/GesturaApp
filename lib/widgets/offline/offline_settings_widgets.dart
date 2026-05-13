@@ -405,15 +405,7 @@ class _OfflineSettingsSectionState extends State<OfflineSettingsSection> {
   }) {
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: iconColor.withAlpha(30),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: iconColor, size: 20),
-        ),
+        Icon(icon, color: iconColor, size: 24),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -522,17 +514,7 @@ class _OfflineStatsCardState extends State<OfflineStatsCard> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withAlpha(30),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: Text('📥', style: TextStyle(fontSize: 22)),
-              ),
-            ),
+            const Text('📥', style: TextStyle(fontSize: 26)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

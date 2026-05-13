@@ -17,30 +17,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingPage> _pages = [
-    const OnboardingPage(
+  static const List<_OnboardingData> _pages = [
+    _OnboardingData(
       emoji: '🤟',
+      accentColor: Color(0xFF6366F1),
       title: 'Welcome to Gestura',
-      subtitle: 'Learn sign language through interactive lessons, quizzes, and real-time translation.',
-      backgroundColor: Color(0xFF6366F1),
+      subtitle: 'Learn BIM through interactive lessons, quizzes, and real-time translation.',
     ),
-    const OnboardingPage(
+    _OnboardingData(
       emoji: '📚',
+      accentColor: Color(0xFF8B5CF6),
       title: 'Interactive Lessons',
-      subtitle: 'Master signs step-by-step with video tutorials, practice exercises, and instant feedback.',
-      backgroundColor: Color(0xFF8B5CF6),
+      subtitle: 'Master signs step-by-step with video tutorials and instant feedback.',
     ),
-    const OnboardingPage(
+    _OnboardingData(
       emoji: '🎯',
+      accentColor: Color(0xFFEC4899),
       title: 'Track Your Progress',
-      subtitle: 'Earn XP, unlock badges, maintain streaks, and watch your skills grow every day.',
-      backgroundColor: Color(0xFFEC4899),
+      subtitle: 'Earn XP, unlock badges, maintain streaks, and grow every day.',
     ),
-    const OnboardingPage(
+    _OnboardingData(
       emoji: '🌐',
+      accentColor: Color(0xFF10B981),
       title: 'Real-Time Translation',
-      subtitle: 'Use your camera to translate signs to text or type text to see sign demonstrations.',
-      backgroundColor: Color(0xFF10B981),
+      subtitle: 'Use your camera to translate signs to text — bridging the conversation.',
     ),
   ];
 
@@ -59,10 +59,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } else {
       _completeOnboarding();
     }
-  }
-
-  void _skipOnboarding() {
-    _completeOnboarding();
   }
 
   Future<void> _completeOnboarding() async {
@@ -85,23 +81,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _pages[_currentPage].accentColor;
+
     return Scaffold(
-      backgroundColor: _pages[_currentPage].backgroundColor,
+      backgroundColor: context.bgPrimary,
       body: SafeArea(
         child: Column(
           children: [
-            // Skip Button
+            // Skip button
             Align(
               alignment: Alignment.topRight,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: TextButton(
-                  onPressed: _skipOnboarding,
+                  onPressed: _completeOnboarding,
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withAlpha(180),
-                      fontSize: 16,
+                      color: context.textMuted,
+                      fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -109,65 +107,65 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Page Content
+            // Page content
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _pages.length,
-                onPageChanged: (index) {
-                  setState(() => _currentPage = index);
-                },
-                itemBuilder: (context, index) {
-                  return _buildPage(_pages[index]);
-                },
+                onPageChanged: (index) => setState(() => _currentPage = index),
+                itemBuilder: (context, index) => _buildPage(_pages[index]),
               ),
             ),
 
-            // Bottom Section
+            // Bottom section
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: Column(
                 children: [
-                  // Page Indicators
+                  // Page indicators
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
                       _pages.length,
                       (index) => AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
                         margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentPage == index ? 32 : 10,
-                        height: 10,
+                        width: _currentPage == index ? 28 : 8,
+                        height: 8,
                         decoration: BoxDecoration(
                           color: _currentPage == index
-                              ? Colors.white
-                              : Colors.white.withAlpha(100),
-                          borderRadius: BorderRadius.circular(5),
+                              ? accent
+                              : context.borderColor,
+                          borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
-                  // Next/Get Started Button
+                  // Next / Get Started button
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: _pages[_currentPage].backgroundColor,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      child: ElevatedButton(
+                        onPressed: _nextPage,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
                         ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                        child: Text(
+                          _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
@@ -181,71 +179,91 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildPage(OnboardingPage page) {
+  Widget _buildPage(_OnboardingData page) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Animated Emoji
-          Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(30),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                page.emoji,
-                style: const TextStyle(fontSize: 80),
+          // Emoji icon with ambient glow
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Glow
+              Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: page.accentColor.withAlpha(15),
+                ),
               ),
-            ),
+              // Icon ring
+              Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: page.accentColor.withAlpha(20),
+                  border: Border.all(color: page.accentColor.withAlpha(60), width: 1.5),
+                ),
+                child: Center(
+                  child: Text(
+                    page.emoji,
+                    style: const TextStyle(fontSize: 68),
+                  ),
+                ),
+              ),
+            ],
           )
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
-                begin: const Offset(1, 1),
-                end: const Offset(1.1, 1.1),
-                duration: 1500.ms,
+                begin: const Offset(1.0, 1.0),
+                end: const Offset(1.05, 1.05),
+                duration: 1800.ms,
+                curve: Curves.easeInOut,
               ),
-          const SizedBox(height: 48),
+
+          const SizedBox(height: 52),
 
           // Title
           Text(
             page.title,
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                  height: 1.2,
+                ),
             textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.3),
+          ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.2),
+
           const SizedBox(height: 16),
 
           // Subtitle
           Text(
             page.subtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withAlpha(200),
-              height: 1.5,
-            ),
+                  color: context.textMuted,
+                  height: 1.6,
+                ),
             textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
+          ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2),
         ],
       ),
     );
   }
 }
 
-class OnboardingPage {
+class _OnboardingData {
   final String emoji;
+  final Color accentColor;
   final String title;
   final String subtitle;
-  final Color backgroundColor;
 
-  const OnboardingPage({
+  const _OnboardingData({
     required this.emoji,
+    required this.accentColor,
     required this.title,
     required this.subtitle,
-    required this.backgroundColor,
   });
 }

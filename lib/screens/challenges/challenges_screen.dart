@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/design_system.dart';
 import '../../config/theme.dart';
@@ -81,35 +82,26 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   }
 
   Widget _buildHeader() {
+    final canPop = Navigator.canPop(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
       child: Row(
         children: [
-          TapScale(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: context.bgCard,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.borderColor),
-              ),
-              child: Icon(
-                Icons.arrow_back,
-                color: context.textSecondary,
-                size: 20,
-              ),
+          if (canPop) ...[
+            TapScale(
+              onTap: () => Navigator.pop(context),
+              child: Icon(Icons.arrow_back_ios, color: context.textSecondary, size: 20),
             ),
-          ),
-          const SizedBox(width: 12),
-          const Text('🎯', style: TextStyle(fontSize: 24)),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
+          ],
           Text(
             'Challenges',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.04 * 22,
+              color: context.textPrimary,
+            ),
           ),
         ],
       ),
@@ -119,116 +111,14 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   Widget _buildStatsCard(ChallengeProvider challengeProvider) {
     final dailyChallenges = challengeProvider.dailyChallenges;
     final weeklyChallenges = challengeProvider.weeklyChallenges;
-    final specialChallenges = challengeProvider.specialChallenges;
-    
-    final completedDaily = dailyChallenges.where((c) => c.isCompleted).length;
+    final activeToday = dailyChallenges.where((c) => !c.isCompleted).length;
     final completedWeekly = weeklyChallenges.where((c) => c.isCompleted).length;
-    final completedSpecial = specialChallenges.where((c) => c.isCompleted).length;
-    final totalCompleted = completedDaily + completedWeekly + completedSpecial;
-    final totalXpAvailable = challengeProvider.totalXPAvailable;
 
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Active Challenges',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(180),
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$totalCompleted Completed',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(50),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    const Text('⭐', style: TextStyle(fontSize: 18)),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$totalXpAvailable XP',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildMiniStat('Daily', '$completedDaily/${dailyChallenges.length}'),
-              const SizedBox(width: 16),
-              _buildMiniStat('Weekly', '$completedWeekly/${weeklyChallenges.length}'),
-              const SizedBox(width: 16),
-              _buildMiniStat('Special', '$completedSpecial/${specialChallenges.length}'),
-            ],
-          ),
-        ],
-      ),
-    ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1);
-  }
-
-  Widget _buildMiniStat(String label, String value) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(30),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withAlpha(180),
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      child: Text(
+        '$activeToday active today · $completedWeekly completed this week',
+        style: TextStyle(fontSize: 10, color: context.textMuted),
       ),
     );
   }
@@ -267,21 +157,28 @@ class _ChallengesScreenState extends State<ChallengesScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('🎯', style: TextStyle(fontSize: 60)),
+            const Text('🎯', style: TextStyle(fontSize: 52)),
             const SizedBox(height: 16),
             Text(
-              'No $type challenges',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+              type == 'daily'
+                  ? 'No daily goals yet'
+                  : type == 'weekly'
+                      ? 'No weekly challenges yet'
+                      : 'No special missions yet',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Check back later for new challenges!',
+              type == 'daily'
+                  ? 'Pull down to load today\'s goals'
+                  : 'New challenges appear regularly — check back soon',
               style: TextStyle(
                 color: context.textMuted,
-                fontSize: 14,
+                fontSize: 13,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -297,211 +194,197 @@ class _ChallengesScreenState extends State<ChallengesScreen>
     );
   }
 
+  void _showChallengeDetail(ChallengeModel challenge) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.borderColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Text(challenge.emoji, style: const TextStyle(fontSize: 36)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        challenge.title,
+                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        challenge.description,
+                        style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: context.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Progress: ${challenge.currentValue} / ${challenge.targetValue}',
+                  style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  '${(challenge.progress * 100).toInt()}%',
+                  style: TextStyle(color: challenge.typeColor, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: challenge.progress,
+                minHeight: 8,
+                backgroundColor: context.bgElevated,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  challenge.isCompleted ? AppColors.success : challenge.typeColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Icon(Icons.star, size: 16, color: AppColors.primary),
+                const SizedBox(width: 4),
+                Text(
+                  '+${challenge.xpReward} XP reward',
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                Text(
+                  challenge.remainingTimeText,
+                  style: TextStyle(
+                    color: challenge.remainingTime < 6 ? AppColors.error : context.textMuted,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildChallengeCard(ChallengeModel challenge, int index) {
+    final isInProgress = !challenge.isCompleted && challenge.progress > 0;
     return TapScale(
+      onTap: () => _showChallengeDetail(challenge),
       child: Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.bgCard,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: challenge.isCompleted
-              ? AppColors.success.withAlpha(100)
-              : context.borderColor,
-          width: challenge.isCompleted ? 2 : 1,
+              ? AppColors.success.withValues(alpha: 0.31)
+              : isInProgress
+                  ? AppColors.primary.withValues(alpha: 0.35)
+                  : context.borderColor,
         ),
       ),
       child: Column(
         children: [
+          // Top row: emoji + title/desc + XP
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Emoji Icon
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: challenge.typeColor.withAlpha(30),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Text(
-                    challenge.emoji,
-                    style: const TextStyle(fontSize: 28),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              // Info
+              Text(challenge.emoji, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: challenge.typeColor.withAlpha(30),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            challenge.typeLabel,
-                            style: TextStyle(
-                              color: challenge.typeColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        if (challenge.isPersonalized) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6366F1).withAlpha(30),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              '✨ For You',
-                              style: TextStyle(
-                                color: Color(0xFF6366F1),
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                        const Spacer(),
-                        Text(
-                          challenge.remainingTimeText,
-                          style: TextStyle(
-                            color: challenge.remainingTime < 6
-                                ? AppColors.error
-                                : context.textMuted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
                     Text(
                       challenge.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      style: GoogleFonts.bricolageGrotesque(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.24,
+                        color: challenge.isCompleted ? context.textMuted : context.textPrimary,
+                        height: 1.2,
+                        decoration: challenge.isCompleted ? TextDecoration.lineThrough : null,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       challenge.description,
-                      style: TextStyle(
-                        color: context.textMuted,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(fontSize: 9, color: context.textMuted, height: 1.4),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '+${challenge.xpReward} XP',
+                style: GoogleFonts.bricolageGrotesque(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: challenge.isCompleted ? AppColors.success : AppColors.warning,
+                  letterSpacing: -0.1,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Progress Bar
+          const SizedBox(height: 8),
+          // Progress row
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${challenge.currentValue}/${challenge.targetValue}',
-                          style: TextStyle(
-                            color: challenge.isCompleted
-                                ? AppColors.success
-                                : context.textSecondary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                        Text(
-                          '${(challenge.progress * 100).toInt()}%',
-                          style: TextStyle(
-                            color: challenge.isCompleted
-                                ? AppColors.success
-                                : context.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: challenge.progress,
-                        minHeight: 5,
-                        backgroundColor: context.bgElevated,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          challenge.isCompleted
-                              ? AppColors.success
-                              : challenge.typeColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              // XP Reward
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: challenge.isCompleted
-                      ? AppColors.success.withAlpha(26)
-                      : AppColors.primary.withAlpha(26),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      challenge.isCompleted ? '✅' : '⭐',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '+${challenge.xpReward}',
-                      style: TextStyle(
-                        color: challenge.isCompleted
-                            ? AppColors.success
-                            : AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      'XP',
-                      style: TextStyle(
-                        color: challenge.isCompleted
-                            ? AppColors.success
-                            : AppColors.primary,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
+              Text('Progress', style: TextStyle(fontSize: 9, color: context.textMuted)),
+              Text(
+                '${challenge.currentValue} / ${challenge.targetValue}',
+                style: GoogleFonts.bricolageGrotesque(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: context.textSecondary,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: challenge.progress,
+              minHeight: 3,
+              backgroundColor: context.bgElevated,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                challenge.isCompleted ? AppColors.success : AppColors.warning,
+              ),
+            ),
           ),
         ],
       ),
     ),
-    ).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideX(begin: 0.1);
+    ).animate().fadeIn(delay: Duration(milliseconds: 80 * index));
   }
 }

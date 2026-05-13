@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,67 +22,105 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
   final FirestoreService _firestoreService = FirestoreService();
 
   String _searchQuery = '';
   String _selectedFilter = 'all';
-  
-  // All data loaded upfront
+
   List<LessonModel> _allLessons = [];
   List<CategoryModel> _allCategories = [];
   Map<String, CategoryModel> _categoryMap = {};
-  
-  // Search results
+
   List<LessonModel> _lessonResults = [];
   List<CategoryModel> _categoryResults = [];
-  
+
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  DocumentSnapshot? _lastDoc;
+
   bool _isSearching = false;
-  
-  // Recent searches (persisted)
+
   List<String> _recentSearches = [];
+
+  static const int _pageSize = 50;
 
   @override
   void initState() {
     super.initState();
     _focusNode.requestFocus();
-    _loadAllData();
+    _loadInitialData();
     _loadRecentSearches();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAllData() async {
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMore &&
+        _hasMore &&
+        !_isSearching) {
+      _loadMoreLessons();
+    }
+  }
+
+  Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     try {
-      // Load all categories and lessons at once
       final categories = await _firestoreService.getCategories();
-      final lessons = await _firestoreService.getAllLessons();
-      
-      // Create category map for quick lookup
       final categoryMap = <String, CategoryModel>{};
-      for (var cat in categories) {
+      for (final cat in categories) {
         categoryMap[cat.id] = cat;
       }
-      
+
+      final result = await _firestoreService.getLessonsPaginated(limit: _pageSize);
+
       if (mounted) {
         setState(() {
           _allCategories = categories;
-          _allLessons = lessons;
           _categoryMap = categoryMap;
+          _allLessons = result.lessons;
+          _lastDoc = result.lastDoc;
+          _hasMore = result.lessons.length == _pageSize;
           _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint('Error loading search data: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadMoreLessons() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      final result = await _firestoreService.getLessonsPaginated(
+        limit: _pageSize,
+        startAfter: _lastDoc,
+      );
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _allLessons.addAll(result.lessons);
+          _lastDoc = result.lastDoc;
+          _hasMore = result.lessons.length == _pageSize;
+          _isLoadingMore = false;
+        });
+        // Re-run current search over the expanded list
+        if (_searchQuery.isNotEmpty) _performSearch(_searchQuery);
       }
+    } catch (e) {
+      debugPrint('Error loading more lessons: $e');
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
@@ -245,8 +284,6 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          const Text('🔍', style: TextStyle(fontSize: 24)),
-          const SizedBox(width: 8),
           Text(
             'Search',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -265,7 +302,7 @@ class _SearchScreenState extends State<SearchScreen> {
             )
           else
             Text(
-              '${_allLessons.length} lessons',
+              '${_allLessons.length}${_hasMore ? '+' : ''} lessons',
               style: TextStyle(
                 color: context.textMuted,
                 fontSize: 12,
@@ -678,6 +715,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildSuggestions() {
     return SingleChildScrollView(
+      controller: _scrollController,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -819,7 +857,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             child: Row(
               children: [
-                const Text('💡', style: TextStyle(fontSize: 24)),
+                Icon(Icons.lightbulb_outline, size: 20, color: AppColors.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -834,7 +872,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Type any word to instantly search through ${_allLessons.length} signs!',
+                        'Type any word to instantly search through ${_allLessons.length} signs${_hasMore ? '+' : ''}!',
                         style: TextStyle(
                           color: context.textSecondary,
                           fontSize: 12,
@@ -846,6 +884,23 @@ class _SearchScreenState extends State<SearchScreen> {
               ],
             ),
           ),
+
+          // Load-more indicator
+          if (_isLoadingMore) ...[
+            const SizedBox(height: 20),
+            const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+          ] else if (_hasMore) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton.icon(
+                onPressed: _loadMoreLessons,
+                icon: const Icon(Icons.expand_more, color: AppColors.primary),
+                label: const Text('Load more signs', style: TextStyle(color: AppColors.primary)),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 40),
         ],
       ),
     );

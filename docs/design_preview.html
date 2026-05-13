@@ -1,0 +1,2568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestura — Design Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Lexend:wght@300;400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Nunito:wght@300;400;500;600;700&family=Epilogue:wght@400;600;700;800&family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:   #09091A; --bg1: #0F0F1A; --bg2: #1B1B2F; --bg3: #222238; --bg4: #2A2A45;
+      --bdr:  rgba(99,102,241,0.15); --bdr2: rgba(99,102,241,0.32);
+      --pri:  #6366F1; --pri-d: rgba(99,102,241,0.14); --pri-m: rgba(99,102,241,0.28);
+      --pk:   #EC4899; --pk-d:  rgba(236,72,153,0.14);
+      --grn:  #10B981; --grn-d: rgba(16,185,129,0.14);
+      --amb:  #F59E0B; --amb-d: rgba(245,158,11,0.14);
+      --t1: #EEEEFF; --t2: #C0C0D8; --t3: #6868A8;
+      --fd: 'Familjen Grotesk', sans-serif; --fb: 'Lexend', sans-serif;
+      --rsm: 8px; --rmd: 14px; --rlg: 20px; --rxl: 28px;
+    }
+    body { background: var(--bg); color: var(--t1); font-family: var(--fb); font-size: 14px; line-height: 1.5; }
+
+    /* ── Nav tabs ── */
+    .tabs { display: flex; border-bottom: 1px solid var(--bdr); background: var(--bg1); padding: 0 32px; position: sticky; top: 0; z-index: 10; }
+    .tab { padding: 16px 20px; font-family: var(--fd); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--t3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab:hover { color: var(--t2); }
+    .tab.active { color: var(--pri); border-bottom-color: var(--pri); }
+
+    /* ── Sections ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Page header ── */
+    .ph { padding: 40px 40px 28px; border-bottom: 1px solid var(--bdr); }
+    .eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pri); background: var(--pri-d); border: 1px solid var(--bdr2); border-radius: 20px; padding: 3px 11px; margin-bottom: 14px; }
+    .ph h1 { font-family: var(--fd); font-size: 34px; font-weight: 700; letter-spacing: -0.03em; color: var(--t1); line-height: 1.05; margin-bottom: 8px; }
+    .ph p  { font-size: 14px; color: var(--t2); font-weight: 300; max-width: 560px; line-height: 1.6; }
+
+    /* ── Two-phone comparison ── */
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .phone-panel { padding: 36px 32px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .phone-panel.left  { background: var(--bg1); border-right: 1px solid var(--bdr); }
+    .phone-panel.right { background: var(--bg); }
+    .panel-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+    .panel-label.before { color: var(--t3); }
+    .panel-label.after  { color: var(--pri); }
+
+    .phone {
+      width: 288px; border-radius: 32px; overflow: hidden;
+      border: 2px solid var(--bdr2);
+      box-shadow: 0 0 0 5px var(--bg), 0 0 0 7px var(--bdr), 0 40px 80px rgba(0,0,0,0.6);
+    }
+    .screen { background: var(--bg1); overflow-y: auto; max-height: 580px; scrollbar-width: none; }
+    .screen::-webkit-scrollbar { display: none; }
+
+    /* ── BEFORE dashboard ── */
+    .b-appbar { padding: 16px 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+    .b-logo { font-family: var(--fd); font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); }
+    .b-logo em { color: var(--pri); font-style: normal; }
+    .b-av { width: 32px; height: 32px; border-radius: 50%; background: var(--pri-d); border: 2px solid var(--pri); display: flex; align-items: center; justify-content: center; font-family: var(--fd); font-size: 12px; font-weight: 700; color: var(--pri); }
+
+    .b-hero { padding: 4px 16px 16px; }
+    .b-greet { font-size: 13px; color: var(--t2); margin-bottom: 12px; }
+    .b-greet strong { color: var(--t1); }
+
+    /* OLD stat row — equal size bubbles */
+    .b-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .b-stat { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 14px; text-align: center; }
+    .b-stat-num { font-family: var(--fd); font-size: 22px; font-weight: 700; color: var(--t1); }
+    .b-stat-lbl { font-size: 10px; color: var(--t3); margin-top: 3px; }
+
+    .b-xp-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 14px; margin-bottom: 16px; }
+    .b-xp-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .b-xp-label { font-size: 12px; color: var(--t2); }
+    .b-xp-val { font-size: 12px; font-weight: 600; color: var(--t1); }
+    .b-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+    .b-bar-fill { height: 100%; border-radius: 3px; background: var(--pri); }
+
+    /* OLD section header */
+    .b-sec { padding: 0 16px; margin-bottom: 10px; }
+    .b-sec-title { font-size: 15px; font-weight: 700; color: var(--t1); }
+
+    .b-cards { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .b-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 14px; }
+    .b-card-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .b-card-icon { width: 36px; height: 36px; background: var(--pri-d); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .b-card-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .b-card-desc  { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+    /* ── AFTER dashboard ── */
+    .a-appbar { padding: 16px 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+    .a-logo { font-family: var(--fd); font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); }
+    .a-logo em { color: var(--pri); font-style: normal; }
+    .a-av { width: 32px; height: 32px; border-radius: 50%; background: var(--pri-d); border: 2px solid var(--pri); display: flex; align-items: center; justify-content: center; font-family: var(--fd); font-size: 12px; font-weight: 700; color: var(--pri); }
+
+    .a-hero { padding: 2px 16px 16px; }
+    .a-greet-lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--t3); margin-bottom: 1px; }
+    .a-name { font-family: var(--fd); font-size: 19px; font-weight: 600; letter-spacing: -0.02em; color: var(--t1); margin-bottom: 16px; }
+
+    /* NEW level + xp */
+    .a-level-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 12px; }
+    .a-lv-wrap { display: flex; flex-direction: column; }
+    .a-lv-lbl { font-size: 8px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); line-height: 1; }
+    .a-lv-num { font-family: var(--fd); font-size: 50px; font-weight: 700; letter-spacing: -0.04em; color: var(--pri); line-height: 0.88; }
+    .a-xp-wrap { flex: 1; padding-bottom: 4px; }
+    .a-xp-frac { font-size: 10px; color: var(--t3); margin-bottom: 5px; }
+    .a-xp-frac strong { color: var(--t2); font-weight: 600; }
+    .a-xp-track { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+    .a-xp-fill  { height: 100%; width: 78%; background: var(--pri); border-radius: 2px; }
+    .a-xp-next  { font-size: 9px; color: var(--t3); margin-top: 3px; }
+
+    /* NEW asymmetric stats */
+    .a-stats { display: grid; grid-template-columns: 1fr 1.35fr; gap: 8px; margin-bottom: 22px; }
+    .a-streak { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rmd); padding: 11px 12px; }
+    .a-streak-ic { font-size: 16px; margin-bottom: 5px; }
+    .a-streak-n  { font-family: var(--fd); font-size: 26px; font-weight: 700; letter-spacing: -0.03em; color: var(--t1); line-height: 1; }
+    .a-streak-lb { font-size: 9px; color: var(--t3); margin-top: 2px; font-weight: 500; }
+    .a-goal { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rmd); padding: 11px 12px; display: flex; flex-direction: column; justify-content: space-between; }
+    .a-goal-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .a-goal-n  { font-family: var(--fd); font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); line-height: 1; }
+    .a-goal-lb { font-size: 9px; color: var(--t3); margin-top: 2px; font-weight: 500; }
+    .a-goal-badge { font-size: 8px; font-weight: 700; background: var(--grn-d); color: var(--grn); border-radius: 5px; padding: 2px 6px; }
+    .a-goal-dots { display: flex; gap: 4px; margin-top: 9px; }
+    .a-dot { height: 4px; flex: 1; border-radius: 2px; background: var(--bg3); }
+    .a-dot.on { background: var(--grn); }
+
+    /* NEW section header */
+    .a-sec { display: flex; align-items: center; gap: 7px; padding: 0 16px; margin-bottom: 8px; }
+    .a-sec-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pri); flex-shrink: 0; }
+    .a-sec-dot.pk { background: var(--pk); }
+    .a-sec-title { font-family: var(--fd); font-size: 13px; font-weight: 700; letter-spacing: -0.01em; color: var(--t1); flex: 1; }
+    .a-sec-action { font-size: 10px; font-weight: 500; color: var(--pri); }
+
+    /* NEW challenge cards */
+    .a-cards { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .a-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 12px 13px; }
+    .a-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 7px; }
+    .a-card-tag { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; background: var(--pk-d); color: var(--pk); }
+    .a-card-tag.ind { background: var(--pri-d); color: var(--pri); }
+    .a-card-xp  { font-size: 10px; font-weight: 600; color: var(--grn); font-family: var(--fd); }
+    .a-card-title { font-family: var(--fd); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--t1); margin-bottom: 2px; }
+    .a-card-desc  { font-size: 10px; font-weight: 300; color: var(--t2); margin-bottom: 8px; }
+    .a-card-bar { height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+    .a-card-fill { height: 100%; border-radius: 2px; background: var(--pri); }
+    .a-card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; }
+    .a-card-pct { font-size: 9px; color: var(--t3); }
+    .a-card-btn { font-family: var(--fd); font-size: 10px; font-weight: 600; color: var(--pri); background: var(--pri-d); border: 1px solid var(--bdr2); border-radius: 6px; padding: 4px 9px; }
+
+    /* badges */
+    .a-badges { padding: 0 16px 20px; }
+    .a-badges-row { display: flex; gap: 9px; margin-top: 8px; }
+    .ab-c { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .ab-i { width: 38px; height: 38px; border-radius: 50%; background: var(--bg2); border: 2px solid var(--bdr2); display: flex; align-items: center; justify-content: center; font-size: 17px; }
+    .ab-i.ind { background: var(--pri-d); border-color: var(--pri); }
+    .ab-i.pk  { background: var(--pk-d);  border-color: var(--pk); }
+    .ab-i.lk  { filter: grayscale(1); opacity: 0.4; }
+    .ab-n { font-size: 7px; font-weight: 500; color: var(--t3); text-align: center; max-width: 40px; line-height: 1.2; }
+
+    /* ── Annotations ── */
+    .ann-list { display: flex; flex-direction: column; gap: 9px; width: 288px; }
+    .ann { display: flex; gap: 8px; align-items: flex-start; }
+    .an-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .an-dot.pri { background: var(--pri); }
+    .an-dot.pk  { background: var(--pk); }
+    .an-dot.grn { background: var(--grn); }
+    .ann p { font-size: 11px; color: var(--t2); font-weight: 300; line-height: 1.5; }
+    .ann strong { color: var(--t1); font-weight: 500; }
+
+    /* ── Change list ── */
+    .changes { padding: 32px 40px; border-top: 1px solid var(--bdr); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+    .change-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rmd); padding: 18px; }
+    .change-card h4 { font-family: var(--fd); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--t1); margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+    .ch-num { width: 20px; height: 20px; border-radius: 50%; background: var(--pri-d); border: 1px solid var(--bdr2); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--pri); flex-shrink: 0; font-family: var(--fd); }
+    .change-card ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .change-card li { font-size: 12px; font-weight: 300; color: var(--t2); padding-left: 12px; position: relative; line-height: 1.5; }
+    .change-card li::before { content: '→'; position: absolute; left: 0; color: var(--pri); font-size: 10px; top: 2px; }
+
+    /* ── Phase C section ── */
+    .phase-c-grid { padding: 32px 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    .phase-c-panel { display: flex; flex-direction: column; gap: 20px; }
+    .sec-label { font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--t3); padding-bottom: 10px; border-bottom: 1px solid var(--bdr); margin-bottom: 4px; }
+
+    /* Badge card demos */
+    .badge-demo-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .bdg { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); padding: 14px; width: 100px; display: flex; flex-direction: column; align-items: center; gap: 9px; }
+    .bdg-ring { width: 52px; height: 52px; border-radius: 50%; background: var(--pri-d); border: 2px solid var(--pri); display: flex; align-items: center; justify-content: center; font-size: 22px; position: relative; }
+    .bdg-ring.gold { background: var(--amb-d); border-color: var(--amb); }
+    .bdg-ring.pink { background: var(--pk-d);  border-color: var(--pk); }
+    .bdg-ring.lock { background: var(--bg3); border-color: var(--bdr2); filter: grayscale(1); opacity: 0.45; }
+    .bdg-tier { position: absolute; bottom: -7px; font-size: 7px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 5px; border-radius: 4px; color: #fff; background: var(--pri); font-family: var(--fb); white-space: nowrap; }
+    .bdg-tier.go { background: var(--amb); }
+    .bdg-tier.pk { background: var(--pk); }
+    .bdg-name { font-family: var(--fd); font-size: 10px; font-weight: 600; color: var(--t1); text-align: center; line-height: 1.2; }
+    .bdg-xp { font-size: 9px; font-weight: 500; color: var(--grn); background: var(--grn-d); border-radius: 5px; padding: 2px 7px; }
+    .bdg-xp.lk { color: var(--t3); background: var(--bg3); }
+
+    /* Challenge card demo */
+    .ch-full { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); overflow: hidden; }
+    .ch-inner { padding: 16px 18px 14px; }
+    .ch-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .ch-emoji { font-size: 30px; line-height: 1; }
+    .ch-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .ch-tag { font-size: 8px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; background: var(--pk-d); color: var(--pk); }
+    .ch-xp  { font-family: var(--fd); font-size: 12px; font-weight: 600; color: var(--grn); }
+    .ch-title { font-family: var(--fd); font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); margin-bottom: 3px; }
+    .ch-desc  { font-size: 12px; font-weight: 300; color: var(--t2); margin-bottom: 14px; line-height: 1.5; }
+    .ch-bar { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+    .ch-bar div { height: 100%; border-radius: 2px; background: var(--pri); }
+    .ch-foot { display: flex; justify-content: space-between; font-size: 10px; color: var(--t3); }
+
+    /* Learn path card demo */
+    .path-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rlg); overflow: hidden; }
+    .path-top { padding: 14px 16px; display: flex; align-items: flex-start; justify-content: space-between; }
+    .path-icon { width: 40px; height: 40px; background: rgba(99,102,241,0.18); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .path-prog { display: flex; align-items: center; gap: 6px; }
+    .path-pct-ring { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--bdr2); display: flex; align-items: center; justify-content: center; position: relative; }
+    .path-pct-ring::before { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 3px solid transparent; border-top-color: var(--pri); border-right-color: var(--pri); }
+    .path-pct { font-family: var(--fd); font-size: 9px; font-weight: 700; color: var(--pri); }
+    .path-body { padding: 0 16px 14px; }
+    .path-name { font-family: var(--fd); font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: var(--t1); margin-bottom: 3px; }
+    .path-sub  { font-size: 11px; font-weight: 300; color: var(--t2); margin-bottom: 10px; }
+    .path-bar-track { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+    .path-bar-fill  { height: 100%; border-radius: 2px; background: var(--pri); width: 45%; }
+
+    /* ── Phase A done banner ── */
+    .done-banner { margin: 32px 40px 0; padding: 14px 20px; background: var(--grn-d); border: 1px solid rgba(16,185,129,0.30); border-radius: var(--rmd); display: flex; align-items: center; gap: 10px; }
+    .done-banner span { font-size: 12px; color: var(--grn); font-weight: 400; }
+    .done-banner strong { font-weight: 600; }
+
+    /* ── Phase D ── */
+    .pd-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .pd-panel { padding: 36px 32px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .pd-panel.left  { background: var(--bg1); border-right: 1px solid var(--bdr); }
+    .pd-panel.right { background: var(--bg); }
+
+    /* BEFORE: icon-box monoculture */
+    .pd-b-screen { background: var(--bg1); }
+    .pd-b-appbar { padding: 14px 16px 10px; }
+    .pd-b-appbar-title { font-family: var(--fd); font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+
+    /* BEFORE: emoji section header */
+    .pd-b-sec { padding: 0 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+    .pd-b-sec-title { font-size: 14px; font-weight: 700; color: var(--t1); }
+    .pd-b-sec-action { font-size: 11px; color: var(--pri); }
+
+    /* BEFORE: icon-in-box list items */
+    .pd-b-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+    .pd-b-item { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+    .pd-b-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+    .pd-b-icon.a { background: var(--pri-d); }
+    .pd-b-icon.b { background: var(--pk-d); }
+    .pd-b-icon.c { background: var(--grn-d); }
+    .pd-b-icon.d { background: var(--amb-d); }
+    .pd-b-text { flex: 1; min-width: 0; }
+    .pd-b-title { font-family: var(--fd); font-size: 12px; font-weight: 600; color: var(--t1); }
+    .pd-b-sub { font-size: 10px; color: var(--t3); margin-top: 1px; }
+    .pd-b-arrow { font-size: 12px; color: var(--t3); }
+
+    /* AFTER: icon system — 4 variants */
+    .pd-a-screen { background: var(--bg1); }
+    .pd-a-appbar { padding: 14px 16px 10px; }
+    .pd-a-appbar-title { font-family: var(--fd); font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+
+    /* AFTER variant A: bare header — colored glyph, no box */
+    .pd-a-sec { padding: 0 16px 6px; display: flex; align-items: center; justify-content: space-between; }
+    .pd-a-sec-left { display: flex; align-items: center; gap: 6px; }
+    .pd-a-sec-glyph { font-size: 13px; line-height: 1; color: var(--pri); }
+    .pd-a-sec-glyph.pk { color: var(--pk); }
+    .pd-a-sec-glyph.grn { color: var(--grn); }
+    .pd-a-sec-title { font-family: var(--fd); font-size: 13px; font-weight: 700; letter-spacing: -0.01em; color: var(--t1); }
+    .pd-a-sec-action { font-size: 10px; font-weight: 500; color: var(--pri); }
+
+    /* AFTER: list items with 3 sub-variants */
+    .pd-a-list { padding: 0 12px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+
+    /* Sub-variant: inline (no box, icon + text side by side) */
+    .pd-a-item-inline { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 14px; padding: 11px 12px; display: flex; align-items: center; gap: 9px; }
+    .pd-a-ic-inline { font-size: 17px; line-height: 1; width: 20px; text-align: center; flex-shrink: 0; }
+    .pd-a-text { flex: 1; min-width: 0; }
+    .pd-a-title { font-family: var(--fd); font-size: 12px; font-weight: 600; color: var(--t1); }
+    .pd-a-sub { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+    /* Sub-variant: pill tag inside item */
+    .pd-a-item-pill { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 14px; padding: 11px 12px; display: flex; align-items: center; gap: 9px; }
+    .pd-a-pill { display: inline-flex; align-items: center; gap: 4px; background: var(--grn-d); border: 1px solid rgba(16,185,129,0.22); border-radius: 20px; padding: 2px 8px 2px 5px; flex-shrink: 0; }
+    .pd-a-pill-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--grn); }
+    .pd-a-pill-text { font-size: 9px; font-weight: 700; color: var(--grn); letter-spacing: 0.04em; }
+    .pd-a-pill.pk { background: var(--pk-d); border-color: rgba(236,72,153,0.22); }
+    .pd-a-pill.pk .pd-a-pill-dot { background: var(--pk); }
+    .pd-a-pill.pk .pd-a-pill-text { color: var(--pk); }
+    .pd-a-pill.amb { background: var(--amb-d); border-color: rgba(245,158,11,0.22); }
+    .pd-a-pill.amb .pd-a-pill-dot { background: var(--amb); }
+    .pd-a-pill.amb .pd-a-pill-text { color: var(--amb); }
+
+    /* Sub-variant: solid circle (primary CTA context only) */
+    .pd-a-item-solid { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 14px; padding: 11px 12px; display: flex; align-items: center; gap: 9px; }
+    .pd-a-ic-solid { width: 30px; height: 30px; border-radius: 50%; background: var(--pri); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+
+    .pd-a-arrow { font-size: 12px; color: var(--t3); }
+    .pd-a-prog { font-size: 9px; color: var(--grn); font-weight: 500; }
+
+    /* Settings row BEFORE */
+    .pd-b-settings { padding: 0 12px; display: flex; flex-direction: column; gap: 1px; margin-bottom: 16px; }
+    .pd-b-setting { background: var(--bg2); padding: 10px 12px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--bdr); }
+    .pd-b-setting:first-child { border-radius: 14px 14px 0 0; }
+    .pd-b-setting:last-child  { border-radius: 0 0 14px 14px; border-top: none; }
+    .pd-b-setting:first-child:last-child { border-radius: 14px; }
+    .pd-b-set-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .pd-b-set-icon.a { background: var(--pri-d); }
+    .pd-b-set-icon.b { background: var(--pk-d); }
+    .pd-b-set-icon.c { background: var(--grn-d); }
+    .pd-b-set-label { flex: 1; font-size: 12px; font-weight: 500; color: var(--t1); }
+    .pd-b-set-val { font-size: 10px; color: var(--t3); }
+
+    /* Settings row AFTER */
+    .pd-a-settings { padding: 0 12px; display: flex; flex-direction: column; gap: 1px; margin-bottom: 16px; }
+    .pd-a-setting { background: var(--bg2); padding: 11px 12px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--bdr); }
+    .pd-a-setting:first-child { border-radius: 14px 14px 0 0; }
+    .pd-a-setting:last-child  { border-radius: 0 0 14px 14px; border-top: none; }
+    .pd-a-set-lead { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; background: var(--t3); }
+    .pd-a-set-lead.pri { background: var(--pri); }
+    .pd-a-set-lead.pk  { background: var(--pk); }
+    .pd-a-set-lead.grn { background: var(--grn); }
+    .pd-a-set-label { flex: 1; font-size: 12px; font-weight: 500; color: var(--t1); }
+    .pd-a-set-val { font-size: 10px; color: var(--t3); }
+    .pd-a-set-chip { font-size: 9px; font-weight: 600; color: var(--pri); background: var(--pri-d); border-radius: 5px; padding: 2px 7px; }
+
+    /* Variant reference grid */
+    .pd-variants { padding: 32px 40px; border-top: 1px solid var(--bdr); }
+    .pd-variants h3 { font-family: var(--fd); font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); margin-bottom: 20px; }
+    .pd-var-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .pd-var-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--rmd); padding: 18px; }
+    .pd-var-card h4 { font-family: var(--fd); font-size: 12px; font-weight: 700; color: var(--pri); letter-spacing: 0.04em; margin-bottom: 4px; text-transform: uppercase; font-size: 9px; }
+    .pd-var-card .pd-vc-name { font-family: var(--fd); font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 10px; letter-spacing: -0.01em; }
+    .pd-var-card p { font-size: 11px; color: var(--t2); font-weight: 300; line-height: 1.5; margin-bottom: 12px; }
+    .pd-vc-use { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--t3); border-top: 1px solid var(--bdr); padding-top: 10px; margin-top: 0; }
+    .pd-vc-use span { color: var(--grn); }
+
+    /* Annotation labels under phones */
+    .pd-ann { display: flex; flex-direction: column; gap: 6px; width: 288px; }
+    .pd-ann-item { display: flex; gap: 7px; align-items: flex-start; }
+    .pd-ann-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; background: var(--pri); }
+    .pd-ann-dot.red { background: #F87171; }
+    .pd-ann-dot.grn { background: var(--grn); }
+    .pd-ann p { font-size: 11px; color: var(--t2); font-weight: 300; line-height: 1.4; }
+    .pd-ann strong { color: var(--t1); font-weight: 500; }
+
+    @media (max-width: 860px) {
+      .comparison { grid-template-columns: 1fr; }
+      .changes { grid-template-columns: 1fr; }
+      .phase-c-grid { grid-template-columns: 1fr; }
+      .pd-comparison { grid-template-columns: 1fr; }
+      .pd-var-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="tabs">
+  <div class="tab active" onclick="show('phase-a')">Phase A — Foundation ✓</div>
+  <div class="tab" onclick="show('phase-b')">Phase B — Dashboard ✓</div>
+  <div class="tab" onclick="show('phase-c')">Phase C — Cards & Widgets ✓</div>
+  <div class="tab" onclick="show('phase-d')">Phase D — Icon System ✓</div>
+  <div class="tab" onclick="show('phase-e')">Phase E — Typography ✓</div>
+  <div class="tab" onclick="show('phase-f')">Phase F — Layout ✓</div>
+  <div class="tab" onclick="show('phase-g')">Phase G — Full Redesign ✓</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PHASE A -->
+<div class="section active" id="phase-a">
+  <div class="ph">
+    <div class="eyebrow">Phase A · Shipped</div>
+    <h1>Foundation</h1>
+    <p>Color tokens, type scale, radius system, SectionHeader dot, and GradientButton — all propagated to every screen automatically. No screen-by-screen edits needed.</p>
+  </div>
+  <div class="done-banner">
+    <span>✅ <strong>Committed and pushed.</strong> Every surface in the app is now using indigo-tinted neutrals, tighter heading letterSpacing, and Familjen Grotesk labels on all primary buttons.</span>
+  </div>
+  <div class="changes" style="padding-top:28px">
+    <div class="change-card">
+      <h4><div class="ch-num">1</div> Color tokens</h4>
+      <ul>
+        <li>bgCard <code>#16162A</code> → <code>#1B1B2F</code></li>
+        <li>bgElevated → <code>#222238</code></li>
+        <li>textPrimary <code>#F8FAFC</code> → <code>#EEEEFF</code></li>
+        <li>textMuted → <code>#6868A8</code></li>
+        <li>border → <code>#2C2C4E</code></li>
+        <li>Light theme also indigo-tinted</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">2</div> Type scale</h4>
+      <ul>
+        <li>headlineLarge letterSpacing −0.8</li>
+        <li>headlineMedium letterSpacing −0.6</li>
+        <li>Explicit lineHeight on all styles</li>
+        <li>w800 → w700 (FG already heavy)</li>
+        <li>titleMedium gets −0.2 tracking</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">3</div> Components</h4>
+      <ul>
+        <li>AppRadius: sm/md/lg/xl constants</li>
+        <li>SectionHeader: 7px dot accent</li>
+        <li>GradientButton: radius 16→14, FG label</li>
+        <li>AppDecorations.tileCard() added</li>
+        <li>heroCard: solid color (no gradient)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PHASE B -->
+<div class="section" id="phase-b">
+  <div class="ph">
+    <div class="eyebrow">Phase B · Shipped</div>
+    <h1>Dashboard Redesign</h1>
+    <p>The hero screen. Break the identical stat-bubble grid. Give numbers their proper typographic weight. Introduce visual rhythm with varied spacing and asymmetric tiles.</p>
+  </div>
+  <div class="done-banner">
+    <span>✅ <strong>Committed and pushed.</strong> Open hero layout with 50px level number, asymmetric streak/goals tiles, and tag+XP challenge cards — all in <code>dashboard_screen.dart</code>.</span>
+  </div>
+
+  <div class="comparison">
+    <!-- BEFORE -->
+    <div class="phone-panel left">
+      <div class="panel-label before">Before (current)</div>
+      <div class="phone">
+        <div class="screen">
+          <div class="b-appbar">
+            <div class="b-logo">Gest<em>ura</em></div>
+            <div class="b-av">H</div>
+          </div>
+          <div class="b-hero">
+            <div class="b-greet">Good morning, <strong>Hakimi</strong> 👋</div>
+            <!-- XP card -->
+            <div class="b-xp-card">
+              <div class="b-xp-row">
+                <div class="b-xp-label">Level 7 — XP Progress</div>
+                <div class="b-xp-val">1,240 / 1,600</div>
+              </div>
+              <div class="b-bar"><div class="b-bar-fill" style="width:78%"></div></div>
+            </div>
+            <!-- Identical stat bubbles -->
+            <div class="b-stat-row">
+              <div class="b-stat">
+                <div class="b-stat-num">🔥 14</div>
+                <div class="b-stat-lbl">Day Streak</div>
+              </div>
+              <div class="b-stat">
+                <div class="b-stat-num">3/5</div>
+                <div class="b-stat-lbl">Daily Goals</div>
+              </div>
+            </div>
+          </div>
+          <!-- Plain section header -->
+          <div class="b-sec"><div class="b-sec-title">Daily Challenges</div></div>
+          <div class="b-cards">
+            <div class="b-card">
+              <div class="b-card-row">
+                <div class="b-card-icon">🖐</div>
+                <div>
+                  <div class="b-card-title">Fingerspelling Sprint</div>
+                  <div class="b-card-desc">Practice signs A through E</div>
+                </div>
+              </div>
+              <div class="b-bar"><div class="b-bar-fill" style="width:60%"></div></div>
+            </div>
+            <div class="b-card">
+              <div class="b-card-row">
+                <div class="b-card-icon">📖</div>
+                <div>
+                  <div class="b-card-title">Vocabulary Rush</div>
+                  <div class="b-card-desc">10 new greetings signs</div>
+                </div>
+              </div>
+              <div class="b-bar"><div class="b-bar-fill" style="width:0%"></div></div>
+            </div>
+          </div>
+          <div class="b-sec"><div class="b-sec-title">Recent Badges</div></div>
+          <div style="padding: 0 16px 20px">
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <div class="b-stat" style="width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:50%">🏅</div>
+              <div class="b-stat" style="width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:50%">🔥</div>
+              <div class="b-stat" style="width:44px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:50%">⭐</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ann-list">
+        <div class="ann"><div class="an-dot pri"></div><p><strong>XP buried in a card</strong> — level number is small label text, not a visual anchor</p></div>
+        <div class="ann"><div class="an-dot pk"></div><p><strong>Identical 2×2 stat boxes</strong> — same size, same radius, same padding. No visual hierarchy</p></div>
+        <div class="ann"><div class="an-dot grn"></div><p><strong>Square icon + title</strong> — every challenge card looks the same layout</p></div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="phone-panel right">
+      <div class="panel-label after">After (proposed)</div>
+      <div class="phone">
+        <div class="screen">
+          <div class="a-appbar">
+            <div class="a-logo">Gest<em>ura</em></div>
+            <div class="a-av">H</div>
+          </div>
+          <div class="a-hero">
+            <div class="a-greet-lbl">Good morning</div>
+            <div class="a-name">Hakimi 👋</div>
+            <!-- Level + XP open, not in a card -->
+            <div class="a-level-row">
+              <div class="a-lv-wrap">
+                <div class="a-lv-lbl">Level</div>
+                <div class="a-lv-num">7</div>
+              </div>
+              <div class="a-xp-wrap">
+                <div class="a-xp-frac"><strong>1,240</strong> / 1,600 XP</div>
+                <div class="a-xp-track"><div class="a-xp-fill"></div></div>
+                <div class="a-xp-next">360 XP to Level 8</div>
+              </div>
+            </div>
+            <!-- Asymmetric stats -->
+            <div class="a-stats">
+              <div class="a-streak">
+                <div class="a-streak-ic">🔥</div>
+                <div class="a-streak-n">14</div>
+                <div class="a-streak-lb">Day streak</div>
+              </div>
+              <div class="a-goal">
+                <div class="a-goal-top">
+                  <div>
+                    <div class="a-goal-n">3 / 5</div>
+                    <div class="a-goal-lb">Today's goals</div>
+                  </div>
+                  <div class="a-goal-badge">60%</div>
+                </div>
+                <div class="a-goal-dots">
+                  <div class="a-dot on"></div><div class="a-dot on"></div>
+                  <div class="a-dot on"></div><div class="a-dot"></div><div class="a-dot"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dot section header -->
+          <div class="a-sec">
+            <div class="a-sec-dot pk"></div>
+            <div class="a-sec-title">Today's Challenges</div>
+            <div class="a-sec-action">See all</div>
+          </div>
+          <div class="a-cards">
+            <div class="a-card">
+              <div class="a-card-top">
+                <div class="a-card-tag">✨ For You</div>
+                <div class="a-card-xp">+45 XP</div>
+              </div>
+              <div class="a-card-title">Fingerspelling Sprint</div>
+              <div class="a-card-desc">Signs A–E · your weakest set this week</div>
+              <div class="a-card-bar"><div class="a-card-fill" style="width:60%"></div></div>
+              <div class="a-card-foot">
+                <div class="a-card-pct">60% done</div>
+                <div class="a-card-btn">Continue →</div>
+              </div>
+            </div>
+            <div class="a-card">
+              <div class="a-card-top">
+                <div class="a-card-tag ind">Vocabulary</div>
+                <div class="a-card-xp">+50 XP</div>
+              </div>
+              <div class="a-card-title">Vocabulary Rush</div>
+              <div class="a-card-desc">10 new greetings signs</div>
+              <div class="a-card-foot" style="margin-top:0">
+                <div class="a-card-pct">Not started</div>
+                <div class="a-card-btn">Begin →</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="a-sec">
+            <div class="a-sec-dot"></div>
+            <div class="a-sec-title">Recent Badges</div>
+            <div class="a-sec-action">View all</div>
+          </div>
+          <div class="a-badges">
+            <div class="a-badges-row">
+              <div class="ab-c"><div class="ab-i ind">🏅</div><div class="ab-n">First Sign</div></div>
+              <div class="ab-c"><div class="ab-i pk">🔥</div><div class="ab-n">7-Day Streak</div></div>
+              <div class="ab-c"><div class="ab-i ind">⭐</div><div class="ab-n">Quiz Ace</div></div>
+              <div class="ab-c"><div class="ab-i lk">🔒</div><div class="ab-n">Social Butterfly</div></div>
+              <div class="ab-c"><div class="ab-i lk">🔒</div><div class="ab-n">Speed Signer</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ann-list">
+        <div class="ann"><div class="an-dot pri"></div><p><strong>Level "7" at 50px</strong> — Familjen Grotesk, open composition. Progress is the headline, not a label</p></div>
+        <div class="ann"><div class="an-dot pk"></div><p><strong>Asymmetric stat tiles</strong> — streak (portrait) vs goal (landscape + dots). Different shapes, different purposes</p></div>
+        <div class="ann"><div class="an-dot grn"></div><p><strong>Tag + XP header</strong> — "For You" tag top-left, XP top-right. Card breathes and has internal hierarchy</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="changes">
+    <div class="change-card">
+      <h4><div class="ch-num">1</div> Hero section</h4>
+      <ul>
+        <li>Greeting split: 9px uppercase label + 19px name</li>
+        <li>Level removed from XP card → open layout</li>
+        <li>"7" at 50px Familjen Grotesk, primary color</li>
+        <li>XP bar 4px, thin and precise</li>
+        <li>XP card wrapper removed — breathes freely</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">2</div> Stat tiles</h4>
+      <ul>
+        <li>Grid: 1fr / 1.35fr (not equal columns)</li>
+        <li>Streak tile: icon → number → label stacked</li>
+        <li>Goal tile: value + badge top, progress dots bottom</li>
+        <li>Both use AppRadius.md (14px) not lg (20px)</li>
+        <li>Spacing 8px within, 22px after the group</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">3</div> Challenge cards</h4>
+      <ul>
+        <li>Remove square icon — emoji anchor instead</li>
+        <li>Tag top-left (context) / XP top-right (reward)</li>
+        <li>Title Familjen Grotesk 14px 600</li>
+        <li>Progress bar 3px (less visual weight)</li>
+        <li>Continue/Begin button inline bottom-right</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PHASE C -->
+<div class="section" id="phase-c">
+  <div class="ph">
+    <div class="eyebrow">Phase C · Shipped</div>
+    <h1>Cards &amp; Widgets</h1>
+    <p>Badge cards, challenge complete dialogs, learning path cards — the repeated components that show up across every screen. Celebratory moments deserve more presence; repeated elements need visual variety.</p>
+  </div>
+  <div class="done-banner">
+    <span>✅ <strong>Committed and pushed.</strong> Badge ring: border-only + locked desaturation. Unlock dialog: tinted tier pill, restrained glow, tier-palette confetti. StreakFreeze: flat card layout. LearningPathCard: AppRadius.md icon containers.</span>
+  </div>
+
+  <div class="phase-c-grid">
+    <div class="phase-c-panel">
+
+      <div class="sec-label">Badge cards — tier in border, not fill</div>
+      <div class="badge-demo-row">
+        <div class="bdg">
+          <div class="bdg-ring" style="position:relative">🏅<div class="bdg-tier">Silver</div></div>
+          <div class="bdg-name">First Sign</div>
+          <div class="bdg-xp">+25 XP</div>
+        </div>
+        <div class="bdg">
+          <div class="bdg-ring gold" style="position:relative">🔥<div class="bdg-tier go">Gold</div></div>
+          <div class="bdg-name">14-Day Streak</div>
+          <div class="bdg-xp">+100 XP</div>
+        </div>
+        <div class="bdg">
+          <div class="bdg-ring pink" style="position:relative">✨<div class="bdg-tier pk">Rare</div></div>
+          <div class="bdg-name">Community First</div>
+          <div class="bdg-xp">+150 XP</div>
+        </div>
+        <div class="bdg">
+          <div class="bdg-ring lock">🔒</div>
+          <div class="bdg-name" style="color:var(--t3)">Speed Signer</div>
+          <div class="bdg-xp lk">+75 XP</div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--t3);font-weight:300;line-height:1.6">Tier expressed through border color + pill label. Gold and Rare have distinct visual weight from Silver. Locked state: desaturation not just opacity.</p>
+
+      <div class="sec-label" style="margin-top:8px">Challenge card — full size</div>
+      <div class="ch-full">
+        <div class="ch-inner">
+          <div class="ch-head">
+            <div class="ch-emoji">🖐</div>
+            <div class="ch-meta">
+              <div class="ch-tag">✨ For You</div>
+              <div class="ch-xp">+45 XP</div>
+            </div>
+          </div>
+          <div class="ch-title">Fingerspelling Sprint</div>
+          <div class="ch-desc">Signs A through E — your three most-missed signs from last week's sessions.</div>
+          <div class="ch-bar"><div style="width:60%"></div></div>
+          <div class="ch-foot"><span>3 of 5 completed</span><span>60%</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="phase-c-panel">
+
+      <div class="sec-label">Learning path card</div>
+      <div class="path-card">
+        <div class="path-top">
+          <div class="path-icon">🤟</div>
+          <div class="path-prog">
+            <div class="path-pct-ring"><div class="path-pct">45%</div></div>
+          </div>
+        </div>
+        <div class="path-body">
+          <div class="path-name">Everyday Conversations</div>
+          <div class="path-sub">12 of 26 lessons complete</div>
+          <div class="path-bar-track"><div class="path-bar-fill"></div></div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--t3);font-weight:300;line-height:1.6">Path icon in a tinted square (not a gradient). Progress shown via both circular indicator and bar — clear redundancy for accessibility. Title and subtitle use proper size contrast.</p>
+
+      <div class="sec-label" style="margin-top:8px">What changes in Phase C</div>
+      <div class="change-card" style="width:100%">
+        <h4><div class="ch-num">C</div> Shared widget changes</h4>
+        <ul>
+          <li>BadgeCard: tier pill smaller (8px), dot under icon removed</li>
+          <li>BadgeUnlockDialog: confetti colors → tier palette, not gradient</li>
+          <li>ChallengeCard: emoji replaces colored square icon throughout</li>
+          <li>LearningPathCard: icon container AppRadius.md, no gradient fill</li>
+          <li>StatCard (dashboard): convert existing equal-size to asymmetric</li>
+          <li>StreakFreeze: flat color card, icon + text layout tidied</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PHASE D -->
+<div class="section" id="phase-d">
+  <div class="ph">
+    <div class="eyebrow">Phase D · Preview</div>
+    <h1>Icon System Overhaul</h1>
+    <p>Replace the single rounded-square-with-tint pattern (62+ instances, #1 AI tell) with a 4-variant system matched to context. Every icon slot earns its presentation instead of defaulting to the same box.</p>
+  </div>
+
+  <div class="pd-comparison">
+
+    <!-- ─── BEFORE ─── -->
+    <div class="pd-panel left">
+      <div class="panel-label before">Before — Icon-Box Monoculture</div>
+
+      <div class="phone">
+        <div class="screen pd-b-screen">
+
+          <div class="pd-b-appbar">
+            <div style="font-family:var(--fd);font-size:16px;font-weight:700;letter-spacing:-0.02em;">Learn</div>
+          </div>
+
+          <!-- Emoji section header -->
+          <div class="pd-b-sec" style="margin-top:4px;">
+            <div class="pd-b-sec-title">📚 Lessons</div>
+            <div class="pd-b-sec-action">See all</div>
+          </div>
+
+          <!-- Icon-box list — every item identical -->
+          <div class="pd-b-list">
+            <div class="pd-b-item">
+              <div class="pd-b-icon a">🤟</div>
+              <div class="pd-b-text">
+                <div class="pd-b-title">Greetings</div>
+                <div class="pd-b-sub">12 signs · 4 lessons</div>
+              </div>
+              <div class="pd-b-arrow">›</div>
+            </div>
+            <div class="pd-b-item">
+              <div class="pd-b-icon b">🔢</div>
+              <div class="pd-b-text">
+                <div class="pd-b-title">Numbers 1–20</div>
+                <div class="pd-b-sub">20 signs · 6 lessons</div>
+              </div>
+              <div class="pd-b-arrow">›</div>
+            </div>
+            <div class="pd-b-item">
+              <div class="pd-b-icon c">👨‍👩‍👧</div>
+              <div class="pd-b-text">
+                <div class="pd-b-title">Family</div>
+                <div class="pd-b-sub">18 signs · 5 lessons</div>
+              </div>
+              <div class="pd-b-arrow">›</div>
+            </div>
+            <div class="pd-b-item">
+              <div class="pd-b-icon d">🍎</div>
+              <div class="pd-b-text">
+                <div class="pd-b-title">Food & Drink</div>
+                <div class="pd-b-sub">24 signs · 7 lessons</div>
+              </div>
+              <div class="pd-b-arrow">›</div>
+            </div>
+          </div>
+
+          <!-- Emoji settings section -->
+          <div class="pd-b-sec">
+            <div class="pd-b-sec-title">⚙️ Settings</div>
+          </div>
+          <div class="pd-b-settings">
+            <div class="pd-b-setting">
+              <div class="pd-b-set-icon a">🔔</div>
+              <div class="pd-b-set-label">Notifications</div>
+              <div class="pd-b-set-val">On</div>
+            </div>
+            <div class="pd-b-setting" style="border-top:none;">
+              <div class="pd-b-set-icon b">🎨</div>
+              <div class="pd-b-set-label">Appearance</div>
+              <div class="pd-b-set-val">Dark</div>
+            </div>
+            <div class="pd-b-setting" style="border-top:none;">
+              <div class="pd-b-set-icon c">🌐</div>
+              <div class="pd-b-set-label">Language</div>
+              <div class="pd-b-set-val">English</div>
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Annotations -->
+      <div class="pd-ann">
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot red"></div>
+          <p><strong>Same container everywhere</strong> — 40px rounded square with .withAlpha(30) tint. Zero variation across 62+ instances.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot red"></div>
+          <p><strong>Emoji section headers</strong> — "📚 Lessons", "⚙️ Settings" on every screen. Screen reader announces full emoji name.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot red"></div>
+          <p><strong>No hierarchy signal</strong> — icon boxes on list items, section headers, settings rows, and primary CTAs all look identical.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── AFTER ─── -->
+    <div class="pd-panel right">
+      <div class="panel-label after">After — 4-Variant System</div>
+
+      <div class="phone">
+        <div class="screen pd-a-screen">
+
+          <div class="pd-a-appbar">
+            <div style="font-family:var(--fd);font-size:16px;font-weight:700;letter-spacing:-0.02em;">Learn</div>
+          </div>
+
+          <!-- VARIANT A: Bare header — small glyph, no box -->
+          <div class="pd-a-sec" style="margin-top:4px;">
+            <div class="pd-a-sec-left">
+              <span class="pd-a-sec-glyph">◆</span>
+              <div class="pd-a-sec-title">Lessons</div>
+            </div>
+            <div class="pd-a-sec-action">See all</div>
+          </div>
+
+          <div class="pd-a-list">
+            <!-- VARIANT B: Inline — bare icon, no container, progress hint -->
+            <div class="pd-a-item-inline">
+              <span class="pd-a-ic-inline">🤟</span>
+              <div class="pd-a-text">
+                <div class="pd-a-title">Greetings</div>
+                <div class="pd-a-sub">12 signs · 4 lessons</div>
+              </div>
+              <span class="pd-a-prog">83%</span>
+              <span class="pd-a-arrow">›</span>
+            </div>
+
+            <!-- VARIANT C: Pill tag — category status pill + inline text -->
+            <div class="pd-a-item-pill">
+              <span class="pd-a-ic-inline">🔢</span>
+              <div class="pd-a-text">
+                <div class="pd-a-title">Numbers 1–20</div>
+                <div class="pd-a-sub">20 signs · 6 lessons</div>
+              </div>
+              <span class="pd-a-pill pk">
+                <span class="pd-a-pill-dot"></span>
+                <span class="pd-a-pill-text">New</span>
+              </span>
+              <span class="pd-a-arrow">›</span>
+            </div>
+
+            <div class="pd-a-item-inline">
+              <span class="pd-a-ic-inline">👨‍👩‍👧</span>
+              <div class="pd-a-text">
+                <div class="pd-a-title">Family</div>
+                <div class="pd-a-sub">18 signs · 5 lessons</div>
+              </div>
+              <span class="pd-a-prog">40%</span>
+              <span class="pd-a-arrow">›</span>
+            </div>
+
+            <!-- VARIANT D: Solid circle — primary action (locked/CTA) only -->
+            <div class="pd-a-item-solid">
+              <div class="pd-a-ic-solid">🍎</div>
+              <div class="pd-a-text">
+                <div class="pd-a-title">Food & Drink</div>
+                <div class="pd-a-sub" style="color:var(--pri);font-weight:500;">Start this path</div>
+              </div>
+              <span class="pd-a-arrow" style="color:var(--pri);">›</span>
+            </div>
+          </div>
+
+          <!-- VARIANT A: Bare header in settings context -->
+          <div class="pd-a-sec">
+            <div class="pd-a-sec-left">
+              <span class="pd-a-sec-glyph" style="color:var(--t3);">◇</span>
+              <div class="pd-a-sec-title">Preferences</div>
+            </div>
+          </div>
+
+          <!-- Settings with minimal lead dot (no icon box at all) -->
+          <div class="pd-a-settings">
+            <div class="pd-a-setting">
+              <div class="pd-a-set-lead pri"></div>
+              <div class="pd-a-set-label">Notifications</div>
+              <div class="pd-a-set-chip">On</div>
+            </div>
+            <div class="pd-a-setting" style="border-top:none;">
+              <div class="pd-a-set-lead pk"></div>
+              <div class="pd-a-set-label">Appearance</div>
+              <div class="pd-a-set-val">Dark</div>
+            </div>
+            <div class="pd-a-setting" style="border-top:none;">
+              <div class="pd-a-set-lead grn"></div>
+              <div class="pd-a-set-label">Language</div>
+              <div class="pd-a-set-val">English</div>
+            </div>
+          </div>
+
+          <div style="height:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Annotations -->
+      <div class="pd-ann">
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot grn"></div>
+          <p><strong>Bare header glyph</strong> — a small colored ◆ replaces emoji. Semantic, accessible, visually lighter.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot grn"></div>
+          <p><strong>Inline + Pill variants</strong> — list items breathe without boxes. Status pills (New, In Progress) surface contextual meaning instead of decoration.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot grn"></div>
+          <p><strong>Solid only on primary</strong> — solid fill circle reserved for the single "Start this path" CTA. Scarcity restores visual weight.</p>
+        </div>
+        <div class="pd-ann-item">
+          <div class="pd-ann-dot grn"></div>
+          <p><strong>Settings: lead dot only</strong> — 4px colored dot signals category without the visual weight of a 30px icon box.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Variant reference ─── -->
+  <div class="pd-variants">
+    <h3>The 4 Icon Variants — When to Use Each</h3>
+    <div class="pd-var-grid">
+
+      <div class="pd-var-card">
+        <div class="pd-var-card h4">Variant A</div>
+        <div class="pd-vc-name">Bare Glyph</div>
+        <p>A small monochrome symbol (◆ ◇ ▸) or icon at 12–14px, no container. Uses the section's accent color at full opacity.</p>
+        <div class="pd-vc-use">Use for: <span>Section headers, page titles, nav labels</span></div>
+      </div>
+
+      <div class="pd-var-card">
+        <div class="pd-var-card h4">Variant B</div>
+        <div class="pd-vc-name">Inline Icon</div>
+        <p>Emoji or icon at 16–18px placed inline with text, no container. Let the icon's natural color carry the weight.</p>
+        <div class="pd-vc-use">Use for: <span>Learn topic rows, challenge list items, profile rows</span></div>
+      </div>
+
+      <div class="pd-var-card">
+        <div class="pd-var-card h4">Variant C</div>
+        <div class="pd-vc-name">Status Pill</div>
+        <p>Horizontal pill with a 5px dot + label. Tinted background, colored text, no box. Communicates state (New, Active, Done).</p>
+        <div class="pd-vc-use">Use for: <span>Category tags, progress status, challenge type labels</span></div>
+      </div>
+
+      <div class="pd-var-card">
+        <div class="pd-var-card h4">Variant D</div>
+        <div class="pd-vc-name">Solid Circle</div>
+        <p>Solid filled circle at 28–32px. Used sparingly — one per section max. Signals the primary recommended action.</p>
+        <div class="pd-vc-use">Use for: <span>Primary CTA items only (Start, Resume, Featured)</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── What changes in code ─── -->
+  <div class="changes" style="padding-top:24px; padding-bottom:32px;">
+    <div class="change-card">
+      <h4><div class="ch-num">1</div> SectionHeader widget</h4>
+      <ul>
+        <li>Remove emoji from title string everywhere</li>
+        <li>Replace with a small colored Icon widget (16px, accent color)</li>
+        <li>Add to design_system.dart as the canonical pattern</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">2</div> Learn &amp; topic list rows</h4>
+      <ul>
+        <li>Remove 40–48px rounded-square containers</li>
+        <li>Inline emoji/icon at 18px with no background</li>
+        <li>Add StatusPill widget for New/Active/Completed state</li>
+      </ul>
+    </div>
+    <div class="change-card">
+      <h4><div class="ch-num">3</div> Settings rows</h4>
+      <ul>
+        <li>Remove icon boxes entirely</li>
+        <li>Replace with 4px colored lead dot (category color)</li>
+        <li>Value chips replace plain text for toggled settings</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PHASE E -->
+<div class="section" id="phase-e">
+  <div class="ph">
+    <div class="eyebrow">Phase E · Preview</div>
+    <h1>Typography Overhaul</h1>
+    <p>Current pairing (Familjen Grotesk + Lexend) is inoffensive but flat — the size scale steps only 1.14× per level, below the 1.25× minimum that creates perceivable hierarchy. Two alternatives shown: one bolder, one more editorial. Same dark theme, same screens, completely different personality.</p>
+  </div>
+
+  <style>
+    /* Three-column type comparison */
+    .ty-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; min-height: 720px; }
+    .ty-col { display: flex; flex-direction: column; align-items: center; padding: 28px 20px; gap: 16px; }
+    .ty-col:nth-child(1) { background: var(--bg1); border-right: 1px solid var(--bdr); }
+    .ty-col:nth-child(2) { background: var(--bg); border-right: 1px solid var(--bdr); }
+    .ty-col:nth-child(3) { background: var(--bg); }
+    .ty-col-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); margin-bottom: 4px; }
+    .ty-col-label.opt { color: var(--pri); }
+    .ty-col-name { font-size: 12px; color: var(--t2); font-weight: 500; margin-bottom: 8px; text-align: center; }
+
+    /* Scale specimen */
+    .ty-scale { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 16px; padding: 18px 16px; width: 100%; margin-bottom: 8px; }
+    .ty-scale-row { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(99,102,241,0.08); }
+    .ty-scale-row:last-child { border-bottom: none; }
+    .ty-scale-lbl { font-size: 9px; color: var(--t3); width: 60px; flex-shrink: 0; letter-spacing: 0.08em; text-transform: uppercase; }
+    .ty-scale-ex  { color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Current — Familjen Grotesk + Lexend */
+    .ty-cur-disp { font-family: 'Familjen Grotesk', sans-serif; font-weight: 700; }
+    .ty-cur-body { font-family: 'Lexend', sans-serif; }
+    .ty-cur-scale .ty-scale-ex:nth-child(2) { font-family: 'Familjen Grotesk',sans-serif; font-weight:700; }
+    .ty-h1-cur { font-family:'Familjen Grotesk',sans-serif; font-weight:700; font-size:32px; letter-spacing:-0.03em; color:var(--t1); line-height:1.05; }
+    .ty-h2-cur { font-family:'Familjen Grotesk',sans-serif; font-weight:700; font-size:28px; letter-spacing:-0.02em; color:var(--t1); line-height:1.1; }
+    .ty-h3-cur { font-family:'Familjen Grotesk',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.02em; color:var(--t1); }
+    .ty-h4-cur { font-family:'Familjen Grotesk',sans-serif; font-weight:600; font-size:20px; letter-spacing:-0.01em; color:var(--t1); }
+    .ty-b1-cur  { font-family:'Lexend',sans-serif; font-weight:400; font-size:14px; color:var(--t2); }
+    .ty-b2-cur  { font-family:'Lexend',sans-serif; font-weight:300; font-size:12px; color:var(--t3); }
+
+    /* Option A — Bricolage Grotesque + Nunito */
+    .ty-h1-a { font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:36px; letter-spacing:-0.04em; color:var(--t1); line-height:0.95; }
+    .ty-h2-a { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:28px; letter-spacing:-0.03em; color:var(--t1); line-height:1.0; }
+    .ty-h3-a { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:22px; letter-spacing:-0.02em; color:var(--t1); }
+    .ty-h4-a { font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.01em; color:var(--t1); }
+    .ty-b1-a  { font-family:'Nunito',sans-serif; font-weight:400; font-size:14px; color:var(--t2); }
+    .ty-b2-a  { font-family:'Nunito',sans-serif; font-weight:300; font-size:12px; color:var(--t3); }
+
+    /* Option B — Epilogue + Figtree */
+    .ty-h1-b { font-family:'Epilogue',sans-serif; font-weight:800; font-size:34px; letter-spacing:-0.035em; color:var(--t1); line-height:1.0; }
+    .ty-h2-b { font-family:'Epilogue',sans-serif; font-weight:700; font-size:26px; letter-spacing:-0.025em; color:var(--t1); line-height:1.05; }
+    .ty-h3-b { font-family:'Epilogue',sans-serif; font-weight:700; font-size:20px; letter-spacing:-0.015em; color:var(--t1); }
+    .ty-h4-b { font-family:'Epilogue',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.01em; color:var(--t1); }
+    .ty-b1-b  { font-family:'Figtree',sans-serif; font-weight:400; font-size:14px; color:var(--t2); }
+    .ty-b2-b  { font-family:'Figtree',sans-serif; font-weight:300; font-size:12px; color:var(--t3); }
+
+    /* phone screens in type tab */
+    .ty-phone { width: 252px; border-radius: 28px; overflow: hidden; border: 2px solid var(--bdr2); box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--bdr), 0 32px 60px rgba(0,0,0,0.5); }
+    .ty-screen { background: var(--bg1); overflow-y: auto; max-height: 520px; scrollbar-width: none; }
+    .ty-screen::-webkit-scrollbar { display: none; }
+
+    /* dashboard screen inside */
+    .ty-appbar { padding: 14px 14px 6px; display:flex; align-items:center; justify-content:space-between; }
+    .ty-appbar-actions { display:flex; gap:8px; }
+    .ty-appbar-btn { width:32px; height:32px; background:var(--bg2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; }
+    .ty-greeting { padding: 4px 14px 0; }
+    .ty-greeting-lbl { font-size: 8px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); margin-bottom: 2px; }
+    .ty-level-hero { padding: 8px 14px 12px; display:flex; align-items:flex-end; gap:10px; }
+    .ty-lv-num-wrap { display:flex; flex-direction:column; }
+    .ty-lv-tag { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--t3); }
+    .ty-lv-num { font-size: 44px; font-weight: 700; letter-spacing: -0.04em; color: var(--pri); line-height: 0.9; }
+    .ty-xp-col { flex:1; padding-bottom:3px; }
+    .ty-xp-frac { font-size: 9px; color: var(--t3); margin-bottom: 4px; }
+    .ty-xp-frac strong { color: var(--t2); }
+    .ty-xp-bar { height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-bottom: 3px; }
+    .ty-xp-fill { height: 100%; width: 73%; background: var(--pri); border-radius: 2px; }
+    .ty-xp-next { font-size: 8px; color: var(--t3); }
+    .ty-sec { padding: 6px 14px 4px; display:flex; align-items:center; gap:6px; }
+    .ty-sec-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--pri); flex-shrink:0; }
+    .ty-sec-title { font-size: 11px; font-weight: 700; letter-spacing: -0.01em; color: var(--t1); }
+    .ty-cards { padding: 2px 10px 10px; display:flex; flex-direction:column; gap:7px; }
+    .ty-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 12px; padding: 12px; }
+    .ty-card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom: 6px; }
+    .ty-card-icon { font-size: 20px; }
+    .ty-card-tag { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform:uppercase; color: var(--pri); background: var(--pri-d); padding: 2px 7px; border-radius: 20px; }
+    .ty-card-value { font-size: 9px; color: var(--t3); line-height: 1.4; }
+    .ty-streak-row { padding: 0 10px 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .ty-stat { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 12px; padding: 10px 11px; }
+    .ty-stat-icon { font-size: 14px; margin-bottom: 4px; }
+    .ty-stat-n  { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; color: var(--t1); line-height: 1; }
+    .ty-stat-lb { font-size: 8px; color: var(--t3); margin-top: 2px; }
+
+    /* scale issue callout */
+    .ty-note { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 12px; padding: 14px; width: 100%; font-size: 11px; line-height: 1.6; }
+    .ty-note strong { color: var(--t1); display: block; margin-bottom: 4px; }
+    .ty-note-tag { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-bottom: 6px; }
+    .ty-note-tag.bad { background: rgba(239,68,68,0.15); color: #EF4444; }
+    .ty-note-tag.good { background: rgba(16,185,129,0.15); color: var(--grn); }
+    .ty-scale-viz { display: flex; align-items: flex-end; gap: 3px; margin-top: 8px; }
+    .ty-sv-bar { background: var(--pri); border-radius: 2px; min-width: 20px; }
+    .ty-sv-lbl { font-size: 8px; color: var(--t3); text-align: center; margin-top: 3px; }
+    .ty-sv-col { display: flex; flex-direction: column; align-items: center; }
+  </style>
+
+  <div class="ty-grid">
+
+    <!-- ─── Column 1: Current ─── -->
+    <div class="ty-col">
+      <div class="ty-col-label">Current</div>
+      <div class="ty-col-name">Familjen Grotesk + Lexend</div>
+
+      <div class="ty-phone">
+        <div class="ty-screen">
+          <div class="ty-appbar">
+            <span style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-0.02em;color:var(--t1)">Gestura<em style="color:var(--pri)">.</em></span>
+            <div class="ty-appbar-actions"><div class="ty-appbar-btn">🔔</div><div class="ty-appbar-btn">🔍</div></div>
+          </div>
+          <div class="ty-greeting">
+            <div class="ty-greeting-lbl">Welcome back</div>
+            <div style="font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:19px;letter-spacing:-0.02em;color:var(--t1);margin-bottom:12px;">Ahmad K.</div>
+          </div>
+          <div class="ty-level-hero">
+            <div class="ty-lv-num-wrap">
+              <div class="ty-lv-tag">Level</div>
+              <div class="ty-lv-num" style="font-family:'Familjen Grotesk',sans-serif;">12</div>
+            </div>
+            <div class="ty-xp-col">
+              <div class="ty-xp-frac"><strong>1,240</strong> / 1,500 XP</div>
+              <div class="ty-xp-bar"><div class="ty-xp-fill"></div></div>
+              <div class="ty-xp-next">260 XP to Level 13</div>
+            </div>
+          </div>
+          <div class="ty-streak-row">
+            <div class="ty-stat">
+              <div class="ty-stat-icon">🔥</div>
+              <div class="ty-stat-n" style="font-family:'Familjen Grotesk',sans-serif;">7</div>
+              <div class="ty-stat-lb">Day streak</div>
+            </div>
+            <div class="ty-stat">
+              <div class="ty-stat-icon">📚</div>
+              <div class="ty-stat-n" style="font-family:'Familjen Grotesk',sans-serif;">24</div>
+              <div class="ty-stat-lb">Lessons done</div>
+            </div>
+          </div>
+          <div class="ty-sec"><div class="ty-sec-dot"></div><div class="ty-sec-title" style="font-family:'Familjen Grotesk',sans-serif;font-size:13px;">Continue Learning</div></div>
+          <div class="ty-cards">
+            <div class="ty-card">
+              <div class="ty-card-top"><span class="ty-card-icon">✋</span><span class="ty-card-tag">In Progress</span></div>
+              <div style="font-family:'Familjen Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px;">Alphabet — Unit 2</div>
+              <div class="ty-card-value" style="font-family:'Lexend',sans-serif;">Lesson 4 of 8 · 3 min left</div>
+            </div>
+            <div class="ty-card">
+              <div class="ty-card-top"><span class="ty-card-icon">💬</span><span class="ty-card-tag" style="color:var(--grn);background:var(--grn-d);">New</span></div>
+              <div style="font-family:'Familjen Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px;">Greetings & Phrases</div>
+              <div class="ty-card-value" style="font-family:'Lexend',sans-serif;">8 lessons · Beginner</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ty-note">
+        <span class="ty-note-tag bad">Issue: flat scale</span>
+        <strong>Size steps too close</strong>
+        Steps: 32 → 28 → 24 → 20 → 16 → 14px<br>
+        Ratio: ~1.14× per level. Min needed: 1.25×.<br>
+        Headings don't feel significantly different from subheadings.
+        <div class="ty-scale-viz">
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:32px;opacity:0.9;"></div><div class="ty-sv-lbl">32</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:28px;opacity:0.75;"></div><div class="ty-sv-lbl">28</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:24px;opacity:0.65;"></div><div class="ty-sv-lbl">24</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:20px;opacity:0.55;"></div><div class="ty-sv-lbl">20</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:16px;opacity:0.45;"></div><div class="ty-sv-lbl">16</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:14px;opacity:0.35;"></div><div class="ty-sv-lbl">14</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Column 2: Option A — Bricolage Grotesque + Nunito ─── -->
+    <div class="ty-col">
+      <div class="ty-col-label opt">Option A</div>
+      <div class="ty-col-name">Bricolage Grotesque + Nunito</div>
+
+      <div class="ty-phone">
+        <div class="ty-screen">
+          <div class="ty-appbar">
+            <span style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;letter-spacing:-0.04em;color:var(--t1)">Gestura<em style="color:var(--pri);font-style:normal">.</em></span>
+            <div class="ty-appbar-actions"><div class="ty-appbar-btn">🔔</div><div class="ty-appbar-btn">🔍</div></div>
+          </div>
+          <div class="ty-greeting">
+            <div class="ty-greeting-lbl">Welcome back</div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;letter-spacing:-0.04em;color:var(--t1);margin-bottom:12px;line-height:1.0;">Ahmad K.</div>
+          </div>
+          <div class="ty-level-hero">
+            <div class="ty-lv-num-wrap">
+              <div class="ty-lv-tag">Level</div>
+              <div class="ty-lv-num" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;letter-spacing:-0.05em;">12</div>
+            </div>
+            <div class="ty-xp-col">
+              <div class="ty-xp-frac" style="font-family:'Nunito',sans-serif;"><strong>1,240</strong> / 1,500 XP</div>
+              <div class="ty-xp-bar"><div class="ty-xp-fill"></div></div>
+              <div class="ty-xp-next" style="font-family:'Nunito',sans-serif;">260 XP to Level 13</div>
+            </div>
+          </div>
+          <div class="ty-streak-row">
+            <div class="ty-stat">
+              <div class="ty-stat-icon">🔥</div>
+              <div class="ty-stat-n" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:26px;letter-spacing:-0.04em;">7</div>
+              <div class="ty-stat-lb" style="font-family:'Nunito',sans-serif;">Day streak</div>
+            </div>
+            <div class="ty-stat">
+              <div class="ty-stat-icon">📚</div>
+              <div class="ty-stat-n" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:26px;letter-spacing:-0.04em;">24</div>
+              <div class="ty-stat-lb" style="font-family:'Nunito',sans-serif;">Lessons done</div>
+            </div>
+          </div>
+          <div class="ty-sec"><div class="ty-sec-dot"></div><div class="ty-sec-title" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:13px;letter-spacing:-0.02em;">Continue Learning</div></div>
+          <div class="ty-cards">
+            <div class="ty-card">
+              <div class="ty-card-top"><span class="ty-card-icon">✋</span><span class="ty-card-tag">In Progress</span></div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;color:var(--t1);margin-bottom:3px;letter-spacing:-0.02em;">Alphabet — Unit 2</div>
+              <div class="ty-card-value" style="font-family:'Nunito',sans-serif;">Lesson 4 of 8 · 3 min left</div>
+            </div>
+            <div class="ty-card">
+              <div class="ty-card-top"><span class="ty-card-icon">💬</span><span class="ty-card-tag" style="color:var(--grn);background:var(--grn-d);">New</span></div>
+              <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:700;color:var(--t1);margin-bottom:3px;letter-spacing:-0.02em;">Greetings &amp; Phrases</div>
+              <div class="ty-card-value" style="font-family:'Nunito',sans-serif;">8 lessons · Beginner</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ty-note">
+        <span class="ty-note-tag good">Fixed: 1.33× scale</span>
+        <strong>Expressive display, warm body</strong>
+        Bricolage Grotesque has optical character — quirky variable strokes that feel hand-crafted, matching the expressive nature of sign language. Nunito rounds the body text, keeps it warm and readable.
+        <div class="ty-scale-viz">
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:38px;opacity:0.9;"></div><div class="ty-sv-lbl">38</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:28px;opacity:0.75;"></div><div class="ty-sv-lbl">28</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:22px;opacity:0.65;"></div><div class="ty-sv-lbl">22</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:17px;opacity:0.55;"></div><div class="ty-sv-lbl">17</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:14px;opacity:0.45;"></div><div class="ty-sv-lbl">14</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:12px;opacity:0.35;"></div><div class="ty-sv-lbl">12</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Column 3: Option B — Epilogue + Figtree ─── -->
+    <div class="ty-col">
+      <div class="ty-col-label opt">Option B</div>
+      <div class="ty-col-name">Epilogue + Figtree</div>
+
+      <div class="ty-phone">
+        <div class="ty-screen">
+          <div class="ty-appbar">
+            <span style="font-family:'Epilogue',sans-serif;font-weight:800;font-size:17px;letter-spacing:-0.03em;color:var(--t1)">Gestura<em style="color:var(--pri);font-style:normal">.</em></span>
+            <div class="ty-appbar-actions"><div class="ty-appbar-btn">🔔</div><div class="ty-appbar-btn">🔍</div></div>
+          </div>
+          <div class="ty-greeting">
+            <div class="ty-greeting-lbl">Welcome back</div>
+            <div style="font-family:'Epilogue',sans-serif;font-weight:800;font-size:21px;letter-spacing:-0.03em;color:var(--t1);margin-bottom:12px;line-height:1.05;">Ahmad K.</div>
+          </div>
+          <div class="ty-level-hero">
+            <div class="ty-lv-num-wrap">
+              <div class="ty-lv-tag">Level</div>
+              <div class="ty-lv-num" style="font-family:'Epilogue',sans-serif;font-weight:800;letter-spacing:-0.04em;">12</div>
+            </div>
+            <div class="ty-xp-col">
+              <div class="ty-xp-frac" style="font-family:'Figtree',sans-serif;"><strong>1,240</strong> / 1,500 XP</div>
+              <div class="ty-xp-bar"><div class="ty-xp-fill"></div></div>
+              <div class="ty-xp-next" style="font-family:'Figtree',sans-serif;">260 XP to Level 13</div>
+            </div>
+          </div>
+          <div class="ty-streak-row">
+            <div class="ty-stat">
+              <div class="ty-stat-icon">🔥</div>
+              <div class="ty-stat-n" style="font-family:'Epilogue',sans-serif;font-weight:800;font-size:26px;letter-spacing:-0.04em;">7</div>
+              <div class="ty-stat-lb" style="font-family:'Figtree',sans-serif;">Day streak</div>
+            </div>
+            <div class="ty-stat">
+              <div class="ty-stat-icon">📚</div>
+              <div class="ty-stat-n" style="font-family:'Epilogue',sans-serif;font-weight:800;font-size:26px;letter-spacing:-0.04em;">24</div>
+              <div class="ty-stat-lb" style="font-family:'Figtree',sans-serif;">Lessons done</div>
+            </div>
+          </div>
+          <div class="ty-sec"><div class="ty-sec-dot"></div><div class="ty-sec-title" style="font-family:'Epilogue',sans-serif;font-weight:700;font-size:13px;letter-spacing:-0.01em;">Continue Learning</div></div>
+          <div class="ty-cards">
+            <div class="ty-card">
+              <div class="ty-card-top"><span class="ty-card-icon">✋</span><span class="ty-card-tag">In Progress</span></div>
+              <div style="font-family:'Epilogue',sans-serif;font-size:14px;font-weight:700;color:var(--t1);margin-bottom:3px;letter-spacing:-0.015em;">Alphabet — Unit 2</div>
+              <div class="ty-card-value" style="font-family:'Figtree',sans-serif;">Lesson 4 of 8 · 3 min left</div>
+            </div>
+            <div class="ty-card">
+              <div class="ty-card-top"><span class="ty-card-icon">💬</span><span class="ty-card-tag" style="color:var(--grn);background:var(--grn-d);">New</span></div>
+              <div style="font-family:'Epilogue',sans-serif;font-size:14px;font-weight:700;color:var(--t1);margin-bottom:3px;letter-spacing:-0.015em;">Greetings &amp; Phrases</div>
+              <div class="ty-card-value" style="font-family:'Figtree',sans-serif;">8 lessons · Beginner</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ty-note">
+        <span class="ty-note-tag good">Fixed: 1.31× scale</span>
+        <strong>Editorial display, refined body</strong>
+        Epilogue has a confident editorial quality — used in design tools and publications. Figtree is a clean humanist sans that sits comfortably next to Epilogue without competing. Together they feel like a considered, intentional pairing.
+        <div class="ty-scale-viz">
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:36px;opacity:0.9;"></div><div class="ty-sv-lbl">36</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:28px;opacity:0.75;"></div><div class="ty-sv-lbl">28</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:21px;opacity:0.65;"></div><div class="ty-sv-lbl">21</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:16px;opacity:0.55;"></div><div class="ty-sv-lbl">16</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:14px;opacity:0.45;"></div><div class="ty-sv-lbl">14</div></div>
+          <div class="ty-sv-col"><div class="ty-sv-bar" style="height:12px;opacity:0.35;"></div><div class="ty-sv-lbl">12</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PHASE F -->
+<div class="section" id="phase-f">
+  <div class="ph">
+    <div class="eyebrow">Phase F · Preview</div>
+    <h1>Layout Overhaul</h1>
+    <p>Every screen currently follows the same pattern: AppBar → scrolling column of equal-height cards. Two anchor screens (Dashboard + Learn) are redesigned with asymmetric compositions, intentional whitespace variation, and a horizontal-scroll featured card to break the monotonous grid.</p>
+  </div>
+
+  <style>
+    .lyt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .lyt-col { padding: 32px 24px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .lyt-col.before { background: var(--bg1); border-right: 1px solid var(--bdr); }
+    .lyt-col.after  { background: var(--bg); }
+    .lyt-col-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+    .lyt-col-label.before { color: var(--t3); }
+    .lyt-col-label.after  { color: var(--pri); }
+    .lyt-col-name { font-size: 12px; color: var(--t2); font-weight: 500; margin-bottom: 4px; }
+
+    .lyt-phone { width: 260px; border-radius: 30px; overflow: hidden; border: 2px solid var(--bdr2); box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--bdr), 0 36px 64px rgba(0,0,0,0.55); }
+    .lyt-screen { background: var(--bg1); overflow-y: auto; max-height: 560px; scrollbar-width: none; }
+    .lyt-screen::-webkit-scrollbar { display: none; }
+
+    /* ── BEFORE: standard flutter layout ── */
+    .lb-appbar { padding: 14px 14px 10px; display:flex; align-items:center; justify-content:space-between; background: var(--bg1); }
+    .lb-logo { font-family: 'Familjen Grotesk',sans-serif; font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+    .lb-logo em { color: var(--pri); font-style: normal; }
+    .lb-ab-right { display:flex; gap:8px; }
+    .lb-btn { width:34px; height:34px; background:var(--bg2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; }
+    .lb-welcome { padding: 16px 14px 8px; background: linear-gradient(135deg,var(--pri),oklch(0.55 0.22 290)); border-radius: 16px; margin: 10px; color:white; }
+    .lb-welcome-greet { font-size:12px;opacity:0.8;margin-bottom:2px; }
+    .lb-welcome-name { font-family:'Familjen Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:12px; }
+    .lb-welcome-row { display:flex;gap:16px;margin-bottom:10px; }
+    .lb-stat { display:flex;flex-direction:column; }
+    .lb-stat-n { font-family:'Familjen Grotesk',sans-serif;font-size:20px;font-weight:700;line-height:1; }
+    .lb-stat-l { font-size:9px;opacity:0.7;margin-top:2px; }
+    .lb-section { padding: 14px 14px 6px; display:flex;align-items:center;justify-content:space-between; }
+    .lb-section-t { font-family:'Familjen Grotesk',sans-serif;font-size:13px;font-weight:700; }
+    .lb-section-a { font-size:11px;color:var(--pri); }
+    .lb-card-list { padding: 0 10px; display:flex;flex-direction:column;gap:8px;margin-bottom:16px; }
+    .lb-card { background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px; }
+    .lb-card-icon { width:36px;height:36px;background:var(--pri-d);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0; }
+    .lb-card-t { font-family:'Familjen Grotesk',sans-serif;font-size:12px;font-weight:600;color:var(--t1); }
+    .lb-card-s { font-size:10px;color:var(--t3);margin-top:1px; }
+    .lb-daily { padding: 0 10px 14px; }
+    .lb-daily-card { background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:12px; }
+    .lb-daily-row { display:flex;align-items:center;gap:10px;margin-bottom:8px; }
+    .lb-daily-icon { width:36px;height:36px;background:var(--amb-d);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0; }
+    .lb-daily-t { font-family:'Familjen Grotesk',sans-serif;font-size:12px;font-weight:600;color:var(--t1); }
+    .lb-daily-s { font-size:10px;color:var(--t3);margin-top:1px; }
+    .lb-bar-row { display:flex;align-items:center;gap:8px; }
+    .lb-bar-track { flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden; }
+    .lb-bar-fill { height:100%;width:66%;background:var(--pri);border-radius:2px; }
+    .lb-bar-pct { font-size:9px;color:var(--t3); }
+
+    /* ── AFTER: asymmetric layout ── */
+    .la-screen { background: var(--bg1); }
+    .la-appbar { padding: 14px 16px 10px; display:flex; align-items:center; justify-content:space-between; }
+    .la-logo { font-family: 'Bricolage Grotesque',sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -0.04em; }
+    .la-logo em { color: var(--pri); font-style: normal; }
+    .la-ab-right { display:flex; gap:8px; }
+    .la-ab-btn { width:34px; height:34px; background:var(--bg2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; border: 1px solid var(--bdr); }
+
+    /* Hero — asymmetric, level number dominates */
+    .la-hero { padding: 4px 16px 16px; }
+    .la-hero-row { display: flex; align-items: flex-end; gap: 0; }
+    .la-hero-left { flex: 0 0 auto; margin-right: 16px; }
+    .la-lv-caption { font-family:'Bricolage Grotesque',sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t3); margin-bottom: -4px; }
+    .la-lv-num { font-family:'Bricolage Grotesque',sans-serif; font-size: 80px; font-weight: 800; letter-spacing: -0.06em; color: var(--pri); line-height: 0.85; }
+    .la-hero-right { flex: 1; display:flex; flex-direction:column; gap: 10px; padding-bottom: 4px; }
+    .la-greeting { font-family:'Bricolage Grotesque',sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); line-height: 1.2; }
+    .la-xp-line { font-size: 9px; color: var(--t3); font-family:'Nunito',sans-serif; }
+    .la-xp-line strong { color: var(--t2); }
+    .la-xp-track { height: 3px; background: var(--bg3); border-radius: 2px; overflow:hidden; margin-top: 4px; }
+    .la-xp-fill { height:100%; width: 73%; background: var(--pri); border-radius:2px; }
+
+    /* Asymmetric stat row */
+    .la-stats { padding: 0 16px 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+    .la-stat { background:var(--bg2); border: 1px solid var(--bdr); border-radius: 10px; padding: 9px 10px; }
+    .la-stat-icon { font-size: 12px; margin-bottom: 3px; }
+    .la-stat-n { font-family:'Bricolage Grotesque',sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -0.03em; color: var(--t1); line-height: 1; }
+    .la-stat-lb { font-family:'Nunito',sans-serif; font-size: 8px; color: var(--t3); margin-top: 1px; }
+
+    /* Featured horizontal scroll */
+    .la-feat-scroll { padding: 0 16px 4px; }
+    .la-feat-cards { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+    .la-feat-cards::-webkit-scrollbar { display: none; }
+    .la-feat-card { flex: 0 0 180px; background: var(--bg2); border: 1px solid var(--bdr2); border-radius: 14px; padding: 14px; }
+    .la-feat-card.active { background: oklch(0.32 0.08 265); border-color: var(--pri); }
+    .la-feat-tag { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pri); background: var(--pri-d); padding: 2px 7px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
+    .la-feat-icon { font-size: 22px; margin-bottom: 6px; }
+    .la-feat-title { font-family:'Bricolage Grotesque',sans-serif; font-size: 13px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); line-height: 1.2; margin-bottom: 4px; }
+    .la-feat-sub { font-family:'Nunito',sans-serif; font-size: 10px; color: var(--t3); }
+
+    /* Section header in after */
+    .la-sec { padding: 10px 16px 6px; display: flex; align-items: center; justify-content:space-between; }
+    .la-sec-left { display: flex; align-items: center; gap: 6px; }
+    .la-sec-dot { width: 5px; height: 5px; background: var(--pri); border-radius: 50%; }
+    .la-sec-t { font-family:'Bricolage Grotesque',sans-serif; font-size: 13px; font-weight: 700; letter-spacing: -0.02em; color: var(--t1); }
+    .la-sec-a { font-size: 10px; color: var(--pri); font-family:'Nunito',sans-serif; }
+
+    /* vertical compact list */
+    .la-list { padding: 0 16px 16px; display: flex; flex-direction:column; gap: 6px; }
+    .la-list-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: 10px; }
+    .la-list-emoji { font-size: 18px; flex-shrink:0; }
+    .la-list-body { flex: 1; min-width: 0; }
+    .la-list-t { font-family:'Bricolage Grotesque',sans-serif; font-size: 12px; font-weight: 700; color: var(--t1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .la-list-s { font-family:'Nunito',sans-serif; font-size: 9px; color: var(--t3); }
+    .la-list-pill { font-size: 8px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: var(--grn-d); color: var(--grn); white-space: nowrap; }
+    .la-list-pill.inprog { background: var(--pri-d); color: var(--pri); }
+
+    /* daily goal compact */
+    .la-goal { padding: 0 16px 16px; }
+    .la-goal-card { background:var(--bg2); border: 1px solid var(--bdr); border-radius: 12px; padding: 12px 14px; }
+    .la-goal-header { display: flex; justify-content:space-between; align-items:center; margin-bottom: 8px; }
+    .la-goal-title { font-family:'Bricolage Grotesque',sans-serif; font-size: 12px; font-weight: 700; color: var(--t1); }
+    .la-goal-pct { font-family:'Bricolage Grotesque',sans-serif; font-size: 16px; font-weight: 800; color: var(--pri); }
+    .la-goal-bar { height: 4px; background:var(--bg3); border-radius:2px; overflow:hidden; margin-bottom:10px; }
+    .la-goal-fill { height:100%; width: 66%; background: var(--pri); border-radius:2px; }
+    .la-goal-items { display:flex; flex-direction:column; gap: 5px; }
+    .la-goal-item { display:flex; align-items:center; gap: 7px; }
+    .la-goal-check { width:14px; height:14px; border-radius:50%; border:1.5px solid var(--pri); display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--pri);flex-shrink:0; }
+    .la-goal-check.done { background:var(--pri); color:white; border-color:var(--pri); }
+    .la-goal-item-t { font-family:'Nunito',sans-serif; font-size: 10px; color: var(--t2); }
+    .la-goal-item-xp { font-size: 9px; color: var(--t3); font-family:'Nunito',sans-serif; margin-left:auto; }
+
+    /* callout boxes */
+    .lyt-note { background: var(--bg2); border: 1px solid var(--bdr); border-radius: 12px; padding: 14px; width: 100%; font-size: 11px; line-height: 1.7; color: var(--t2); }
+    .lyt-note strong { color: var(--t1); display:block; margin-bottom:4px; }
+    .lyt-note-tag { display:inline-block; font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;margin-bottom:6px; }
+    .lyt-note-tag.before { background:rgba(239,68,68,0.15);color:#EF4444; }
+    .lyt-note-tag.after  { background:rgba(16,185,129,0.15);color:var(--grn); }
+    .lyt-note ul { padding-left: 14px; margin-top: 4px; }
+    .lyt-note li { margin-bottom: 2px; }
+  </style>
+
+  <div class="lyt-grid">
+
+    <!-- ─── BEFORE ─── -->
+    <div class="lyt-col before">
+      <div class="lyt-col-label before">Before — Column of Cards</div>
+      <div class="lyt-col-name">AppBar → gradient welcome card → equal-size card list</div>
+
+      <div class="lyt-phone">
+        <div class="lyt-screen">
+
+          <!-- AppBar -->
+          <div class="lb-appbar">
+            <span class="lb-logo">Gestura<em>.</em></span>
+            <div class="lb-ab-right"><div class="lb-btn">🔔</div><div class="lb-btn">🔍</div></div>
+          </div>
+
+          <!-- Gradient welcome card -->
+          <div style="padding:0 10px;margin-bottom:14px;">
+            <div class="lb-welcome">
+              <div class="lb-welcome-greet">Good morning 👋</div>
+              <div class="lb-welcome-name">Ahmad K.</div>
+              <div class="lb-welcome-row">
+                <div class="lb-stat"><div class="lb-stat-n">7</div><div class="lb-stat-l">Day Streak</div></div>
+                <div class="lb-stat"><div class="lb-stat-n">12</div><div class="lb-stat-l">Level</div></div>
+                <div class="lb-stat"><div class="lb-stat-n">24</div><div class="lb-stat-l">Lessons</div></div>
+              </div>
+              <div class="lb-bar-row"><div class="lb-bar-track"><div class="lb-bar-fill" style="background:white;opacity:0.5;"></div></div><div class="lb-bar-pct" style="color:white;opacity:0.7;">73%</div></div>
+            </div>
+          </div>
+
+          <!-- Continue learning section -->
+          <div class="lb-section"><span class="lb-section-t">Continue Learning</span><span class="lb-section-a">See all</span></div>
+          <div class="lb-card-list">
+            <div class="lb-card">
+              <div class="lb-card-icon">✋</div>
+              <div><div class="lb-card-t">Alphabet — Unit 2</div><div class="lb-card-s">Lesson 4 of 8 · 3 min left</div></div>
+            </div>
+            <div class="lb-card">
+              <div class="lb-card-icon">💬</div>
+              <div><div class="lb-card-t">Greetings & Phrases</div><div class="lb-card-s">8 lessons · Beginner</div></div>
+            </div>
+          </div>
+
+          <!-- Daily goals section -->
+          <div class="lb-section"><span class="lb-section-t">Daily Goal</span></div>
+          <div class="lb-daily">
+            <div class="lb-daily-card">
+              <div class="lb-daily-row"><div class="lb-daily-icon">🎯</div><div><div class="lb-daily-t">2 / 3 completed</div><div class="lb-daily-s">Complete today's goals</div></div></div>
+              <div class="lb-bar-row"><div class="lb-bar-track"><div class="lb-bar-fill"></div></div><div class="lb-bar-pct">66%</div></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="lyt-note">
+        <span class="lyt-note-tag before">3 AI-layout tells</span>
+        <strong>Problems</strong>
+        <ul>
+          <li>Gradient welcome card — strongest single AI tell in dashboards</li>
+          <li>Equal-height card list — every card gets same visual weight</li>
+          <li>Level number buried inside gradient box, never given visual dominance</li>
+          <li>Daily goal needs its own card instead of sharing space</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ─── AFTER ─── -->
+    <div class="lyt-col after">
+      <div class="lyt-col-label after">After — Asymmetric Composition</div>
+      <div class="lyt-col-name">Level as hero number · horizontal scroll · compact list</div>
+
+      <div class="lyt-phone">
+        <div class="lyt-screen la-screen">
+
+          <!-- AppBar -->
+          <div class="la-appbar">
+            <span class="la-logo">Gestura<em>.</em></span>
+            <div class="la-ab-right"><div class="la-ab-btn">🔔</div><div class="la-ab-btn">🔍</div></div>
+          </div>
+
+          <!-- Hero: level number dominates, asymmetric -->
+          <div class="la-hero">
+            <div class="la-hero-row">
+              <div class="la-hero-left">
+                <div class="la-lv-caption">Level</div>
+                <div class="la-lv-num">12</div>
+              </div>
+              <div class="la-hero-right">
+                <div>
+                  <div style="font-family:'Nunito',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--t3);margin-bottom:2px;">Good morning</div>
+                  <div class="la-greeting">Ahmad K.</div>
+                </div>
+                <div>
+                  <div class="la-xp-line"><strong>1,240</strong> / 1,500 XP to Level 13</div>
+                  <div class="la-xp-track"><div class="la-xp-fill"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3-col stats row -->
+          <div class="la-stats">
+            <div class="la-stat">
+              <div class="la-stat-icon">🔥</div>
+              <div class="la-stat-n">7</div>
+              <div class="la-stat-lb">Streak</div>
+            </div>
+            <div class="la-stat">
+              <div class="la-stat-icon">📚</div>
+              <div class="la-stat-n">24</div>
+              <div class="la-stat-lb">Lessons</div>
+            </div>
+            <div class="la-stat">
+              <div class="la-stat-icon">🏆</div>
+              <div class="la-stat-n">8</div>
+              <div class="la-stat-lb">Badges</div>
+            </div>
+          </div>
+
+          <!-- Horizontal scroll featured cards -->
+          <div class="la-sec">
+            <div class="la-sec-left"><div class="la-sec-dot"></div><div class="la-sec-t">Continue</div></div>
+            <div class="la-sec-a">See all</div>
+          </div>
+          <div class="la-feat-scroll">
+            <div class="la-feat-cards">
+              <div class="la-feat-card active">
+                <div class="la-feat-tag">In Progress</div>
+                <div class="la-feat-icon">✋</div>
+                <div class="la-feat-title">Alphabet — Unit 2</div>
+                <div class="la-feat-sub">Lesson 4 of 8 · 3 min</div>
+              </div>
+              <div class="la-feat-card">
+                <div class="la-feat-tag" style="color:var(--grn);background:var(--grn-d);">New</div>
+                <div class="la-feat-icon">💬</div>
+                <div class="la-feat-title">Greetings &amp; Phrases</div>
+                <div class="la-feat-sub">8 lessons · Beginner</div>
+              </div>
+              <div class="la-feat-card">
+                <div class="la-feat-tag" style="color:var(--amb);background:var(--amb-d);">Challenge</div>
+                <div class="la-feat-icon">⚡</div>
+                <div class="la-feat-title">Daily Signing Challenge</div>
+                <div class="la-feat-sub">5 signs · +30 XP</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Compact categories list -->
+          <div class="la-sec">
+            <div class="la-sec-left"><div class="la-sec-dot" style="background:var(--grn);"></div><div class="la-sec-t">Categories</div></div>
+            <div class="la-sec-a">Browse</div>
+          </div>
+          <div class="la-list">
+            <div class="la-list-item">
+              <span class="la-list-emoji">🖐️</span>
+              <div class="la-list-body">
+                <div class="la-list-t">Fingerspelling A–Z</div>
+                <div class="la-list-s">12 lessons · 85% done</div>
+              </div>
+              <span class="la-list-pill inprog">Active</span>
+            </div>
+            <div class="la-list-item">
+              <span class="la-list-emoji">👁️</span>
+              <div class="la-list-body">
+                <div class="la-list-t">Numbers &amp; Counting</div>
+                <div class="la-list-s">8 lessons · Not started</div>
+              </div>
+              <span class="la-list-pill">New</span>
+            </div>
+          </div>
+
+          <!-- Goal strip — compact, no icon box -->
+          <div class="la-sec"><div class="la-sec-left"><div class="la-sec-dot" style="background:var(--amb);"></div><div class="la-sec-t">Today's Goals</div></div><div class="la-goal-pct" style="font-size:12px;">66%</div></div>
+          <div class="la-goal">
+            <div class="la-goal-card">
+              <div class="la-goal-bar"><div class="la-goal-fill"></div></div>
+              <div class="la-goal-items">
+                <div class="la-goal-item"><div class="la-goal-check done">✓</div><span class="la-goal-item-t">Complete 1 lesson</span><span class="la-goal-item-xp">+20 XP</span></div>
+                <div class="la-goal-item"><div class="la-goal-check done">✓</div><span class="la-goal-item-t">Practice signs (5 min)</span><span class="la-goal-item-xp">+15 XP</span></div>
+                <div class="la-goal-item"><div class="la-goal-check"></div><span class="la-goal-item-t">Take a quiz</span><span class="la-goal-item-xp">+30 XP</span></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="lyt-note">
+        <span class="lyt-note-tag after">All 3 tells fixed</span>
+        <strong>What changed</strong>
+        <ul>
+          <li>Gradient card → level number as dominant typographic element</li>
+          <li>Equal-height list → horizontal scroll for "Continue" cards</li>
+          <li>Categories as compact text-first list, not card grid</li>
+          <li>Daily goal inline with section header, goal items inline not boxed</li>
+          <li>Stats become a 3-col mini-row instead of buried in gradient card</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PHASE G -->
+<div class="section" id="phase-g">
+  <div class="ph">
+    <div class="eyebrow">Phase G · Full Redesign Preview</div>
+    <h1>Complete UI/UX Overhaul</h1>
+    <p>Every screen redesigned with Bricolage Grotesque + Nunito, a corrected 1.33× type scale, the Phase F layout principles applied universally, and zero AI-generated tells. Scroll right to see all 7 screens. No functionality changes — only presentation.</p>
+  </div>
+
+<style>
+  /* ── Design tokens (mirrors Flutter app) ── */
+  :root {
+    --g-bg:   #0F0F1A; --g-bg1: #13132A; --g-bg2: #1A1A2E; --g-bg3: #22223A; --g-bg4: #2A2A45;
+    --g-bdr:  rgba(99,102,241,0.14); --g-bdr2: rgba(99,102,241,0.28);
+    --g-pri:  #6366F1; --g-pri-d: rgba(99,102,241,0.13); --g-pri-m: rgba(99,102,241,0.24);
+    --g-sec:  #8B5CF6; --g-sec-d: rgba(139,92,246,0.13);
+    --g-pk:   #EC4899; --g-pk-d:  rgba(236,72,153,0.13);
+    --g-grn:  #10B981; --g-grn-d: rgba(16,185,129,0.13);
+    --g-amb:  #F59E0B; --g-amb-d: rgba(245,158,11,0.13);
+    --g-err:  #EF4444;
+    --g-t1: #EEEEFF; --g-t2: #AAAAC8; --g-t3: #5A5A8A;
+    --g-disp: 'Bricolage Grotesque', sans-serif;
+    --g-body: 'Nunito', sans-serif;
+  }
+
+  /* ── Showcase layout: horizontal scroll of phones ── */
+  .gs-outer { overflow-x: auto; padding: 32px 40px 48px; scrollbar-width: thin; scrollbar-color: var(--g-bdr2) transparent; }
+  .gs-outer::-webkit-scrollbar { height: 4px; }
+  .gs-outer::-webkit-scrollbar-track { background: transparent; }
+  .gs-outer::-webkit-scrollbar-thumb { background: var(--g-bdr2); border-radius: 2px; }
+  .gs-row { display: flex; gap: 32px; align-items: flex-start; min-width: max-content; }
+
+  /* ── Single phone column ── */
+  .gs-col { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .gs-screen-label { font-family: var(--g-disp); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--g-t3); }
+  .gs-phone { width: 260px; border-radius: 30px; overflow: hidden; border: 2px solid var(--g-bdr2); box-shadow: 0 0 0 5px var(--g-bg), 0 0 0 7px var(--g-bdr), 0 40px 70px rgba(0,0,0,0.65); }
+  .gs-screen { background: var(--g-bg1); overflow-y: auto; max-height: 560px; scrollbar-width: none; font-family: var(--g-body); }
+  .gs-screen::-webkit-scrollbar { display: none; }
+
+  /* ── Shared micro-components ── */
+  .g-appbar { padding: 14px 16px 6px; display: flex; align-items: center; justify-content: space-between; }
+  .g-logo { font-family: var(--g-disp); font-size: 18px; font-weight: 800; letter-spacing: -0.04em; color: var(--g-t1); }
+  .g-logo em { color: var(--g-pri); font-style: normal; }
+  .g-btn { width: 32px; height: 32px; background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .g-btn-row { display: flex; gap: 7px; }
+
+  .g-sec { padding: 10px 16px 5px; display: flex; align-items: center; justify-content: space-between; }
+  .g-sec-left { display: flex; align-items: center; gap: 6px; }
+  .g-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--g-pri); flex-shrink: 0; }
+  .g-sec-title { font-family: var(--g-disp); font-size: 13px; font-weight: 700; letter-spacing: -0.02em; color: var(--g-t1); }
+  .g-sec-action { font-family: var(--g-body); font-size: 10px; color: var(--g-pri); }
+
+  .g-pill { display: inline-flex; align-items: center; gap: 4px; font-family: var(--g-body); font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; }
+  .g-pill.pri { background: var(--g-pri-d); color: var(--g-pri); }
+  .g-pill.grn { background: var(--g-grn-d); color: var(--g-grn); }
+  .g-pill.amb { background: var(--g-amb-d); color: var(--g-amb); }
+  .g-pill.sec { background: var(--g-sec-d); color: var(--g-sec); }
+  .g-pill.pk  { background: var(--g-pk-d);  color: var(--g-pk);  }
+
+  .g-bar-track { height: 3px; background: var(--g-bg3); border-radius: 2px; overflow: hidden; }
+  .g-bar-fill  { height: 100%; background: var(--g-pri); border-radius: 2px; }
+
+  /* ── Bottom nav bar ── */
+  .g-nav { display: flex; background: var(--g-bg2); border-top: 1px solid var(--g-bdr); padding: 8px 4px 4px; }
+  .g-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 0; }
+  .g-nav-icon { font-size: 16px; opacity: 0.45; }
+  .g-nav-icon.active { opacity: 1; }
+  .g-nav-label { font-family: var(--g-body); font-size: 8px; font-weight: 600; color: var(--g-t3); letter-spacing: 0.03em; }
+  .g-nav-label.active { color: var(--g-pri); }
+  .g-nav-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--g-pri); margin: 0 auto; }
+
+  /* ─── SCREEN 1: DASHBOARD ─── */
+  .g-dash-hero { padding: 6px 16px 14px; }
+  .g-dash-sub { font-family: var(--g-body); font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--g-t3); margin-bottom: 2px; }
+  .g-dash-row { display: flex; align-items: flex-end; gap: 14px; }
+  .g-lv-wrap { flex-shrink: 0; }
+  .g-lv-tag  { font-family: var(--g-body); font-size: 8px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--g-t3); margin-bottom: -6px; }
+  .g-lv-num  { font-family: var(--g-disp); font-size: 76px; font-weight: 800; letter-spacing: -0.06em; color: var(--g-pri); line-height: 0.85; }
+  .g-dash-right { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-bottom: 5px; }
+  .g-dash-name { font-family: var(--g-disp); font-size: 16px; font-weight: 700; letter-spacing: -0.03em; color: var(--g-t1); line-height: 1.1; }
+  .g-xp-row { display: flex; flex-direction: column; gap: 3px; }
+  .g-xp-nums { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); }
+  .g-xp-nums strong { color: var(--g-t2); font-weight: 600; }
+  .g-dash-stats { padding: 0 16px 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+  .g-stat { background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 10px; padding: 9px 10px; }
+  .g-stat-ico { font-size: 13px; margin-bottom: 3px; }
+  .g-stat-n   { font-family: var(--g-disp); font-size: 19px; font-weight: 800; letter-spacing: -0.03em; color: var(--g-t1); line-height: 1; }
+  .g-stat-lb  { font-family: var(--g-body); font-size: 8px; color: var(--g-t3); margin-top: 1px; }
+
+  /* horizontal scroll strip */
+  .g-hscroll { overflow-x: auto; scrollbar-width: none; padding: 4px 0 8px; }
+  .g-hscroll::-webkit-scrollbar { display: none; }
+  .g-hscroll-inner { display: flex; gap: 8px; padding: 0 16px; }
+  .g-hcard { flex: 0 0 170px; background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 14px; padding: 13px; }
+  .g-hcard.feat { background: oklch(0.31 0.09 265); border-color: var(--g-pri); }
+  .g-hcard-tag { margin-bottom: 7px; }
+  .g-hcard-ico { font-size: 20px; margin-bottom: 5px; }
+  .g-hcard-title { font-family: var(--g-disp); font-size: 12px; font-weight: 700; letter-spacing: -0.02em; color: var(--g-t1); line-height: 1.2; margin-bottom: 3px; }
+  .g-hcard-sub   { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); }
+
+  /* compact list items */
+  .g-list { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .g-litem { display: flex; align-items: center; gap: 9px; padding: 9px 12px; background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 10px; }
+  .g-litem-ico { font-size: 17px; flex-shrink: 0; }
+  .g-litem-body { flex: 1; min-width: 0; }
+  .g-litem-t { font-family: var(--g-disp); font-size: 11px; font-weight: 700; color: var(--g-t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g-litem-s { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); margin-top: 1px; }
+  .g-litem-chev { font-size: 9px; color: var(--g-t3); flex-shrink: 0; }
+
+  /* goals strip */
+  .g-goals { padding: 0 16px 16px; }
+  .g-goals-card { background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 12px; padding: 12px 13px; }
+  .g-goals-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+  .g-goals-pct { font-family: var(--g-disp); font-size: 15px; font-weight: 800; color: var(--g-pri); }
+  .g-goals-items { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+  .g-goal-row { display: flex; align-items: center; gap: 7px; }
+  .g-goal-check { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--g-t3); display: flex; align-items: center; justify-content: center; font-size: 7px; flex-shrink: 0; }
+  .g-goal-check.done { background: var(--g-grn); border-color: var(--g-grn); color: white; }
+  .g-goal-t { font-family: var(--g-body); font-size: 10px; color: var(--g-t2); flex: 1; }
+  .g-goal-xp { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); }
+
+  /* ─── SCREEN 2: LEARN ─── */
+  .g-learn-hero { padding: 4px 16px 12px; }
+  .g-learn-title { font-family: var(--g-disp); font-size: 28px; font-weight: 800; letter-spacing: -0.04em; color: var(--g-t1); line-height: 0.95; }
+  .g-learn-sub { font-family: var(--g-body); font-size: 11px; color: var(--g-t3); margin-top: 4px; }
+
+  /* Category horizontal scroll */
+  .g-cat-card { flex: 0 0 150px; background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 14px; padding: 14px; overflow: hidden; position: relative; }
+  .g-cat-card.active-cat { border-color: var(--g-pri); background: oklch(0.30 0.09 265); }
+  .g-cat-emoji { font-size: 26px; margin-bottom: 8px; }
+  .g-cat-name { font-family: var(--g-disp); font-size: 12px; font-weight: 700; letter-spacing: -0.02em; color: var(--g-t1); line-height: 1.2; margin-bottom: 4px; }
+  .g-cat-prog-text { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); margin-bottom: 6px; }
+
+  /* Featured lesson — large card */
+  .g-feat-lesson { margin: 4px 16px 0; background: var(--g-bg2); border: 1px solid var(--g-bdr2); border-radius: 16px; padding: 16px; }
+  .g-feat-lesson-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+  .g-feat-lesson-ico { font-size: 28px; }
+  .g-feat-lesson-title { font-family: var(--g-disp); font-size: 15px; font-weight: 800; letter-spacing: -0.03em; color: var(--g-t1); line-height: 1.1; margin-bottom: 4px; }
+  .g-feat-lesson-desc { font-family: var(--g-body); font-size: 10px; color: var(--g-t3); line-height: 1.5; }
+  .g-feat-lesson-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .g-feat-lesson-meta { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); }
+  .g-feat-resume { font-family: var(--g-disp); font-size: 11px; font-weight: 700; background: var(--g-pri); color: white; border-radius: 8px; padding: 6px 13px; letter-spacing: -0.01em; }
+
+  /* ─── SCREEN 3: CHALLENGES ─── */
+  .g-ch-hero { padding: 4px 16px 14px; }
+  .g-ch-title { font-family: var(--g-disp); font-size: 28px; font-weight: 800; letter-spacing: -0.04em; color: var(--g-t1); line-height: 0.95; }
+  .g-ch-sub { font-family: var(--g-body); font-size: 11px; color: var(--g-t3); margin-top: 4px; }
+
+  .g-ch-card { margin: 4px 16px 8px; background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 14px; padding: 14px; }
+  .g-ch-card.doing { border-color: rgba(99,102,241,0.35); }
+  .g-ch-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+  .g-ch-left { display: flex; align-items: flex-start; gap: 10px; }
+  .g-ch-emoji { font-size: 22px; flex-shrink: 0; }
+  .g-ch-title-t { font-family: var(--g-disp); font-size: 12px; font-weight: 700; letter-spacing: -0.02em; color: var(--g-t1); line-height: 1.2; margin-bottom: 2px; }
+  .g-ch-desc { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); line-height: 1.4; }
+  .g-ch-xp { font-family: var(--g-disp); font-size: 11px; font-weight: 700; color: var(--g-amb); letter-spacing: -0.01em; }
+  .g-ch-prog { margin-top: 4px; }
+  .g-ch-prog-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .g-ch-prog-label { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); }
+  .g-ch-prog-frac  { font-family: var(--g-disp); font-size: 10px; font-weight: 700; color: var(--g-t2); }
+
+  /* weekly strip */
+  .g-ch-week { padding: 2px 16px 16px; display: flex; flex-direction: column; gap: 5px; }
+  .g-ch-week-item { display: flex; align-items: center; gap: 8px; padding: 8px 11px; background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 9px; }
+  .g-ch-week-emoji { font-size: 15px; flex-shrink: 0; }
+  .g-ch-week-body { flex: 1; min-width: 0; }
+  .g-ch-week-t { font-family: var(--g-disp); font-size: 10px; font-weight: 600; color: var(--g-t1); }
+  .g-ch-week-s { font-family: var(--g-body); font-size: 8px; color: var(--g-t3); }
+  .g-ch-week-done { font-size: 12px; color: var(--g-grn); }
+
+  /* ─── SCREEN 4: PROFILE ─── */
+  .g-prof-hero { padding: 20px 16px 14px; display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .g-prof-av { width: 72px; height: 72px; border-radius: 50%; background: var(--g-pri-d); border: 2.5px solid var(--g-pri); display: flex; align-items: center; justify-content: center; font-family: var(--g-disp); font-size: 26px; font-weight: 800; color: var(--g-pri); margin-bottom: 10px; }
+  .g-prof-name { font-family: var(--g-disp); font-size: 20px; font-weight: 800; letter-spacing: -0.03em; color: var(--g-t1); line-height: 1; margin-bottom: 6px; }
+  .g-prof-pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+
+  .g-prof-stats { padding: 0 16px 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--g-bdr); border-radius: 12px; overflow: hidden; margin: 0 16px; }
+  .g-prof-stat { background: var(--g-bg2); padding: 11px 10px; text-align: center; }
+  .g-prof-stat-n { font-family: var(--g-disp); font-size: 22px; font-weight: 800; letter-spacing: -0.04em; color: var(--g-t1); line-height: 1; }
+  .g-prof-stat-lb { font-family: var(--g-body); font-size: 8px; color: var(--g-t3); margin-top: 2px; }
+
+  .g-prof-section { padding: 14px 16px 6px; }
+  .g-prof-section-t { font-family: var(--g-disp); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--g-t3); }
+  .g-prof-fields { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 0; }
+  .g-prof-field { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--g-bdr); }
+  .g-prof-field:last-child { border-bottom: none; }
+  .g-prof-field-ico { font-size: 15px; opacity: 0.7; flex-shrink: 0; width: 20px; text-align: center; }
+  .g-prof-field-body { flex: 1; }
+  .g-prof-field-lbl { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); margin-bottom: 1px; }
+  .g-prof-field-val { font-family: var(--g-disp); font-size: 12px; font-weight: 600; color: var(--g-t1); }
+  .g-prof-field-chev { font-size: 10px; color: var(--g-t3); }
+
+  /* ─── SCREEN 5: LEADERBOARD ─── */
+  .g-lb-hero { padding: 4px 16px 14px; }
+  .g-lb-title { font-family: var(--g-disp); font-size: 28px; font-weight: 800; letter-spacing: -0.04em; color: var(--g-t1); line-height: 0.95; }
+  .g-lb-sub { font-family: var(--g-body); font-size: 11px; color: var(--g-t3); margin-top: 4px; }
+
+  /* top 3 podium */
+  .g-lb-podium { padding: 8px 16px 14px; display: flex; align-items: flex-end; justify-content: center; gap: 8px; }
+  .g-lb-pod { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .g-lb-pod.first { margin-bottom: 18px; }
+  .g-lb-av { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--g-disp); font-size: 14px; font-weight: 800; color: white; border: 2px solid; }
+  .g-lb-av.rank1 { width: 52px; height: 52px; border-color: #FFD700; background: rgba(255,215,0,0.15); color: #FFD700; font-size: 16px; }
+  .g-lb-av.rank2 { border-color: #C0C0C0; background: rgba(192,192,192,0.15); color: #C0C0C0; }
+  .g-lb-av.rank3 { border-color: #CD7F32; background: rgba(205,127,50,0.15); color: #CD7F32; }
+  .g-lb-pod-name { font-family: var(--g-disp); font-size: 9px; font-weight: 700; color: var(--g-t1); }
+  .g-lb-pod-xp { font-family: var(--g-body); font-size: 8px; color: var(--g-t3); }
+  .g-lb-pod-rank { font-family: var(--g-disp); font-size: 14px; font-weight: 800; }
+  .g-lb-pod-rank.r1 { color: #FFD700; }
+  .g-lb-pod-rank.r2 { color: #C0C0C0; }
+  .g-lb-pod-rank.r3 { color: #CD7F32; }
+
+  .g-lb-divider { height: 1px; background: var(--g-bdr); margin: 0 16px 12px; }
+  .g-lb-list { padding: 0 16px 8px; display: flex; flex-direction: column; gap: 5px; }
+  .g-lb-row { display: flex; align-items: center; gap: 10px; padding: 8px 11px; background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 10px; }
+  .g-lb-row.me { border-color: var(--g-pri); background: var(--g-pri-d); }
+  .g-lb-rank { font-family: var(--g-disp); font-size: 12px; font-weight: 700; color: var(--g-t3); width: 20px; flex-shrink: 0; text-align: right; }
+  .g-lb-user-av { width: 30px; height: 30px; border-radius: 50%; background: var(--g-bg3); border: 1.5px solid var(--g-bdr2); display: flex; align-items: center; justify-content: center; font-family: var(--g-disp); font-size: 10px; font-weight: 700; color: var(--g-t2); flex-shrink: 0; }
+  .g-lb-user-av.me-av { border-color: var(--g-pri); color: var(--g-pri); }
+  .g-lb-user-body { flex: 1; min-width: 0; }
+  .g-lb-user-name { font-family: var(--g-disp); font-size: 11px; font-weight: 700; color: var(--g-t1); }
+  .g-lb-user-sub  { font-family: var(--g-body); font-size: 8px; color: var(--g-t3); }
+  .g-lb-xp { font-family: var(--g-disp); font-size: 11px; font-weight: 700; color: var(--g-t2); flex-shrink: 0; }
+  .g-lb-xp.me-xp { color: var(--g-pri); }
+
+  .g-lb-my-rank { margin: 8px 16px; padding: 10px 12px; background: var(--g-pri-d); border: 1px solid var(--g-pri); border-radius: 10px; display: flex; align-items: center; gap: 10px; }
+  .g-lb-my-rank-label { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); flex: 1; }
+  .g-lb-my-rank-num { font-family: var(--g-disp); font-size: 14px; font-weight: 800; color: var(--g-pri); }
+
+  /* ─── SCREEN 6: QUIZ RESULT ─── */
+  .g-qr-hero { padding: 16px 16px 8px; text-align: center; }
+  .g-qr-label { font-family: var(--g-body); font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--g-t3); margin-bottom: 4px; }
+  .g-qr-score { font-family: var(--g-disp); font-size: 88px; font-weight: 800; letter-spacing: -0.06em; color: var(--g-pri); line-height: 0.85; }
+  .g-qr-score-sub { font-family: var(--g-body); font-size: 11px; color: var(--g-t3); margin-top: 4px; }
+  .g-qr-verdict { display: inline-block; font-family: var(--g-disp); font-size: 15px; font-weight: 800; letter-spacing: -0.02em; color: var(--g-grn); margin: 10px 0; }
+
+  .g-qr-stats { padding: 0 16px 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+  .g-qr-stat { background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 10px; padding: 10px; text-align: center; }
+  .g-qr-stat-ico { font-size: 14px; margin-bottom: 4px; }
+  .g-qr-stat-val { font-family: var(--g-disp); font-size: 18px; font-weight: 800; letter-spacing: -0.03em; color: var(--g-t1); }
+  .g-qr-stat-lb  { font-family: var(--g-body); font-size: 8px; color: var(--g-t3); margin-top: 1px; }
+
+  .g-qr-xp { margin: 0 16px 12px; padding: 12px 14px; background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 12px; display: flex; align-items: center; gap: 12px; }
+  .g-qr-xp-ico { font-size: 22px; }
+  .g-qr-xp-body { flex: 1; }
+  .g-qr-xp-label { font-family: var(--g-body); font-size: 9px; color: var(--g-t3); }
+  .g-qr-xp-val { font-family: var(--g-disp); font-size: 20px; font-weight: 800; letter-spacing: -0.03em; color: var(--g-pri); }
+
+  .g-qr-review { padding: 0 16px 8px; }
+  .g-qr-review-card { background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 12px; overflow: hidden; }
+  .g-qr-review-header { padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; }
+  .g-qr-review-t { font-family: var(--g-disp); font-size: 12px; font-weight: 700; color: var(--g-t1); }
+  .g-qr-review-badge { font-family: var(--g-body); font-size: 9px; background: var(--g-err); color: white; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
+  .g-qr-review-item { padding: 9px 13px; border-top: 1px solid var(--g-bdr); display: flex; align-items: flex-start; gap: 8px; }
+  .g-qr-review-ico { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .g-qr-review-body { flex: 1; }
+  .g-qr-review-q { font-family: var(--g-disp); font-size: 10px; font-weight: 700; color: var(--g-t1); margin-bottom: 2px; }
+  .g-qr-review-a { font-family: var(--g-body); font-size: 9px; }
+  .g-qr-review-a .wrong { color: var(--g-err); text-decoration: line-through; }
+  .g-qr-review-a .right { color: var(--g-grn); }
+
+  .g-qr-btns { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 7px; }
+  .g-btn-pri  { background: var(--g-pri); color: white; font-family: var(--g-disp); font-size: 13px; font-weight: 700; letter-spacing: -0.01em; border-radius: 11px; padding: 12px; text-align: center; }
+  .g-btn-sec  { background: transparent; border: 1px solid var(--g-bdr2); color: var(--g-t2); font-family: var(--g-body); font-size: 12px; border-radius: 11px; padding: 11px; text-align: center; }
+
+  /* ─── SCREEN 7: SETTINGS ─── */
+  .g-set-hero { padding: 4px 16px 14px; display: flex; align-items: center; gap: 10px; }
+  .g-set-title { font-family: var(--g-disp); font-size: 26px; font-weight: 800; letter-spacing: -0.04em; color: var(--g-t1); }
+
+  .g-set-profile { margin: 0 16px 14px; background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; }
+  .g-set-av { width: 46px; height: 46px; border-radius: 50%; background: var(--g-pri-d); border: 2px solid var(--g-pri); display: flex; align-items: center; justify-content: center; font-family: var(--g-disp); font-size: 16px; font-weight: 800; color: var(--g-pri); flex-shrink: 0; }
+  .g-set-name { font-family: var(--g-disp); font-size: 14px; font-weight: 700; color: var(--g-t1); margin-bottom: 2px; }
+  .g-set-sub  { font-family: var(--g-body); font-size: 10px; color: var(--g-t3); }
+  .g-set-chev { font-size: 12px; color: var(--g-t3); margin-left: auto; }
+
+  .g-set-group { padding: 2px 16px 12px; }
+  .g-set-group-label { font-family: var(--g-body); font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--g-t3); margin-bottom: 6px; padding-left: 4px; }
+  .g-set-rows { background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 12px; overflow: hidden; }
+  .g-set-row { display: flex; align-items: center; gap: 10px; padding: 11px 13px; border-bottom: 1px solid var(--g-bdr); }
+  .g-set-row:last-child { border-bottom: none; }
+  .g-set-row-ico { font-size: 15px; opacity: 0.75; width: 18px; text-align: center; flex-shrink: 0; }
+  .g-set-row-t { font-family: var(--g-disp); font-size: 12px; font-weight: 600; color: var(--g-t1); flex: 1; }
+  .g-set-row-val { font-family: var(--g-body); font-size: 10px; color: var(--g-t3); }
+  .g-set-row-chev { font-size: 10px; color: var(--g-t3); flex-shrink: 0; }
+  .g-set-toggle { width: 30px; height: 17px; border-radius: 9px; background: var(--g-pri); position: relative; flex-shrink: 0; }
+  .g-set-toggle::after { content: ''; position: absolute; top: 2.5px; right: 3px; width: 12px; height: 12px; border-radius: 50%; background: white; }
+  .g-set-toggle.off { background: var(--g-bg3); }
+  .g-set-toggle.off::after { left: 3px; right: auto; }
+
+  /* ── Design notes below showcase ── */
+  .gs-notes { padding: 32px 40px; border-top: 1px solid var(--g-bdr); }
+  .gs-notes-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .gs-note-card { background: var(--g-bg2); border: 1px solid var(--g-bdr); border-radius: 14px; padding: 16px; }
+  .gs-note-num { font-family: var(--g-disp); font-size: 32px; font-weight: 800; letter-spacing: -0.04em; color: var(--g-pri); opacity: 0.4; line-height: 1; margin-bottom: 8px; }
+  .gs-note-title { font-family: var(--g-disp); font-size: 13px; font-weight: 700; letter-spacing: -0.02em; color: var(--g-t1); margin-bottom: 6px; }
+  .gs-note-body { font-family: var(--g-body); font-size: 11px; color: var(--g-t2); line-height: 1.6; }
+</style>
+
+<!-- Horizontal phone showcase -->
+<div class="gs-outer">
+  <div class="gs-row">
+
+    <!-- ══ SCREEN 1: DASHBOARD ══ -->
+    <div class="gs-col">
+      <div class="gs-screen-label">Dashboard</div>
+      <div class="gs-phone">
+        <div class="gs-screen">
+          <div class="g-appbar">
+            <span class="g-logo">Gestura<em>.</em></span>
+            <div class="g-btn-row"><div class="g-btn">🔔</div><div class="g-btn">🔍</div></div>
+          </div>
+          <div class="g-dash-hero">
+            <div class="g-dash-sub">Good morning</div>
+            <div class="g-dash-row">
+              <div class="g-lv-wrap">
+                <div class="g-lv-tag">Lv</div>
+                <div class="g-lv-num">12</div>
+              </div>
+              <div class="g-dash-right">
+                <div class="g-dash-name">Ahmad K.</div>
+                <div class="g-xp-row">
+                  <div class="g-xp-nums"><strong>1,240</strong> / 1,500 XP</div>
+                  <div class="g-bar-track" style="width:100%;"><div class="g-bar-fill" style="width:73%;"></div></div>
+                  <div class="g-xp-nums" style="font-size:8px;">260 XP to Level 13</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="g-dash-stats">
+            <div class="g-stat"><div class="g-stat-ico">🔥</div><div class="g-stat-n">7</div><div class="g-stat-lb">Streak</div></div>
+            <div class="g-stat"><div class="g-stat-ico">📚</div><div class="g-stat-n">24</div><div class="g-stat-lb">Lessons</div></div>
+            <div class="g-stat"><div class="g-stat-ico">🏆</div><div class="g-stat-n">8</div><div class="g-stat-lb">Badges</div></div>
+          </div>
+          <div class="g-sec"><div class="g-sec-left"><div class="g-dot"></div><div class="g-sec-title">Continue</div></div><div class="g-sec-action">See all</div></div>
+          <div class="g-hscroll">
+            <div class="g-hscroll-inner">
+              <div class="g-hcard feat"><div class="g-hcard-tag"><span class="g-pill pri">In Progress</span></div><div class="g-hcard-ico">✋</div><div class="g-hcard-title">Alphabet — Unit 2</div><div class="g-hcard-sub">Lesson 4 of 8 · 3 min</div></div>
+              <div class="g-hcard"><div class="g-hcard-tag"><span class="g-pill grn">New</span></div><div class="g-hcard-ico">💬</div><div class="g-hcard-title">Greetings &amp; Phrases</div><div class="g-hcard-sub">8 lessons · Beginner</div></div>
+              <div class="g-hcard"><div class="g-hcard-tag"><span class="g-pill amb">Challenge</span></div><div class="g-hcard-ico">⚡</div><div class="g-hcard-title">Daily Signing</div><div class="g-hcard-sub">5 signs · +30 XP</div></div>
+            </div>
+          </div>
+          <div class="g-sec" style="margin-top:4px;"><div class="g-sec-left"><div class="g-dot" style="background:var(--g-grn);"></div><div class="g-sec-title">Categories</div></div><div class="g-sec-action">Browse</div></div>
+          <div class="g-list">
+            <div class="g-litem"><span class="g-litem-ico">🖐️</span><div class="g-litem-body"><div class="g-litem-t">Fingerspelling A–Z</div><div class="g-litem-s">12 lessons · 85% done</div></div><span class="g-pill pri" style="font-size:8px;">Active</span></div>
+            <div class="g-litem"><span class="g-litem-ico">👁️</span><div class="g-litem-body"><div class="g-litem-t">Numbers &amp; Counting</div><div class="g-litem-s">8 lessons · Not started</div></div><span class="g-pill grn" style="font-size:8px;">New</span></div>
+          </div>
+          <div class="g-sec" style="margin-top:2px;"><div class="g-sec-left"><div class="g-dot" style="background:var(--g-amb);"></div><div class="g-sec-title">Today's Goals</div></div><div class="g-goals-pct">66%</div></div>
+          <div class="g-goals">
+            <div class="g-goals-card">
+              <div class="g-bar-track"><div class="g-bar-fill" style="width:66%;background:var(--g-amb);"></div></div>
+              <div class="g-goals-items">
+                <div class="g-goal-row"><div class="g-goal-check done">✓</div><span class="g-goal-t">Complete 1 lesson</span><span class="g-goal-xp">+20 XP</span></div>
+                <div class="g-goal-row"><div class="g-goal-check done">✓</div><span class="g-goal-t">Practice 5 min</span><span class="g-goal-xp">+15 XP</span></div>
+                <div class="g-goal-row"><div class="g-goal-check"></div><span class="g-goal-t">Take a quiz</span><span class="g-goal-xp">+30 XP</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="g-nav">
+            <div class="g-nav-item"><div class="g-nav-icon active">⊞</div><div class="g-nav-dot"></div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">📖</div><div class="g-nav-label">Learn</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">⚡</div><div class="g-nav-label">Challenges</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">🏅</div><div class="g-nav-label">Rank</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">👤</div><div class="g-nav-label">Profile</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 2: LEARN ══ -->
+    <div class="gs-col">
+      <div class="gs-screen-label">Learn</div>
+      <div class="gs-phone">
+        <div class="gs-screen">
+          <div class="g-appbar">
+            <div class="g-learn-title" style="font-size:22px;">Learn</div>
+            <div class="g-btn-row"><div class="g-btn">🔍</div></div>
+          </div>
+          <div style="padding:2px 16px 8px;">
+            <div style="font-family:var(--g-body);font-size:10px;color:var(--g-t3);">3 categories in progress · 24 lessons done</div>
+          </div>
+          <div class="g-sec"><div class="g-sec-left"><div class="g-dot"></div><div class="g-sec-title">Categories</div></div><div class="g-sec-action">All</div></div>
+          <div class="g-hscroll">
+            <div class="g-hscroll-inner">
+              <div class="g-cat-card active-cat">
+                <div class="g-cat-emoji">🖐️</div>
+                <div class="g-cat-name">Fingerspelling</div>
+                <div class="g-cat-prog-text">10 / 12 lessons</div>
+                <div class="g-bar-track"><div class="g-bar-fill" style="width:83%;"></div></div>
+              </div>
+              <div class="g-cat-card">
+                <div class="g-cat-emoji">👁️</div>
+                <div class="g-cat-name">Numbers</div>
+                <div class="g-cat-prog-text">0 / 8 lessons</div>
+                <div class="g-bar-track"><div class="g-bar-fill" style="width:0%;"></div></div>
+              </div>
+              <div class="g-cat-card">
+                <div class="g-cat-emoji">💬</div>
+                <div class="g-cat-name">Greetings</div>
+                <div class="g-cat-prog-text">3 / 8 lessons</div>
+                <div class="g-bar-track"><div class="g-bar-fill" style="width:37%;"></div></div>
+              </div>
+              <div class="g-cat-card">
+                <div class="g-cat-emoji">🤟</div>
+                <div class="g-cat-name">Emotions</div>
+                <div class="g-cat-prog-text">0 / 10 lessons</div>
+                <div class="g-bar-track"><div class="g-bar-fill" style="width:0%;"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="g-sec" style="margin-top:8px;"><div class="g-sec-left"><div class="g-dot" style="background:var(--g-pk);"></div><div class="g-sec-title">Resume</div></div></div>
+          <div style="padding:4px 16px 0;">
+            <div class="g-feat-lesson">
+              <div class="g-feat-lesson-top">
+                <div>
+                  <div class="g-feat-lesson-title">Alphabet — Unit 2</div>
+                  <div class="g-feat-lesson-desc">Master the second half of the ASL alphabet. Signs H through P with practice drills.</div>
+                </div>
+                <div class="g-feat-lesson-ico">✋</div>
+              </div>
+              <div class="g-bar-track" style="margin-bottom:0;"><div class="g-bar-fill" style="width:50%;"></div></div>
+              <div class="g-feat-lesson-footer">
+                <div class="g-feat-lesson-meta">Lesson 4 of 8 · ~3 min</div>
+                <div class="g-feat-resume">Resume →</div>
+              </div>
+            </div>
+          </div>
+          <div class="g-sec" style="margin-top:12px;"><div class="g-sec-left"><div class="g-dot" style="background:var(--g-sec);"></div><div class="g-sec-title">All Lessons</div></div><div class="g-sec-action">Filter</div></div>
+          <div class="g-list">
+            <div class="g-litem"><span class="g-litem-ico">🤌</span><div class="g-litem-body"><div class="g-litem-t">Common Signs Vol 1</div><div class="g-litem-s">Greetings · 5 min</div></div><span class="g-pill grn" style="font-size:8px;">Done</span></div>
+            <div class="g-litem"><span class="g-litem-ico">👋</span><div class="g-litem-body"><div class="g-litem-t">Hello &amp; Goodbye</div><div class="g-litem-s">Greetings · 4 min</div></div><span class="g-pill sec" style="font-size:8px;">New</span></div>
+            <div class="g-litem"><span class="g-litem-ico">🔢</span><div class="g-litem-body"><div class="g-litem-t">Numbers 1–10</div><div class="g-litem-s">Numbers · 6 min</div></div><span class="g-pill sec" style="font-size:8px;">New</span></div>
+          </div>
+          <div class="g-nav">
+            <div class="g-nav-item"><div class="g-nav-icon">⊞</div><div class="g-nav-label">Home</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon active">📖</div><div class="g-nav-dot"></div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">⚡</div><div class="g-nav-label">Challenges</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">🏅</div><div class="g-nav-label">Rank</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">👤</div><div class="g-nav-label">Profile</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 3: CHALLENGES ══ -->
+    <div class="gs-col">
+      <div class="gs-screen-label">Challenges</div>
+      <div class="gs-phone">
+        <div class="gs-screen">
+          <div class="g-appbar">
+            <div style="font-family:var(--g-disp);font-size:22px;font-weight:800;letter-spacing:-0.04em;color:var(--g-t1);">Challenges</div>
+          </div>
+          <div style="padding:2px 16px 10px;font-family:var(--g-body);font-size:10px;color:var(--g-t3);">2 active today · 5 completed this week</div>
+          <div class="g-sec"><div class="g-sec-left"><div class="g-dot" style="background:var(--g-amb);"></div><div class="g-sec-title">Today</div></div><span class="g-pill amb" style="font-size:8px;">2 active</span></div>
+          <div class="g-ch-card doing">
+            <div class="g-ch-top">
+              <div class="g-ch-left"><span class="g-ch-emoji">✋</span><div><div class="g-ch-title-t">Sign Recognition Sprint</div><div class="g-ch-desc">Identify 10 signs from the Alphabet category</div></div></div>
+              <div class="g-ch-xp">+50 XP</div>
+            </div>
+            <div class="g-ch-prog">
+              <div class="g-ch-prog-row"><span class="g-ch-prog-label">Progress</span><span class="g-ch-prog-frac">6 / 10</span></div>
+              <div class="g-bar-track"><div class="g-bar-fill" style="width:60%;background:var(--g-amb);"></div></div>
+            </div>
+          </div>
+          <div class="g-ch-card">
+            <div class="g-ch-top">
+              <div class="g-ch-left"><span class="g-ch-emoji">⚡</span><div><div class="g-ch-title-t">Speed Round — Numbers</div><div class="g-ch-desc">Complete a timed quiz in under 90 seconds</div></div></div>
+              <div class="g-ch-xp">+30 XP</div>
+            </div>
+            <div class="g-ch-prog">
+              <div class="g-ch-prog-row"><span class="g-ch-prog-label">Progress</span><span class="g-ch-prog-frac">0 / 1</span></div>
+              <div class="g-bar-track"><div class="g-bar-fill" style="width:0%;"></div></div>
+            </div>
+          </div>
+          <div class="g-sec" style="margin-top:4px;"><div class="g-sec-left"><div class="g-dot" style="background:var(--g-grn);"></div><div class="g-sec-title">This Week</div></div><span class="g-pill grn" style="font-size:8px;">5 done</span></div>
+          <div class="g-ch-week">
+            <div class="g-ch-week-item"><span class="g-ch-week-emoji">🖐️</span><div class="g-ch-week-body"><div class="g-ch-week-t">Fingerspelling Streak</div><div class="g-ch-week-s">Mon · +40 XP earned</div></div><span class="g-ch-week-done">✓</span></div>
+            <div class="g-ch-week-item"><span class="g-ch-week-emoji">💬</span><div class="g-ch-week-body"><div class="g-ch-week-t">Greetings Master</div><div class="g-ch-week-s">Tue · +60 XP earned</div></div><span class="g-ch-week-done">✓</span></div>
+            <div class="g-ch-week-item"><span class="g-ch-week-emoji">🔢</span><div class="g-ch-week-body"><div class="g-ch-week-t">Numbers Blitz</div><div class="g-ch-week-s">Wed · +35 XP earned</div></div><span class="g-ch-week-done">✓</span></div>
+          </div>
+          <div class="g-nav">
+            <div class="g-nav-item"><div class="g-nav-icon">⊞</div><div class="g-nav-label">Home</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">📖</div><div class="g-nav-label">Learn</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon active">⚡</div><div class="g-nav-dot"></div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">🏅</div><div class="g-nav-label">Rank</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">👤</div><div class="g-nav-label">Profile</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 4: PROFILE ══ -->
+    <div class="gs-col">
+      <div class="gs-screen-label">Profile</div>
+      <div class="gs-phone">
+        <div class="gs-screen">
+          <div class="g-appbar">
+            <div style="font-family:var(--g-disp);font-size:22px;font-weight:800;letter-spacing:-0.04em;color:var(--g-t1);">Profile</div>
+            <div class="g-btn">✏️</div>
+          </div>
+          <div class="g-prof-hero">
+            <div class="g-prof-av">AK</div>
+            <div class="g-prof-name">Ahmad K.</div>
+            <div class="g-prof-pills">
+              <span class="g-pill pri">Level 12</span>
+              <span class="g-pill grn">7-day streak</span>
+            </div>
+          </div>
+          <div class="g-prof-stats">
+            <div class="g-prof-stat"><div class="g-prof-stat-n">24</div><div class="g-prof-stat-lb">Lessons</div></div>
+            <div class="g-prof-stat"><div class="g-prof-stat-n">1,240</div><div class="g-prof-stat-lb">Total XP</div></div>
+            <div class="g-prof-stat"><div class="g-prof-stat-n">8</div><div class="g-prof-stat-lb">Badges</div></div>
+          </div>
+          <div style="height:14px;"></div>
+          <div class="g-prof-section"><div class="g-prof-section-t">Account</div></div>
+          <div class="g-prof-fields">
+            <div class="g-prof-field"><span class="g-prof-field-ico">👤</span><div class="g-prof-field-body"><div class="g-prof-field-lbl">Display name</div><div class="g-prof-field-val">Ahmad Kamali</div></div><span class="g-prof-field-chev">›</span></div>
+            <div class="g-prof-field"><span class="g-prof-field-ico">✉️</span><div class="g-prof-field-body"><div class="g-prof-field-lbl">Email</div><div class="g-prof-field-val">ahmad@email.com</div></div><span class="g-prof-field-chev">›</span></div>
+            <div class="g-prof-field"><span class="g-prof-field-ico">🔒</span><div class="g-prof-field-body"><div class="g-prof-field-lbl">Password</div><div class="g-prof-field-val">Change password</div></div><span class="g-prof-field-chev">›</span></div>
+          </div>
+          <div class="g-prof-section"><div class="g-prof-section-t">Learning</div></div>
+          <div class="g-prof-fields">
+            <div class="g-prof-field"><span class="g-prof-field-ico">🎯</span><div class="g-prof-field-body"><div class="g-prof-field-lbl">Daily goal</div><div class="g-prof-field-val">3 lessons/day</div></div><span class="g-prof-field-chev">›</span></div>
+            <div class="g-prof-field"><span class="g-prof-field-ico">📊</span><div class="g-prof-field-body"><div class="g-prof-field-lbl">Level</div><div class="g-prof-field-val">Intermediate</div></div><span class="g-prof-field-chev">›</span></div>
+          </div>
+          <div style="padding:8px 16px 16px;">
+            <div style="font-family:var(--g-body);font-size:11px;color:var(--g-err);text-align:center;padding:12px;border:1px solid rgba(239,68,68,0.25);border-radius:10px;cursor:pointer;">Sign Out</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 5: LEADERBOARD ══ -->
+    <div class="gs-col">
+      <div class="gs-screen-label">Leaderboard</div>
+      <div class="gs-phone">
+        <div class="gs-screen">
+          <div class="g-appbar">
+            <div style="font-family:var(--g-disp);font-size:22px;font-weight:800;letter-spacing:-0.04em;color:var(--g-t1);">Rankings</div>
+          </div>
+          <!-- Tabs -->
+          <div style="padding:4px 16px 10px;display:flex;gap:6px;">
+            <div style="flex:1;text-align:center;padding:7px;background:var(--g-pri);border-radius:8px;font-family:var(--g-disp);font-size:10px;font-weight:700;color:white;">All-time</div>
+            <div style="flex:1;text-align:center;padding:7px;background:var(--g-bg2);border:1px solid var(--g-bdr);border-radius:8px;font-family:var(--g-disp);font-size:10px;font-weight:600;color:var(--g-t3);">Weekly</div>
+            <div style="flex:1;text-align:center;padding:7px;background:var(--g-bg2);border:1px solid var(--g-bdr);border-radius:8px;font-family:var(--g-disp);font-size:10px;font-weight:600;color:var(--g-t3);">Monthly</div>
+          </div>
+          <!-- Podium -->
+          <div class="g-lb-podium">
+            <div class="g-lb-pod">
+              <div class="g-lb-pod-rank r2">2</div>
+              <div class="g-lb-av rank2">SR</div>
+              <div class="g-lb-pod-name">Sara R.</div>
+              <div class="g-lb-pod-xp">3,420 XP</div>
+            </div>
+            <div class="g-lb-pod first">
+              <div class="g-lb-pod-rank r1">1</div>
+              <div class="g-lb-av rank1">MH</div>
+              <div class="g-lb-pod-name">M. Hassan</div>
+              <div class="g-lb-pod-xp">4,100 XP</div>
+            </div>
+            <div class="g-lb-pod">
+              <div class="g-lb-pod-rank r3">3</div>
+              <div class="g-lb-av rank3">LK</div>
+              <div class="g-lb-pod-name">Liu K.</div>
+              <div class="g-lb-pod-xp">2,980 XP</div>
+            </div>
+          </div>
+          <div class="g-lb-divider"></div>
+          <div class="g-lb-list">
+            <div class="g-lb-row"><span class="g-lb-rank">#4</span><div class="g-lb-user-av">JD</div><div class="g-lb-user-body"><div class="g-lb-user-name">Jamie D.</div><div class="g-lb-user-sub">Streak: 12</div></div><span class="g-lb-xp">2,440 XP</span></div>
+            <div class="g-lb-row"><span class="g-lb-rank">#5</span><div class="g-lb-user-av">TP</div><div class="g-lb-user-body"><div class="g-lb-user-name">Taylor P.</div><div class="g-lb-user-sub">Streak: 5</div></div><span class="g-lb-xp">2,200 XP</span></div>
+            <div class="g-lb-row me"><span class="g-lb-rank" style="color:var(--g-pri);">#8</span><div class="g-lb-user-av me-av">AK</div><div class="g-lb-user-body"><div class="g-lb-user-name" style="color:var(--g-pri);">Ahmad K. (You)</div><div class="g-lb-user-sub">Streak: 7</div></div><span class="g-lb-xp me-xp">1,240 XP</span></div>
+            <div class="g-lb-row"><span class="g-lb-rank">#9</span><div class="g-lb-user-av">RN</div><div class="g-lb-user-body"><div class="g-lb-user-name">Riley N.</div><div class="g-lb-user-sub">Streak: 3</div></div><span class="g-lb-xp">1,180 XP</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 6: QUIZ RESULT ══ -->
+    <div class="gs-col">
+      <div class="gs-screen-label">Quiz Result</div>
+      <div class="gs-phone">
+        <div class="gs-screen">
+          <div style="padding:12px 16px 0;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-family:var(--g-body);font-size:10px;color:var(--g-t3);">Sign to Text · Alphabet</span>
+            <span class="g-pill grn">Completed</span>
+          </div>
+          <div class="g-qr-hero">
+            <div class="g-qr-label">Your score</div>
+            <div class="g-qr-score">80%</div>
+            <div class="g-qr-score-sub">8 of 10 correct</div>
+            <div class="g-qr-verdict">Great work! 🎉</div>
+          </div>
+          <div class="g-qr-stats">
+            <div class="g-qr-stat"><div class="g-qr-stat-ico">⏱️</div><div class="g-qr-stat-val">42s</div><div class="g-qr-stat-lb">Time</div></div>
+            <div class="g-qr-stat"><div class="g-qr-stat-ico">✅</div><div class="g-qr-stat-val">8</div><div class="g-qr-stat-lb">Correct</div></div>
+            <div class="g-qr-stat"><div class="g-qr-stat-ico">❌</div><div class="g-qr-stat-val">2</div><div class="g-qr-stat-lb">Wrong</div></div>
+          </div>
+          <div class="g-qr-xp">
+            <div class="g-qr-xp-ico">⭐</div>
+            <div class="g-qr-xp-body"><div class="g-qr-xp-label">XP earned this quiz</div><div class="g-qr-xp-val">+80 XP</div></div>
+          </div>
+          <div class="g-qr-review">
+            <div class="g-qr-review-card">
+              <div class="g-qr-review-header"><span class="g-qr-review-t">Review — Missed</span><span class="g-qr-review-badge">2 wrong</span></div>
+              <div class="g-qr-review-item"><span class="g-qr-review-ico">✋</span><div class="g-qr-review-body"><div class="g-qr-review-q">What sign is shown?</div><div class="g-qr-review-a"><span class="wrong">Book</span> → <span class="right">Letter H</span></div></div></div>
+              <div class="g-qr-review-item"><span class="g-qr-review-ico">👁️</span><div class="g-qr-review-body"><div class="g-qr-review-q">Identify this sign</div><div class="g-qr-review-a"><span class="wrong">Water</span> → <span class="right">Letter W</span></div></div></div>
+            </div>
+          </div>
+          <div class="g-qr-btns">
+            <div class="g-btn-pri">Try Again</div>
+            <div class="g-btn-sec">Back to Quizzes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 7: SETTINGS ══ -->
+    <div class="gs-col">
+      <div class="gs-screen-label">Settings</div>
+      <div class="gs-phone">
+        <div class="gs-screen">
+          <div class="g-appbar">
+            <div style="font-family:var(--g-disp);font-size:22px;font-weight:800;letter-spacing:-0.04em;color:var(--g-t1);">Settings</div>
+          </div>
+          <!-- Profile summary card -->
+          <div class="g-set-profile">
+            <div class="g-set-av">AK</div>
+            <div><div class="g-set-name">Ahmad Kamali</div><div class="g-set-sub">Level 12 · 1,240 XP</div></div>
+            <div class="g-set-chev">›</div>
+          </div>
+          <!-- Learning group -->
+          <div class="g-set-group">
+            <div class="g-set-group-label">Learning</div>
+            <div class="g-set-rows">
+              <div class="g-set-row"><span class="g-set-row-ico">🎯</span><span class="g-set-row-t">Daily Goal</span><span class="g-set-row-val">3 lessons</span><span class="g-set-row-chev">›</span></div>
+              <div class="g-set-row"><span class="g-set-row-ico">🔔</span><span class="g-set-row-t">Reminders</span><span class="g-set-row-val">8:00 PM</span><span class="g-set-row-chev">›</span></div>
+              <div class="g-set-row"><span class="g-set-row-ico">🌐</span><span class="g-set-row-t">Language</span><span class="g-set-row-val">English</span><span class="g-set-row-chev">›</span></div>
+            </div>
+          </div>
+          <!-- App group -->
+          <div class="g-set-group">
+            <div class="g-set-group-label">App</div>
+            <div class="g-set-rows">
+              <div class="g-set-row"><span class="g-set-row-ico">🌙</span><span class="g-set-row-t">Dark Mode</span><div class="g-set-toggle"></div></div>
+              <div class="g-set-row"><span class="g-set-row-ico">🔊</span><span class="g-set-row-t">Sound Effects</span><div class="g-set-toggle"></div></div>
+              <div class="g-set-row"><span class="g-set-row-ico">📳</span><span class="g-set-row-t">Haptics</span><div class="g-set-toggle off"></div></div>
+            </div>
+          </div>
+          <!-- About group -->
+          <div class="g-set-group">
+            <div class="g-set-group-label">About</div>
+            <div class="g-set-rows">
+              <div class="g-set-row"><span class="g-set-row-ico">⭐</span><span class="g-set-row-t">Rate Gestura</span><span class="g-set-row-chev">›</span></div>
+              <div class="g-set-row"><span class="g-set-row-ico">📄</span><span class="g-set-row-t">Privacy Policy</span><span class="g-set-row-chev">›</span></div>
+              <div class="g-set-row"><span class="g-set-row-ico">ℹ️</span><span class="g-set-row-t">Version</span><span class="g-set-row-val">1.0.0</span></div>
+            </div>
+          </div>
+          <div style="padding:4px 16px 16px;text-align:center;font-family:var(--g-body);font-size:11px;color:var(--g-err);padding:12px 16px 20px;">Sign Out</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 8: TRANSLATE — Sign-to-Text tab ══ -->
+    <div class="gs-col">
+      <div class="gs-screen-label">Translate · Sign→Text</div>
+      <div class="gs-phone">
+        <div class="gs-screen">
+          <div class="g-appbar">
+            <div style="font-family:var(--g-disp);font-size:22px;font-weight:800;letter-spacing:-0.04em;color:var(--g-t1);">Translate</div>
+          </div>
+
+          <!-- Tab switcher — icons not emoji -->
+          <div style="margin:4px 16px 0;padding:4px;background:var(--g-bg2);border:1px solid var(--g-bdr);border-radius:14px;display:flex;gap:4px;">
+            <div style="flex:1;background:var(--g-pri);border-radius:10px;padding:10px 6px;display:flex;align-items:center;justify-content:center;gap:6px;">
+              <span style="font-size:12px;">🤟</span>
+              <span style="font-family:var(--g-disp);font-size:12px;font-weight:700;color:white;letter-spacing:-0.01em;">Sign → Text</span>
+            </div>
+            <div style="flex:1;padding:10px 6px;display:flex;align-items:center;justify-content:center;gap:6px;">
+              <span style="font-size:12px;">✍️</span>
+              <span style="font-family:var(--g-disp);font-size:12px;font-weight:600;color:var(--g-t3);letter-spacing:-0.01em;">Text → Sign</span>
+            </div>
+          </div>
+
+          <!-- Camera area — placeholder state -->
+          <div style="margin:12px 16px 0;height:230px;background:#12103A;border-radius:18px;border:1px solid rgba(99,102,241,0.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:relative;overflow:hidden;">
+            <!-- Subtle corner guides (camera frame hint) -->
+            <div style="position:absolute;top:12px;left:12px;width:20px;height:20px;border-top:2px solid rgba(99,102,241,0.5);border-left:2px solid rgba(99,102,241,0.5);border-radius:3px 0 0 0;"></div>
+            <div style="position:absolute;top:12px;right:12px;width:20px;height:20px;border-top:2px solid rgba(99,102,241,0.5);border-right:2px solid rgba(99,102,241,0.5);border-radius:0 3px 0 0;"></div>
+            <div style="position:absolute;bottom:12px;left:12px;width:20px;height:20px;border-bottom:2px solid rgba(99,102,241,0.5);border-left:2px solid rgba(99,102,241,0.5);border-radius:0 0 0 3px;"></div>
+            <div style="position:absolute;bottom:12px;right:12px;width:20px;height:20px;border-bottom:2px solid rgba(99,102,241,0.5);border-right:2px solid rgba(99,102,241,0.5);border-radius:0 0 3px 0;"></div>
+            <!-- Icon — bare, no box -->
+            <div style="font-size:36px;opacity:0.4;">📷</div>
+            <div style="font-family:var(--g-body);font-size:11px;color:var(--g-t3);text-align:center;padding:0 28px;line-height:1.5;">Point your camera at a signer to translate in real time</div>
+            <!-- Start CTA -->
+            <div style="background:var(--g-pri);border-radius:24px;padding:10px 22px;display:flex;align-items:center;gap:8px;">
+              <span style="font-size:14px;">📷</span>
+              <span style="font-family:var(--g-disp);font-size:13px;font-weight:700;color:white;letter-spacing:-0.01em;">Start Camera</span>
+            </div>
+          </div>
+
+          <!-- Translation output -->
+          <div style="margin:10px 16px 0;background:var(--g-bg2);border:1px solid var(--g-bdr);border-radius:14px;padding:13px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <div class="g-dot" style="background:var(--g-pri);"></div>
+                <span style="font-family:var(--g-disp);font-size:12px;font-weight:700;color:var(--g-t1);">Translation</span>
+              </div>
+              <span class="g-pill pri" style="font-size:8px;">BIM → English</span>
+            </div>
+            <!-- Word chips — some filled, last highlighted -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:28px;">
+              <div style="background:var(--g-bg3);border:1px solid var(--g-bdr);border-radius:20px;padding:5px 12px;font-family:var(--g-disp);font-size:12px;font-weight:600;color:var(--g-t1);">Hello</div>
+              <div style="background:var(--g-bg3);border:1px solid var(--g-bdr);border-radius:20px;padding:5px 12px;font-family:var(--g-disp);font-size:12px;font-weight:600;color:var(--g-t1);">My</div>
+              <div style="background:var(--g-bg3);border:1px solid var(--g-bdr);border-radius:20px;padding:5px 12px;font-family:var(--g-disp);font-size:12px;font-weight:600;color:var(--g-t1);">Name</div>
+              <div style="background:var(--g-pri-d);border:1px solid rgba(99,102,241,0.4);border-radius:20px;padding:5px 12px;font-family:var(--g-disp);font-size:12px;font-weight:700;color:var(--g-pri);">Ahmad</div>
+            </div>
+            <!-- Action row — compact icon+label buttons -->
+            <div style="display:flex;gap:7px;">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;background:var(--g-bg3);border:1px solid var(--g-bdr);border-radius:9px;">
+                <span style="font-size:12px;">🔊</span><span style="font-family:var(--g-body);font-size:10px;color:var(--g-t2);">Speak</span>
+              </div>
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;background:var(--g-bg3);border:1px solid var(--g-bdr);border-radius:9px;">
+                <span style="font-size:12px;">📋</span><span style="font-family:var(--g-body);font-size:10px;color:var(--g-t2);">Copy</span>
+              </div>
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;background:var(--g-bg3);border:1px solid var(--g-bdr);border-radius:9px;">
+                <span style="font-size:12px;">↩️</span><span style="font-family:var(--g-body);font-size:10px;color:var(--g-t2);">Undo</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;padding:8px 10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:9px;">
+                <span style="font-family:var(--g-body);font-size:10px;color:#EF4444;">Clear</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Nav — new 5-item with Translate -->
+          <div class="g-nav" style="margin-top:auto;">
+            <div class="g-nav-item"><div class="g-nav-icon">⊞</div><div class="g-nav-label">Home</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">📖</div><div class="g-nav-label">Learn</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon active" style="font-size:18px;">🤟</div><div class="g-nav-dot"></div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">⚡</div><div class="g-nav-label">Challenges</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">👤</div><div class="g-nav-label">Profile</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 9: TRANSLATE — Text-to-Sign tab ══ -->
+    <div class="gs-col">
+      <div class="gs-screen-label">Translate · Text→Sign</div>
+      <div class="gs-phone">
+        <div class="gs-screen">
+          <div class="g-appbar">
+            <div style="font-family:var(--g-disp);font-size:22px;font-weight:800;letter-spacing:-0.04em;color:var(--g-t1);">Translate</div>
+          </div>
+
+          <!-- Tab switcher -->
+          <div style="margin:4px 16px 0;padding:4px;background:var(--g-bg2);border:1px solid var(--g-bdr);border-radius:14px;display:flex;gap:4px;">
+            <div style="flex:1;padding:10px 6px;display:flex;align-items:center;justify-content:center;gap:6px;">
+              <span style="font-size:12px;">🤟</span>
+              <span style="font-family:var(--g-disp);font-size:12px;font-weight:600;color:var(--g-t3);">Sign → Text</span>
+            </div>
+            <div style="flex:1;background:var(--g-pri);border-radius:10px;padding:10px 6px;display:flex;align-items:center;justify-content:center;gap:6px;">
+              <span style="font-size:12px;">✍️</span>
+              <span style="font-family:var(--g-disp);font-size:12px;font-weight:700;color:white;letter-spacing:-0.01em;">Text → Sign</span>
+            </div>
+          </div>
+
+          <!-- Text input -->
+          <div style="margin:12px 16px 0;background:var(--g-bg2);border:1px solid var(--g-bdr);border-radius:14px;padding:13px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-family:var(--g-body);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--g-t3);">Enter text</span>
+              <span style="font-family:var(--g-body);font-size:9px;color:var(--g-t3);">14/200</span>
+            </div>
+            <!-- Input field mockup -->
+            <div style="font-family:var(--g-disp);font-size:14px;font-weight:600;color:var(--g-t1);padding:2px 0 10px;border-bottom:1px solid var(--g-bdr);margin-bottom:10px;letter-spacing:-0.01em;">Hello my name Ahmad</div>
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div style="display:flex;align-items:center;gap:5px;padding:8px 11px;background:var(--g-bg3);border:1px solid var(--g-bdr);border-radius:9px;">
+                <span style="font-size:12px;">🎙</span><span style="font-family:var(--g-body);font-size:10px;color:var(--g-t2);">Voice</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;padding:8px 11px;background:var(--g-bg3);border:1px solid var(--g-bdr);border-radius:9px;">
+                <span style="font-family:var(--g-body);font-size:10px;color:var(--g-t3);">Clear</span>
+              </div>
+              <div style="flex:1;"></div>
+              <div style="background:var(--g-pri);border-radius:10px;padding:9px 16px;display:flex;align-items:center;gap:6px;">
+                <span style="font-size:13px;">🤟</span>
+                <span style="font-family:var(--g-disp);font-size:12px;font-weight:700;color:white;">Translate</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sign preview area — 180px in preview, dark -->
+          <div style="margin:10px 16px 0;height:180px;background:#12103A;border-radius:18px;border:1px solid rgba(99,102,241,0.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;position:relative;">
+            <!-- Bare emoji placeholder — no box -->
+            <div style="font-size:52px;opacity:0.7;">🤟</div>
+            <div style="font-family:var(--g-body);font-size:11px;color:var(--g-t3);">Sign animation will play here</div>
+            <!-- Signed word indicator -->
+            <div style="position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:5px;">
+              <div style="background:rgba(0,0,0,0.6);border-radius:20px;padding:4px 12px;display:flex;align-items:center;gap:6px;">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--g-pri);display:inline-block;"></span>
+                <span style="font-family:var(--g-disp);font-size:10px;font-weight:700;color:white;">HELLO</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Word breakdown chips -->
+          <div style="margin:10px 16px 0;background:var(--g-bg2);border:1px solid var(--g-bdr);border-radius:12px;padding:11px 12px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+              <div class="g-dot" style="background:var(--g-sec);"></div>
+              <span style="font-family:var(--g-disp);font-size:11px;font-weight:700;color:var(--g-t1);">Word Breakdown</span>
+              <div style="margin-left:auto;display:flex;gap:4px;">
+                <span style="background:rgba(16,185,129,0.15);color:var(--g-grn);border-radius:20px;padding:2px 7px;font-family:var(--g-body);font-size:8px;font-weight:700;">3 BIM</span>
+                <span style="background:rgba(59,130,246,0.15);color:#60A5FA;border-radius:20px;padding:2px 7px;font-family:var(--g-body);font-size:8px;font-weight:700;">1 Fingerspell</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">
+              <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.4);border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:4px;">
+                <span style="font-size:10px;">🤟</span><span style="font-family:var(--g-body);font-size:10px;font-weight:600;color:var(--g-grn);">Hello</span>
+              </div>
+              <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.4);border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:4px;">
+                <span style="font-size:10px;">🤟</span><span style="font-family:var(--g-body);font-size:10px;font-weight:600;color:var(--g-grn);">My</span>
+              </div>
+              <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.4);border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:4px;">
+                <span style="font-size:10px;">🤟</span><span style="font-family:var(--g-body);font-size:10px;font-weight:600;color:var(--g-grn);">Name</span>
+              </div>
+              <div style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.4);border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:4px;">
+                <span style="font-size:10px;">✍️</span><span style="font-family:var(--g-body);font-size:10px;font-weight:600;color:#60A5FA;">Ahmad</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="g-nav" style="margin-top:auto;">
+            <div class="g-nav-item"><div class="g-nav-icon">⊞</div><div class="g-nav-label">Home</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">📖</div><div class="g-nav-label">Learn</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon active" style="font-size:18px;">🤟</div><div class="g-nav-dot"></div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">⚡</div><div class="g-nav-label">Challenges</div></div>
+            <div class="g-nav-item"><div class="g-nav-icon">👤</div><div class="g-nav-label">Profile</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Navbar change note -->
+<div style="padding:0 40px 32px;border-top:1px solid var(--g-bdr);margin-top:-1px;">
+  <div style="background:var(--g-bg2);border:1px solid var(--g-bdr2);border-radius:14px;padding:16px 20px;margin-top:24px;display:flex;align-items:flex-start;gap:16px;">
+    <div style="font-family:var(--g-disp);font-size:22px;font-weight:800;color:var(--g-pri);letter-spacing:-0.04em;flex-shrink:0;line-height:1;">!</div>
+    <div>
+      <div style="font-family:var(--g-disp);font-size:13px;font-weight:700;color:var(--g-t1);margin-bottom:4px;letter-spacing:-0.02em;">Navbar change: Leaderboard → Translate</div>
+      <div style="font-family:var(--g-body);font-size:11px;color:var(--g-t2);line-height:1.6;">5-item max for mobile nav. Leaderboard is a social/status feature — accessible from Profile tab or Dashboard card. Translate is a core BIM feature used actively during sessions, so it earns the nav slot. New order: <strong style="color:var(--g-t1);">Home · Learn · Translate · Challenges · Profile</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- Design notes -->
+<div class="gs-notes">
+  <div class="gs-notes-grid">
+    <div class="gs-note-card">
+      <div class="gs-note-num">01</div>
+      <div class="gs-note-title">Typography — Bricolage Grotesque + Nunito</div>
+      <div class="gs-note-body">Display font swapped from Familjen Grotesk → Bricolage Grotesque 800. Scale corrected from 1.14× to 1.33× steps. Screen titles now 26–28px creating clear dominance over card titles at 12–14px. Body copy in Nunito 400 — warmer, more accessible than Lexend.</div>
+    </div>
+    <div class="gs-note-card">
+      <div class="gs-note-num">02</div>
+      <div class="gs-note-title">Dashboard — Level as Hero</div>
+      <div class="gs-note-body">Gradient welcome card removed. Level number rendered at 76px as the visual anchor — users identity with their level; let it dominate. XP progress inlined next to it. Stats become a 3-col mini grid. "Continue" uses horizontal scroll so multiple lessons are visible without full-card height.</div>
+    </div>
+    <div class="gs-note-card">
+      <div class="gs-note-num">03</div>
+      <div class="gs-note-title">Learn — Magazine Layout</div>
+      <div class="gs-note-body">Categories as horizontal scroll with mini progress bars — scannable at a glance. Featured "Resume" lesson gets a dedicated large card with its own progress bar and CTA. Remaining lessons in compact text-first list. No icon-box monoculture at any level.</div>
+    </div>
+    <div class="gs-note-card">
+      <div class="gs-note-num">04</div>
+      <div class="gs-note-title">Universal — Zero AI Tells</div>
+      <div class="gs-note-body">No gradient cards. No tinted icon boxes. No equal-height card grids. No bounce animations. Settings use a grouped plain list (iOS/Android native convention). Profile uses a stat grid created with 1px gaps — no cards within cards. Quiz result uses a 88px score number as the emotional anchor.</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  function show(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>

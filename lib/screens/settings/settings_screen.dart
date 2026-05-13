@@ -1,9 +1,10 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'notification_settings_screen.dart';
 import 'theme_settings_screen.dart';
@@ -34,18 +35,15 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final ImagePicker _picker = ImagePicker();
   final FirestoreService _firestoreService = FirestoreService();
   
   Uint8List? _profileImageBytes;
   bool _isLoadingImage = false;
-  bool _isUploadingImage = false;
-
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
   String _selectedLanguage = 'English';
-  String _selectedSignLanguage = 'ASL';
+  String _selectedSignLanguage = 'BIM';
 
   @override
   void initState() {
@@ -71,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           await prefs.setString('profileImageUrl', user.photoUrl!);
         }
       } catch (e) {
-        debugPrint('Error loading profile image from URL: $e');
+        if (kDebugMode) debugPrint('Error loading profile image from URL: $e');
       }
     } else {
       final imageBase64 = prefs.getString('profileImageBase64');
@@ -79,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         try {
           imageBytes = base64Decode(imageBase64);
         } catch (e) {
-          debugPrint('Error decoding profile image: $e');
+          if (kDebugMode) debugPrint('Error decoding profile image: $e');
         }
       }
     }
@@ -103,236 +101,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool('vibration', _vibrationEnabled);
     await prefs.setString('language', _selectedLanguage);
     await prefs.setString('signLanguage', _selectedSignLanguage);
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      setState(() => _isLoadingImage = true);
-      
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
-      );
-
-      if (image != null && mounted) {
-        final bytes = await image.readAsBytes();
-        
-        setState(() {
-          _profileImageBytes = bytes;
-          _isUploadingImage = true;
-        });
-
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        String? photoUrl;
-        
-        try {
-          final result = await CloudinaryService.uploadImage(
-            image,
-            folder: 'gestura/profiles',
-          );
-          if (result != null) {
-            photoUrl = result.secureUrl;
-          }
-        } catch (e) {
-          debugPrint('Error uploading to Cloudinary: $e');
-        }
-
-        if (mounted) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('profileImageBase64', base64Encode(bytes));
-          
-          if (photoUrl != null && authProvider.userId != null) {
-            await _firestoreService.updateUser(
-              authProvider.userId!,
-              {'photoUrl': photoUrl},
-            );
-            await prefs.setString('profileImageUrl', photoUrl);
-            await authProvider.refreshUser();
-          }
-
-          setState(() => _isUploadingImage = false);
-
-          HapticService.success();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(photoUrl != null
-                ? AppLocalizations.of(context).profileSavedCloud
-                : AppLocalizations.of(context).profileSavedLocally),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Error picking image: $e');
-      if (mounted) {
-        setState(() => _isUploadingImage = false);
-        HapticService.error();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingImage = false);
-      }
-    }
-  }
-
-  void _showImagePickerOptions() {
-    HapticService.buttonTap();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.bgCard,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.borderColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              Text(
-                AppLocalizations.of(context).changeProfilePicture,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 24),
-
-              _buildImageOption(
-                icon: Icons.camera_alt,
-                label: AppLocalizations.of(context).takePhoto,
-                color: const Color(0xFF6366F1),
-                onTap: () {
-                  HapticService.buttonTap();
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              const SizedBox(height: 12),
-
-              _buildImageOption(
-                icon: Icons.photo_library,
-                label: AppLocalizations.of(context).chooseFromGallery,
-                color: const Color(0xFF10B981),
-                onTap: () {
-                  HapticService.buttonTap();
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-
-              if (_profileImageBytes != null || (Provider.of<AuthProvider>(context, listen: false).currentUser?.photoUrl != null)) ...[
-                const SizedBox(height: 12),
-                _buildImageOption(
-                  icon: Icons.delete_outline,
-                  label: AppLocalizations.of(context).removePhoto,
-                  color: AppColors.error,
-                  onTap: () async {
-                    HapticService.buttonTap();
-                    Navigator.pop(context);
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.remove('profileImageBase64');
-                    await prefs.remove('profileImageUrl');
-                    
-                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                    if (authProvider.userId != null) {
-                      await _firestoreService.updateUser(
-                        authProvider.userId!,
-                        {'photoUrl': null},
-                      );
-                      await authProvider.refreshUser();
-                    }
-                    
-                    if (mounted) {
-                      setState(() {
-                        _profileImageBytes = null;
-                      });
-                      HapticService.success();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(AppLocalizations.of(context).profilePhotoRemoved),
-                          backgroundColor: AppColors.success,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
-
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImageOption({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return TapScale(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withAlpha(20),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withAlpha(50)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withAlpha(30),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color),
-            ),
-            const SizedBox(width: 16),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-            ),
-            const Spacer(),
-            Icon(Icons.chevron_right, color: color),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<bool?> _showBuyConfirmation(BuildContext context, int cost, int userXp) {
@@ -422,7 +190,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               _buildHeader(),
               _buildProfileCard(),
-              _buildStatsRow(),
               const SizedBox(height: 20),
               _buildStreakCard(),
               _buildGeneralSection(),
@@ -444,28 +211,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: context.bgCard,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: context.borderColor),
+          if (Navigator.canPop(context)) ...[
+            TapScale(
+              onTap: () => Navigator.pop(context),
+              child: Icon(Icons.arrow_back_ios, color: context.textSecondary, size: 20),
             ),
-            child: Icon(
-              Icons.settings,
-              color: context.textPrimary,
-            ),
-          ),
-          const SizedBox(width: 16),
+            const SizedBox(width: 8),
+          ],
           Text(
             AppLocalizations.of(context).settingsTitle,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.04 * 26,
+              color: context.textPrimary,
+            ),
           ),
         ],
       ),
@@ -477,192 +240,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
 
-        return Container(
-          margin: const EdgeInsets.all(20),
-          padding: const EdgeInsets.all(20),
-          decoration: AppDecorations.glowCard(context).copyWith(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              TapScale(
-                onTap: _showImagePickerOptions,
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.primary,
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                    ClipOval(
-                      child: SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: _isLoadingImage
-                            ? Container(
-                                color: context.bgElevated,
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.primary,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
+        return TapScale(
+          onTap: () {
+            HapticService.buttonTap();
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+          },
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: context.bgCard,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: context.borderColor),
+            ),
+            child: Row(
+              children: [
+                // 46px circle avatar
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary, width: 2),
+                  ),
+                  child: ClipOval(
+                    child: _isLoadingImage
+                        ? const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))
+                        : user?.photoUrl != null
+                            ? Image.network(
+                                CloudinaryService.getOptimizedImage(user!.photoUrl!, width: 92, height: 92),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _buildDefaultAvatar(user.initials),
                               )
-                            : user?.photoUrl != null
-                                ? Image.network(
-                                    CloudinaryService.getOptimizedImage(user!.photoUrl!, width: 160, height: 160),
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      if (_profileImageBytes != null) {
-                                        return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
-                                      }
-                                      return Container(
-                                        color: context.bgElevated,
-                                        child: const Center(
-                                          child: CircularProgressIndicator(
-                                            color: AppColors.primary,
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      if (_profileImageBytes != null) {
-                                        return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
-                                      }
-                                      return _buildDefaultAvatar(user.initials);
-                                    },
-                                  )
-                                : _profileImageBytes != null
-                                    ? Image.memory(
-                                        _profileImageBytes!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return _buildDefaultAvatar(user?.initials ?? 'U');
-                                        },
-                                      )
-                                    : _buildDefaultAvatar(user?.initials ?? 'U'),
-                      ),
-                    ),
-                    if (_isUploadingImage)
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(128),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  AppLocalizations.of(context).uploading,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: context.bgCard, width: 2),
-                        ),
-                        child: _isUploadingImage
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                      ),
-                    ),
-                  ],
+                            : _profileImageBytes != null
+                                ? Image.memory(_profileImageBytes!, fit: BoxFit.cover)
+                                : _buildDefaultAvatar(user?.initials ?? 'U'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.fullName ?? 'Learner',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user?.email ?? 'user@gestura.app',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: context.textMuted,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    TapScale(
-                      onTap: () {
-                        HapticService.buttonTap();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context).editProfile,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.fullName ?? 'Learner',
+                        style: GoogleFonts.bricolageGrotesque(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        'Level ${user?.level ?? 1} · ${user?.totalXP ?? 0} XP',
+                        style: TextStyle(fontSize: 10, color: context.textMuted),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Text('›', style: TextStyle(fontSize: 20, color: context.textMuted)),
+              ],
+            ),
           ),
-        ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1);
+        ).animate().fadeIn(delay: 100.ms);
       },
     );
   }
@@ -679,94 +320,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             fontSize: 28,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildStatsRow() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        final user = authProvider.currentUser;
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  emoji: '🔥',
-                  value: '${user?.currentStreak ?? 0}',
-                  label: AppLocalizations.of(context).dayStreakLabel,
-                  color: const Color(0xFFEF4444),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  emoji: '⭐',
-                  value: _formatNumber(user?.totalXP ?? 0),
-                  label: AppLocalizations.of(context).totalXP,
-                  color: const Color(0xFFF59E0B),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  emoji: '🏆',
-                  value: '${user?.totalBadges ?? 0}',
-                  label: AppLocalizations.of(context).badgesLabel,
-                  color: const Color(0xFF6366F1),
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: 200.ms);
-      },
-    );
-  }
-
-  Widget _buildStatCard({
-    required String emoji,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: context.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.borderColor),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 20)),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.textMuted,
-                  fontSize: 11,
-                ),
-          ),
-        ],
       ),
     );
   }
@@ -843,7 +396,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               _buildSettingsTile(
                 icon: Icons.notifications_outlined,
-                iconColor: const Color(0xFF6366F1),
+                iconColor: AppColors.primary,
                 title: AppLocalizations.of(context).notifications,
                 trailing: Switch(
                   value: _notificationsEnabled,
@@ -852,14 +405,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() => _notificationsEnabled = value);
                     _saveSettings();
                   },
-                  activeTrackColor: AppColors.primary.withAlpha(128),
+                  activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
                   activeThumbColor: AppColors.primary,
                 ),
               ),
               _buildDivider(),
               _buildSettingsTile(
                 icon: Icons.tune,
-                iconColor: const Color(0xFFF59E0B),
+                iconColor: AppColors.warning,
                 title: AppLocalizations.of(context).notificationSettings,
                 trailing: Icon(
                   Icons.chevron_right,
@@ -879,7 +432,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildDivider(),
               _buildSettingsTile(
                 icon: Icons.volume_up_outlined,
-                iconColor: const Color(0xFF10B981),
+                iconColor: AppColors.success,
                 title: AppLocalizations.of(context).soundEffects,
                 trailing: Switch(
                   value: _soundEnabled,
@@ -888,14 +441,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() => _soundEnabled = value);
                     _saveSettings();
                   },
-                  activeTrackColor: AppColors.primary.withAlpha(128),
+                  activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
                   activeThumbColor: AppColors.primary,
                 ),
               ),
               _buildDivider(),
               _buildSettingsTile(
                 icon: Icons.vibration,
-                iconColor: const Color(0xFFEF4444),
+                iconColor: AppColors.error,
                 title: AppLocalizations.of(context).vibration,
                 trailing: Switch(
                   value: _vibrationEnabled,
@@ -904,7 +457,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() => _vibrationEnabled = value);
                     _saveSettings();
                   },
-                  activeTrackColor: AppColors.primary.withAlpha(128),
+                  activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
                   activeThumbColor: AppColors.primary,
                 ),
               ),
@@ -932,7 +485,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Consumer<LocaleProvider>(
                 builder: (context, localeProvider, _) => _buildSettingsTile(
                   icon: Icons.language,
-                  iconColor: const Color(0xFF3B82F6),
+                  iconColor: AppColors.info,
                   title: AppLocalizations.of(context).language,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -951,7 +504,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildDivider(),
               _buildSettingsTile(
                 icon: Icons.sign_language,
-                iconColor: const Color(0xFFEC4899),
+                iconColor: AppColors.accent,
                 title: AppLocalizations.of(context).signLanguage,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -990,7 +543,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         await _firestoreService.setAutoUseFreeze(user.id, value);
                         await authProvider.refreshUser();
                       },
-                      activeTrackColor: AppColors.primary.withAlpha(128),
+                      activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
                       activeThumbColor: AppColors.primary,
                     ),
                   );
@@ -999,7 +552,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildDivider(),
               _buildSettingsTile(
                 icon: Icons.dark_mode_outlined,
-                iconColor: const Color(0xFF8B5CF6),
+                iconColor: AppColors.secondary,
                 title: AppLocalizations.of(context).appearance,
                 trailing: Consumer<ThemeProvider>(
                   builder: (context, themeProvider, child) {
@@ -1059,16 +612,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 decoration: BoxDecoration(
                   color: context.bgCard,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF6366F1).withAlpha(100)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.39)),
                 ),
                 child: _buildSettingsTile(
                   icon: Icons.admin_panel_settings,
-                  iconColor: const Color(0xFF6366F1),
+                  iconColor: AppColors.primary,
                   title: AppLocalizations.of(context).adminPanel,
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withAlpha(30),
+                      color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
@@ -1077,7 +630,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Text(
                           'Admin',
                           style: TextStyle(
-                            color: Color(0xFF6366F1),
+                            color: AppColors.primary,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1085,7 +638,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         SizedBox(width: 4),
                         Icon(
                           Icons.chevron_right,
-                          color: Color(0xFF6366F1),
+                          color: AppColors.primary,
                           size: 18,
                         ),
                       ],
@@ -1116,7 +669,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _buildSettingsTile(
                     icon: Icons.share_outlined,
-                    iconColor: const Color(0xFF10B981),
+                    iconColor: AppColors.success,
                     title: AppLocalizations.of(context).shareProgress,
                     trailing: Icon(
                       Icons.chevron_right,
@@ -1134,7 +687,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildDivider(),
                   _buildSettingsTile(
                     icon: Icons.info_outline,
-                    iconColor: const Color(0xFF6366F1),
+                    iconColor: AppColors.primary,
                     title: AppLocalizations.of(context).about,
                     trailing: Icon(
                       Icons.chevron_right,
@@ -1191,23 +744,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return TapScale(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [iconColor.withValues(alpha: 0.22), iconColor.withValues(alpha: 0.10)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: iconColor.withValues(alpha: 0.18)),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
+            Icon(icon, color: iconColor, size: 20),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -1450,10 +990,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  String _formatNumber(int number) {
-    if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(number % 1000 == 0 ? 0 : 1)}k';
-    }
-    return number.toString();
-  }
 }

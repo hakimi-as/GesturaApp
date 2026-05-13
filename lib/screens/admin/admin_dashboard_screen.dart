@@ -63,6 +63,27 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = context.read<AuthProvider>().currentUser?.isAdmin ?? false;
+    if (!isAdmin) {
+      return Scaffold(
+        backgroundColor: context.bgPrimary,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock_outline, size: 64, color: context.textMuted),
+              const SizedBox(height: 16),
+              Text('Access Denied', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Admin access required.', style: TextStyle(color: context.textMuted)),
+              const SizedBox(height: 24),
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Go Back')),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: context.bgPrimary,
       appBar: AppBar(

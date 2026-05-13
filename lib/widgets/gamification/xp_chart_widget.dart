@@ -317,9 +317,7 @@ class _XPProgressChartState extends State<XPProgressChart> {
             }).toList(),
             isCurved: true,
             curveSmoothness: 0.3,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-            ),
+            color: AppColors.primary,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
@@ -328,7 +326,7 @@ class _XPProgressChartState extends State<XPProgressChart> {
                 final isToday = index == _weeklyData.length - 1;
                 return FlDotCirclePainter(
                   radius: isToday ? 6 : 4,
-                  color: isToday ? const Color(0xFF8B5CF6) : const Color(0xFF6366F1),
+                  color: isToday ? AppColors.primary.withAlpha(200) : AppColors.primary,
                   strokeWidth: 2,
                   strokeColor: Colors.white,
                 );
@@ -338,8 +336,8 @@ class _XPProgressChartState extends State<XPProgressChart> {
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF6366F1).withAlpha(50),
-                  const Color(0xFF8B5CF6).withAlpha(10),
+                  AppColors.primary.withAlpha(50),
+                  AppColors.primary.withAlpha(5),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,

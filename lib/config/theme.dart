@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ============ DARK THEME COLORS ============
@@ -6,26 +6,29 @@ class AppColorsDark {
   static const Color primary = Color(0xFF6366F1);
   static const Color primaryLight = Color(0xFF818CF8);
   static const Color primaryDark = Color(0xFF4F46E5);
-  
+
   static const Color secondary = Color(0xFF8B5CF6);
   static const Color accent = Color(0xFFEC4899);
-  
+
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
-  
-  static const Color bgPrimary = Color(0xFF0F0F1A);
-  static const Color bgSecondary = Color(0xFF1A1A2E);
-  static const Color bgCard = Color(0xFF16162A);
-  static const Color bgElevated = Color(0xFF1E1E35);
-  
-  static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFFCBD5E1);
-  static const Color textMuted = Color(0xFF64748B);
-  
-  static const Color border = Color(0xFF2D2D4A);
-  static const Color divider = Color(0xFF2D2D4A);
+
+  // Surfaces — all nudged toward indigo hue for subconscious warmth
+  static const Color bgPrimary   = Color(0xFF0F0F1A);
+  static const Color bgSecondary = Color(0xFF14142A);
+  static const Color bgCard      = Color(0xFF1B1B2F);
+  static const Color bgElevated  = Color(0xFF222238);
+
+  // Text — indigo-tinted so pure cold-gray is never visible
+  static const Color textPrimary   = Color(0xFFEEEEFF);
+  static const Color textSecondary = Color(0xFFC0C0D8);
+  static const Color textMuted     = Color(0xFF6868A8);
+
+  // Structure
+  static const Color border  = Color(0xFF2C2C4E);
+  static const Color divider = Color(0xFF2C2C4E);
 }
 
 // ============ LIGHT THEME COLORS ============
@@ -42,44 +45,44 @@ class AppColorsLight {
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
   
-  static const Color bgPrimary = Color(0xFFF8FAFC);
+  static const Color bgPrimary   = Color(0xFFF7F7FE);
   static const Color bgSecondary = Color(0xFFFFFFFF);
-  static const Color bgCard = Color(0xFFFFFFFF);
-  static const Color bgElevated = Color(0xFFF1F5F9);
-  
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textSecondary = Color(0xFF475569);
-  static const Color textMuted = Color(0xFF94A3B8);
-  
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color divider = Color(0xFFE2E8F0);
+  static const Color bgCard      = Color(0xFFFAFAFF);
+  static const Color bgElevated  = Color(0xFFF0F0FA);
+
+  static const Color textPrimary   = Color(0xFF0F0F28);
+  static const Color textSecondary = Color(0xFF444468);
+  static const Color textMuted     = Color(0xFF8888AA);
+
+  static const Color border  = Color(0xFFDDDDF0);
+  static const Color divider = Color(0xFFDDDDF0);
 }
 
-// ============ DEFAULT COLORS (for backwards compatibility) ============
+// ============ DEFAULT COLORS (dark — mirrors AppColorsDark) ============
 class AppColors {
   static const Color primary = Color(0xFF6366F1);
   static const Color primaryLight = Color(0xFF818CF8);
   static const Color primaryDark = Color(0xFF4F46E5);
-  
+
   static const Color secondary = Color(0xFF8B5CF6);
   static const Color accent = Color(0xFFEC4899);
-  
+
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
-  
-  static const Color bgPrimary = Color(0xFF0F0F1A);
-  static const Color bgSecondary = Color(0xFF1A1A2E);
-  static const Color bgCard = Color(0xFF16162A);
-  static const Color bgElevated = Color(0xFF1E1E35);
-  
-  static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFFCBD5E1);
-  static const Color textMuted = Color(0xFF64748B);
-  
-  static const Color border = Color(0xFF2D2D4A);
-  static const Color divider = Color(0xFF2D2D4A);
+
+  static const Color bgPrimary   = Color(0xFF0F0F1A);
+  static const Color bgSecondary = Color(0xFF14142A);
+  static const Color bgCard      = Color(0xFF1B1B2F);
+  static const Color bgElevated  = Color(0xFF222238);
+
+  static const Color textPrimary   = Color(0xFFEEEEFF);
+  static const Color textSecondary = Color(0xFFC0C0D8);
+  static const Color textMuted     = Color(0xFF6868A8);
+
+  static const Color border  = Color(0xFF2C2C4E);
+  static const Color divider = Color(0xFF2C2C4E);
 
   // Gradients (for backwards compatibility)
   static const LinearGradient primaryGradient = LinearGradient(
@@ -103,20 +106,20 @@ class AppColors {
 
 // ============ THEME DATA ============
 class AppTheme {
-  // Body font: Lexend (accessibility-first humanist sans)
-  // Display font: Familjen Grotesk (warm geometric, for headings)
+  // Body font: Nunito (warm, rounded, highly legible)
+  // Display font: Bricolage Grotesque (expressive variable, for headings)
   static TextTheme _applyFont(TextTheme base) {
-    final body = GoogleFonts.lexendTextTheme(base);
+    final body = GoogleFonts.nunitoTextTheme(base);
     return body.copyWith(
-      headlineLarge: GoogleFonts.familjenGrotesk(textStyle: body.headlineLarge),
-      headlineMedium: GoogleFonts.familjenGrotesk(textStyle: body.headlineMedium),
-      headlineSmall: GoogleFonts.familjenGrotesk(textStyle: body.headlineSmall),
-      titleLarge: GoogleFonts.familjenGrotesk(textStyle: body.titleLarge),
-      titleMedium: GoogleFonts.familjenGrotesk(textStyle: body.titleMedium),
-      titleSmall: GoogleFonts.familjenGrotesk(textStyle: body.titleSmall),
-      labelLarge: GoogleFonts.familjenGrotesk(textStyle: body.labelLarge),
-      labelMedium: GoogleFonts.familjenGrotesk(textStyle: body.labelMedium),
-      labelSmall: GoogleFonts.familjenGrotesk(textStyle: body.labelSmall),
+      headlineLarge: GoogleFonts.bricolageGrotesque(textStyle: body.headlineLarge),
+      headlineMedium: GoogleFonts.bricolageGrotesque(textStyle: body.headlineMedium),
+      headlineSmall: GoogleFonts.bricolageGrotesque(textStyle: body.headlineSmall),
+      titleLarge: GoogleFonts.bricolageGrotesque(textStyle: body.titleLarge),
+      titleMedium: GoogleFonts.bricolageGrotesque(textStyle: body.titleMedium),
+      titleSmall: GoogleFonts.bricolageGrotesque(textStyle: body.titleSmall),
+      labelLarge: GoogleFonts.bricolageGrotesque(textStyle: body.labelLarge),
+      labelMedium: GoogleFonts.bricolageGrotesque(textStyle: body.labelMedium),
+      labelSmall: GoogleFonts.bricolageGrotesque(textStyle: body.labelSmall),
     );
   }
 
@@ -217,16 +220,16 @@ class AppTheme {
       ),
 
       textTheme: _applyFont(const TextTheme(
-        headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary, letterSpacing: -0.5),
-        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary, letterSpacing: -0.5),
-        headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary, letterSpacing: -0.3),
-        titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary, letterSpacing: -0.2),
-        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColorsDark.textPrimary),
-        titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColorsDark.textPrimary),
-        bodyLarge: TextStyle(fontSize: 16, color: AppColorsDark.textSecondary, height: 1.5),
-        bodyMedium: TextStyle(fontSize: 14, color: AppColorsDark.textSecondary, height: 1.5),
-        bodySmall: TextStyle(fontSize: 12, color: AppColorsDark.textMuted, height: 1.4),
-        labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsDark.textSecondary, letterSpacing: 0.1),
+        headlineLarge:  TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary,   letterSpacing: -1.0, height: 1.05),
+        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsDark.textPrimary,   letterSpacing: -0.7, height: 1.1),
+        headlineSmall:  TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.4, height: 1.15),
+        titleLarge:     TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.3, height: 1.2),
+        titleMedium:    TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColorsDark.textPrimary,   letterSpacing: -0.2, height: 1.25),
+        titleSmall:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsDark.textPrimary,   letterSpacing: -0.1, height: 1.3),
+        bodyLarge:      TextStyle(fontSize: 16, color: AppColorsDark.textSecondary, height: 1.65),
+        bodyMedium:     TextStyle(fontSize: 14, color: AppColorsDark.textSecondary, height: 1.6),
+        bodySmall:      TextStyle(fontSize: 12, color: AppColorsDark.textMuted,     height: 1.55),
+        labelLarge:     TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColorsDark.textSecondary, letterSpacing: 0.1),
       )),
     );
   }
@@ -256,7 +259,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: AppColorsLight.bgCard,
         elevation: 2,
-        shadowColor: Colors.black.withAlpha(20),
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -328,16 +331,16 @@ class AppTheme {
       ),
 
       textTheme: _applyFont(const TextTheme(
-        headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary, letterSpacing: -0.5),
-        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary, letterSpacing: -0.5),
-        headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary, letterSpacing: -0.3),
-        titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary, letterSpacing: -0.2),
-        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColorsLight.textPrimary),
-        titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColorsLight.textPrimary),
-        bodyLarge: TextStyle(fontSize: 16, color: AppColorsLight.textSecondary, height: 1.5),
-        bodyMedium: TextStyle(fontSize: 14, color: AppColorsLight.textSecondary, height: 1.5),
-        bodySmall: TextStyle(fontSize: 12, color: AppColorsLight.textMuted, height: 1.4),
-        labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsLight.textSecondary, letterSpacing: 0.1),
+        headlineLarge:  TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary,   letterSpacing: -1.0, height: 1.05),
+        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColorsLight.textPrimary,   letterSpacing: -0.7, height: 1.1),
+        headlineSmall:  TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.4, height: 1.15),
+        titleLarge:     TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.3, height: 1.2),
+        titleMedium:    TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColorsLight.textPrimary,   letterSpacing: -0.2, height: 1.25),
+        titleSmall:     TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColorsLight.textPrimary,   letterSpacing: -0.1, height: 1.3),
+        bodyLarge:      TextStyle(fontSize: 16, color: AppColorsLight.textSecondary, height: 1.65),
+        bodyMedium:     TextStyle(fontSize: 14, color: AppColorsLight.textSecondary, height: 1.6),
+        bodySmall:      TextStyle(fontSize: 12, color: AppColorsLight.textMuted,     height: 1.55),
+        labelLarge:     TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColorsLight.textSecondary, letterSpacing: 0.1),
       )),
     );
   }

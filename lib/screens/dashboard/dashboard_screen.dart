@@ -1,17 +1,19 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/theme.dart';
 import '../../config/design_system.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../providers/challenge_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../services/haptic_service.dart';
@@ -24,7 +26,6 @@ import '../translate/translate_screen.dart';
 import '../learn/learn_screen.dart';
 import '../progress/progress_screen.dart';
 import '../profile/profile_screen.dart';
-import '../progress/enhanced_progress_screen.dart';
 import '../search/search_screen.dart';
 import '../leaderboard/leaderboard_screen.dart';
 import '../challenges/challenges_screen.dart';
@@ -76,7 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error loading profile image: $e');
+      if (kDebugMode) debugPrint('Error loading profile image: $e');
     }
   }
 
@@ -88,7 +89,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         Provider.of<ProgressProvider>(context, listen: false)
             .loadUserProgress(authProvider.userId!);
-        
+        Provider.of<NotificationProvider>(context, listen: false)
+            .loadNotifications(authProvider.userId!);
+
         final user = authProvider.currentUser;
         if (user != null) {
           Provider.of<ChallengeProvider>(context, listen: false)
@@ -110,17 +113,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       isScrollControlled: true,
       builder: (context) => const StreakFreezeModal(),
     );
-  }
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Good Morning,';
-    } else if (hour < 17) {
-      return 'Good Afternoon,';
-    } else {
-      return 'Good Evening,';
-    }
   }
 
   @override
@@ -150,44 +142,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ? ShimmerWidgets.dashboardLoading()
               : SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildHeader(context),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                        child: _buildHeader(context),
+                      ),
                       const SizedBox(height: 20),
-                      _buildWelcomeCard(context),
-                      const SizedBox(height: 24),
-    
-                      // Learning Path Card
-                       Consumer<AuthProvider>(
-                        builder: (context, authProvider, child) {
-                          return CurrentPathProgressCard(
-                            userId: authProvider.currentUser?.id ?? '',
-                            onTap: () {
-                              HapticService.buttonTap();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const LearningPathsScreen(),
-                                ),
-                              );
-                            },
-                           );
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildHeroSection(context),
+                      ),
+                      const SizedBox(height: 14),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildStatTiles(context),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildQuickActionsSection(context),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Consumer<AuthProvider>(
+                          builder: (context, authProvider, child) {
+                            return CurrentPathProgressCard(
+                              userId: authProvider.currentUser?.id ?? '',
+                              onTap: () {
+                                HapticService.buttonTap();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LearningPathsScreen(),
+                                  ),
+                                );
+                              },
+                            );
                           },
                         ),
-                        const SizedBox(height: 24),
-    
-                        _buildQuickActionsSection(context),
-                        const SizedBox(height: 24),
-                        _buildCompetitionSection(context),
-                        const SizedBox(height: 24),
-                        _buildRecentActivitySection(context),
-                        const SizedBox(height: 24),
-                        _buildDailyGoalsSection(context),
-                        const SizedBox(height: 20),
-                      ],
-                     ),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildDailyGoalsSection(context),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildCompetitionSection(context),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildRecentActivitySection(context),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
                 ),
         ),
       ),
@@ -222,8 +233,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   compact: true,
                   onTap: () => _showFreezeInfo(),
                 ),
-                const SizedBox(width: 10),
-                
+                const SizedBox(width: 8),
+
                 TapScale(
                   onTap: () {
                     HapticService.buttonTap();
@@ -246,7 +257,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 TapScale(
                   onTap: () {
                     HapticService.buttonTap();
@@ -270,25 +281,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             size: 24,
                           ),
                         ),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('notifications')
-                              .where('userId', isEqualTo: Provider.of<AuthProvider>(context, listen: false).userId)
-                              .where('isRead', isEqualTo: false)
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            final unreadCount = snapshot.data?.docs.length ?? 0;
+                        Consumer<NotificationProvider>(
+                          builder: (context, notifProvider, _) {
+                            final unreadCount = notifProvider.unreadCount;
                             if (unreadCount == 0) return const SizedBox();
-                            
                             return Positioned(
                               right: 8,
                               top: 8,
                               child: Container(
                                 padding: const EdgeInsets.all(4),
-                                constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
-                                ),
+                                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                                 decoration: const BoxDecoration(
                                   color: AppColors.error,
                                   shape: BoxShape.circle,
@@ -310,7 +312,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 TapScale(
                   onTap: () async {
                     HapticService.buttonTap();
@@ -324,12 +326,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      gradient: (_profileImageBytes == null && user?.photoUrl == null)
-                          ? const LinearGradient(
-                              colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
+                      color: (_profileImageBytes == null && user?.photoUrl == null)
+                          ? AppColors.primary.withValues(alpha: 0.08)
                           : null,
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -347,16 +345,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   return Image.memory(_profileImageBytes!, fit: BoxFit.cover);
                                 }
                                 return Container(
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
-                                    ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.08),
                                   ),
                                   child: Center(
                                     child: Text(
                                       user.initials,
                                       style: const TextStyle(
-                                        color: Colors.white,
+                                        color: AppColors.primary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -373,8 +369,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     return Center(
                                       child: Text(
                                         user?.initials ?? 'U',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: AppColors.primary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                         ),
@@ -385,8 +381,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               : Center(
                                   child: Text(
                                     user?.initials ?? 'U',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
@@ -403,129 +399,187 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWelcomeCard(BuildContext context) {
+  Widget _buildHeroSection(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final user = authProvider.currentUser;
+        final level = user?.level ?? 1;
+        final progress = user?.levelProgress ?? 0.0;
+        final xpToNext = user?.xpToNextLevel ?? 100;
+        final xpForNext = user?.xpForNextLevel ?? 100;
+        final xpEarned = xpForNext - xpToNext;
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        final nameParts = (user?.fullName ?? '').trim().split(' ');
+        final firstName = nameParts.isNotEmpty && nameParts.first.isNotEmpty
+            ? nameParts.first
+            : 'there';
+
+        final hour = DateTime.now().hour;
+        final greeting = hour < 12
+            ? 'Good morning'
+            : (hour < 17 ? 'Good afternoon' : 'Good evening');
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              greeting.toUpperCase(),
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.4,
+                color: context.textMuted,
+              ),
             ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Stack(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getGreeting(),
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(200),
-                      fontSize: 14,
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Level hero block
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lv',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: AppColors.primary.withValues(alpha: 0.71),
+                        height: 1,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Row(
+                    Text(
+                      '$level',
+                      style: GoogleFonts.bricolageGrotesque(
+                        fontSize: 76,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -3.0,
+                        color: AppColors.primary,
+                        height: 0.85,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 16),
+                // Name + XP block
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome back! ',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                        firstName,
+                        style: GoogleFonts.bricolageGrotesque(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: context.textPrimary,
+                          height: 1.1,
                         ),
                       ),
-                      Text('👋', style: TextStyle(fontSize: 24)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(
+                            '${_formatNumber(xpEarned)}',
+                            style: TextStyle(
+                              color: context.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            ' / ${_formatNumber(xpForNext)} XP',
+                            style: TextStyle(
+                              color: context.textMuted,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 5,
+                          backgroundColor: context.bgElevated,
+                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_formatNumber(xpToNext)} XP to Level ${level + 1}',
+                        style: TextStyle(fontSize: 9, color: context.textMuted),
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      _buildWelcomeStatChip(
-                        '🔥',
-                        '${user?.currentStreak ?? 0}',
-                        'Day Streak',
-                      ),
-                      const SizedBox(width: 12),
-                      _buildWelcomeStatChip(
-                        '⭐',
-                        _formatNumber(user?.totalXP ?? 0),
-                        'Total XP',
-                      ),
-                      const SizedBox(width: 12),
-                      _buildWelcomeStatChip(
-                        '🤟',
-                        '${user?.signsLearned ?? 0}',
-                        'Signs',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const Positioned(
-                right: -20,
-                top: -20,
-                child: Opacity(
-                  opacity: 0.15,
-                  child: Text(
-                    '🤟',
-                    style: TextStyle(fontSize: 100),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1);
+              ],
+            ),
+          ],
+        ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.08);
       },
     );
   }
 
-  Widget _buildWelcomeStatChip(String emoji, String value, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(38),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildStatTiles(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final user = authProvider.currentUser;
+        final streak = user?.currentStreak ?? 0;
+        final lessons = user?.lessonsCompleted ?? 0;
+        final badges = user?.totalBadges ?? 0;
+        return Row(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 18)),
+            Expanded(child: _buildStatCard(context, emoji: '🔥', value: '$streak', label: 'Streak')),
             const SizedBox(width: 8),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(180),
-                      fontSize: 10,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
+            Expanded(child: _buildStatCard(context, emoji: '📚', value: '$lessons', label: 'Lessons')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildStatCard(context, emoji: '🏅', value: '$badges', label: 'Badges')),
           ],
-        ),
+        ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1);
+      },
+    );
+  }
+
+  Widget _buildStatCard(BuildContext context, {
+    required String emoji,
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+      decoration: BoxDecoration(
+        color: context.bgCard,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 13)),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: GoogleFonts.bricolageGrotesque(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.6,
+              color: context.textPrimary,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 8,
+              color: context.textMuted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -541,145 +595,153 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'Quick Actions', emoji: '⚡'),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildQuickActionCard(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              Container(
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Continue',
+                style: GoogleFonts.bricolageGrotesque(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.26,
+                  color: context.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () {
+                  HapticService.buttonTap();
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen(showBackButton: true)));
+                },
+                child: Text('See all', style: TextStyle(fontSize: 10, color: AppColors.primary)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _buildHCard(
                 context,
+                tag: 'Translate',
+                color: AppColors.info,
                 icon: Icons.translate,
-                iconBgColor: const Color(0xFF3B82F6),
-                title: 'Translate',
-                subtitle: 'Real-time sign translation',
+                title: 'Sign to Text',
+                subtitle: 'Real-time translation',
+                featured: true,
                 onTap: () {
                   HapticService.buttonTap();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const TranslateScreen(showBackButton: true),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TranslateScreen(showBackButton: true)));
                 },
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildQuickActionCard(
+              const SizedBox(width: 8),
+              _buildHCard(
                 context,
+                tag: 'Learn',
+                color: AppColors.secondary,
                 icon: Icons.menu_book,
-                iconBgColor: const Color(0xFF8B5CF6),
-                title: 'Learn',
-                subtitle: 'Interactive lessons',
+                title: 'Continue Lesson',
+                subtitle: 'Pick up where you left off',
+                featured: false,
                 onTap: () {
                   HapticService.buttonTap();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LearnScreen(showBackButton: true),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen(showBackButton: true)));
                 },
               ),
-            ),
-          ],
-        ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildQuickActionCard(
+              const SizedBox(width: 8),
+              _buildHCard(
                 context,
+                tag: 'Quiz',
+                color: AppColors.error,
                 icon: Icons.quiz,
-                iconBgColor: const Color(0xFFF43F5E),
-                title: 'Quiz',
-                subtitle: 'Test your knowledge',
+                title: 'Test Knowledge',
+                subtitle: 'Quiz yourself now',
+                featured: false,
                 onTap: () {
                   HapticService.buttonTap();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LearnScreen(
-                        showBackButton: true,
-                        initialTabIndex: 1,
-                      ),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen(showBackButton: true, initialTabIndex: 1)));
                 },
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildQuickActionCard(
+              const SizedBox(width: 8),
+              _buildHCard(
                 context,
+                tag: 'Progress',
+                color: AppColors.warning,
                 icon: Icons.bar_chart,
-                iconBgColor: const Color(0xFFF59E0B),
-                title: 'Progress',
-                subtitle: 'Track your stats',
+                title: 'Your Stats',
+                subtitle: 'View detailed progress',
+                featured: false,
                 onTap: () {
                   HapticService.buttonTap();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const EnhancedProgressScreen()),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ProgressScreen()));
                 },
               ),
-            ),
-          ],
-        ).animate().fadeIn(delay: 300.ms).slideX(begin: 0.1),
+            ],
+          ),
+        ).animate().fadeIn(delay: 200.ms),
       ],
     );
   }
 
-  Widget _buildQuickActionCard(
+  Widget _buildHCard(
     BuildContext context, {
+    required String tag,
+    required Color color,
     required IconData icon,
-    required Color iconBgColor,
     required String title,
     required String subtitle,
+    required bool featured,
     required VoidCallback onTap,
   }) {
     return TapScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: AppDecorations.card(context).copyWith(
-          borderRadius: BorderRadius.circular(20),
+        width: 170,
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: featured ? const Color(0xFF1E1B4B) : context.bgCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: featured ? AppColors.primary : context.borderColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    iconBgColor.withValues(alpha: 0.25),
-                    iconBgColor.withValues(alpha: 0.12),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: iconBgColor.withValues(alpha: 0.20)),
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(icon, color: iconBgColor, size: 22),
+              child: Text(
+                tag,
+                style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: color),
+              ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 7),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 5),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.24,
+                color: context.textPrimary,
+                height: 1.2,
+              ),
             ),
             const SizedBox(height: 3),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textMuted,
-                  ),
-            ),
+            Text(subtitle, style: TextStyle(fontSize: 9, color: context.textMuted)),
           ],
         ),
       ),
@@ -707,34 +769,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+                  decoration: AppDecorations.card(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('🏆', style: TextStyle(fontSize: 28)),
-                      const SizedBox(height: 12),
-                      const Text(
+                      const Text('🏆', style: TextStyle(fontSize: 26)),
+                      const SizedBox(height: 10),
+                      Text(
                         'Leaderboard',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Compete globally',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(180),
-                          fontSize: 12,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textMuted),
                       ),
                     ],
                   ),
@@ -754,22 +802,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFEC4899), Color(0xFF8B5CF6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+                  decoration: AppDecorations.card(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Text('👥', style: TextStyle(fontSize: 28)),
+                          const Text('👥', style: TextStyle(fontSize: 26)),
                           const Spacer(),
-                          // Pending requests badge
                           FutureBuilder<int>(
                             future: FriendService.getPendingRequestCount(
                               Provider.of<AuthProvider>(context, listen: false).userId ?? '',
@@ -780,13 +820,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(50),
+                                  color: AppColors.accent.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   '$count NEW',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: AppColors.accent,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -797,21 +837,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'Friends',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Connect & compare',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(180),
-                          fontSize: 12,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.textMuted),
                       ),
                     ],
                   ),
@@ -833,34 +866,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+            decoration: AppDecorations.card(context).copyWith(
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
-                const Text('🎯', style: TextStyle(fontSize: 28)),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
+                  ),
+                  child: const Text('🎯', style: TextStyle(fontSize: 22)),
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Daily Challenges',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       Text(
                         'Complete challenges for bonus XP',
                         style: TextStyle(
-                          color: Colors.white.withAlpha(180),
+                          color: context.textMuted,
                           fontSize: 12,
                         ),
                       ),
@@ -875,13 +909,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(50),
+                        color: AppColors.accent.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.accent.withValues(alpha: 0.24)),
                       ),
                       child: Text(
                         '$activeChallenges Active',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.accent,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -946,10 +981,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   context,
                   icon: isQuiz ? '🎯' : (item.isCompleted ? '✅' : '📚'),
                   iconBgColor: isQuiz
-                      ? const Color(0xFFEC4899)
+                      ? AppColors.accent
                       : (item.isCompleted
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFF6366F1)),
+                          ? AppColors.success
+                          : AppColors.primary),
                   title: isQuiz
                       ? 'Completed "$title"'
                       : (item.isCompleted
@@ -957,7 +992,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           : 'Started "$title" Lesson'),
                   subtitle: _formatTimeAgo(item.lastAccessedAt),
                   xpText: '+$xpEarned XP',
-                  xpColor: const Color(0xFF10B981),
+                  xpColor: AppColors.success,
                 );
               }).toList(),
             );
@@ -1011,18 +1046,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: iconBgColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 20)),
-            ),
+          SizedBox(
+            width: 28,
+            child: Text(icon, style: const TextStyle(fontSize: 20), textAlign: TextAlign.center),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1048,7 +1076,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: xpColor.withAlpha(26),
+              color: xpColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -1066,212 +1094,154 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDailyGoalsSection(BuildContext context) {
-    return Consumer2<AuthProvider, ChallengeProvider>(
-      builder: (context, authProvider, challengeProvider, child) {
+    return Consumer<ChallengeProvider>(
+      builder: (context, challengeProvider, child) {
         final dailyChallenges = challengeProvider.dailyChallenges;
-        final totalChallenges = dailyChallenges.length;
-        final completedChallenges = dailyChallenges.where((c) => c.isCompleted).length;
-        final percentage = totalChallenges > 0 
-            ? (completedChallenges / totalChallenges).clamp(0.0, 1.0) 
-            : 0.0;
-
-        if (challengeProvider.isLoading) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SectionHeader(title: 'Daily Challenges', emoji: '🎯'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: AppDecorations.card(context).copyWith(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: ShimmerWidgets.challengesLoading(),
-              ),
-            ],
-          );
-        }
+        final total = dailyChallenges.length;
+        final completed = dailyChallenges.where((c) => c.isCompleted).length;
+        final pct = total > 0 ? (completed / total * 100).round() : 0;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SectionHeader(
-              title: 'Daily Challenges',
-              emoji: '🎯',
-              trailing: TextButton(
-                onPressed: () {
-                  HapticService.buttonTap();
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengesScreen()));
-                },
-                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
-                child: Text('View All', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: AppDecorations.card(context).copyWith(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Today's Progress",
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: context.textSecondary,
-                            ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: completedChallenges == totalChallenges && totalChallenges > 0
-                              ? context.success.withAlpha(26)
-                              : AppColors.primary.withAlpha(26),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '$completedChallenges/$totalChallenges completed',
-                          style: TextStyle(
-                            color: completedChallenges == totalChallenges && totalChallenges > 0
-                                ? context.success
-                                : AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+            // Section header row with dot + title + pct
+            Row(
+              children: [
+                Container(
+                  width: 5, height: 5,
+                  decoration: const BoxDecoration(color: AppColors.warning, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  "Today's Goals",
+                  style: GoogleFonts.bricolageGrotesque(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.26,
+                    color: context.textPrimary,
                   ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: percentage,
-                      minHeight: 8,
-                      backgroundColor: context.bgElevated,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        completedChallenges == totalChallenges && totalChallenges > 0
-                            ? context.success
-                            : AppColors.primary,
-                      ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    HapticService.buttonTap();
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ChallengesScreen()));
+                  },
+                  child: Text(
+                    '$pct%',
+                    style: GoogleFonts.bricolageGrotesque(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 18),
-                  if (dailyChallenges.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Text(
-                        'No daily challenges available',
-                        style: TextStyle(color: context.textMuted),
-                      ),
-                    )
-                  else
-                    ...dailyChallenges.map((challenge) {
-                      return _buildChallengeItem(
-                        context,
-                        challenge: challenge,
-                      );
-                    }),
-                ],
-              ),
+                ),
+              ],
             ),
+            const SizedBox(height: 12),
+            if (challengeProvider.isLoading)
+              Container(
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: context.bgCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: ShimmerWidgets.challengesLoading(),
+              )
+            else if (dailyChallenges.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: context.bgCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
+                  children: [
+                    const Text('🎯', style: TextStyle(fontSize: 28)),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your daily goals are loading',
+                      style: TextStyle(color: context.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Pull down to refresh',
+                      style: TextStyle(color: context.textMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.fromLTRB(13, 12, 13, 13),
+                decoration: BoxDecoration(
+                  color: context.bgCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: total > 0 ? completed / total : 0,
+                        minHeight: 3,
+                        backgroundColor: context.bgElevated,
+                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.warning),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    ...dailyChallenges.take(5).map((c) => _buildGoalRow(context, challenge: c)),
+                  ],
+                ),
+              ),
           ],
-        ).animate().fadeIn(delay: 500.ms);
+        ).animate().fadeIn(delay: 300.ms);
       },
     );
   }
 
-  Widget _buildChallengeItem(
-    BuildContext context, {
-    required ChallengeModel challenge,
-  }) {
+  Widget _buildGoalRow(BuildContext context, {required ChallengeModel challenge}) {
     final isCompleted = challenge.isCompleted;
-    
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(top: 7),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 13,
+            height: 13,
             decoration: BoxDecoration(
-              color: isCompleted 
-                  ? context.success.withAlpha(30) 
-                  : challenge.typeColor.withAlpha(30),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                challenge.emoji,
-                style: const TextStyle(fontSize: 18),
+              shape: BoxShape.circle,
+              color: isCompleted ? AppColors.success : Colors.transparent,
+              border: Border.all(
+                color: isCompleted ? AppColors.success : context.textMuted,
+                width: 1.5,
               ),
             ),
+            child: isCompleted
+                ? const Center(child: Icon(Icons.check, color: Colors.white, size: 7))
+                : null,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 7),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  challenge.title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isCompleted ? context.textMuted : context.textPrimary,
-                        decoration: isCompleted ? TextDecoration.lineThrough : null,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      '${challenge.currentValue}/${challenge.targetValue}',
-                      style: TextStyle(
-                        color: context.textMuted,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: challenge.progress,
-                          minHeight: 4,
-                          backgroundColor: context.bgElevated,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            isCompleted ? context.success : challenge.typeColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            child: Text(
+              challenge.title,
+              style: TextStyle(
+                fontSize: 10,
+                color: isCompleted ? context.textMuted : context.textPrimary,
+                decoration: isCompleted ? TextDecoration.lineThrough : null,
+                height: 1.3,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: isCompleted 
-                  ? context.success.withAlpha(26) 
-                  : AppColors.primary.withAlpha(26),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '+${challenge.xpReward} XP',
-              style: TextStyle(
-                color: isCompleted ? context.success : AppColors.primary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          const SizedBox(width: 6),
+          Text(
+            '+${challenge.xpReward} XP',
+            style: TextStyle(fontSize: 9, color: context.textMuted),
           ),
         ],
       ),

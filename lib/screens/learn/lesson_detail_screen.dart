@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/design_system.dart';
 import '../../config/theme.dart';
@@ -74,6 +75,28 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         .any((p) => p.lessonId == widget.lesson.id && p.isCompleted);
   }
 
+  Future<void> _confirmAndComplete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as Complete?'),
+        content: const Text('This will record your progress and award XP. You cannot undo this.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not yet'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Mark Complete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) _completeLesson();
+  }
+
   Future<void> _completeLesson() async {
     if (_isCompleting || _isCompleted) return;
 
@@ -116,7 +139,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           userId: authProvider.userId!,
           user: authProvider.currentUser!,
           lessonsCompleted: 1,
+          signsLearned: 1,
           xpEarned: widget.lesson.xpReward,
+          categoryId: widget.lesson.categoryId,
         );
       }
 
@@ -147,8 +172,8 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       setState(() => _isCompleting = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
+          const SnackBar(
+            content: Text('Could not save progress. Please check your connection and try again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -175,8 +200,11 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             const SizedBox(height: 16),
             Text(
               'Lesson Complete!',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.88,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -348,11 +376,20 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       backgroundColor: context.bgPrimary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
+          icon: Icon(Icons.arrow_back_ios, color: context.textSecondary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(displayName),
+        title: Text(
+          displayName,
+          style: GoogleFonts.bricolageGrotesque(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.7,
+            color: context.textPrimary,
+          ),
+        ),
         actions: [
           // --- Phase 2: AppBar Download Button ---
           Padding(
@@ -491,14 +528,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            context.bgCard,
-            context.bgElevated,
-          ],
-        ),
+        color: context.bgCard,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: context.borderColor),
       ),
@@ -698,7 +728,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: _isCompleted ? null : _completeLesson,
+            onPressed: _isCompleted ? null : _confirmAndComplete,
             style: ElevatedButton.styleFrom(
               backgroundColor: _isCompleted ? AppColors.success : AppColors.primary,
               disabledBackgroundColor: AppColors.success,

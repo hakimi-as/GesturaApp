@@ -186,11 +186,7 @@ class _ActivityFeedWidgetState extends State<ActivityFeedWidget> {
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: activity.userPhotoUrl == null
-                    ? const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                      )
-                    : null,
+                color: activity.userPhotoUrl == null ? AppColors.primary.withAlpha(40) : null,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),

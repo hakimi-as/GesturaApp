@@ -155,13 +155,7 @@ class _NotificationSettingsScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isEnabled
-              ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
-              : [context.bgCard, context.bgCard],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isEnabled ? AppColors.primary : context.bgCard,
         borderRadius: BorderRadius.circular(20),
         border: isEnabled ? null : Border.all(color: context.borderColor),
       ),
@@ -172,7 +166,7 @@ class _NotificationSettingsScreenState
             height: 56,
             decoration: BoxDecoration(
               color: isEnabled
-                  ? Colors.white.withAlpha(50)
+                  ? Colors.white.withAlpha(30)
                   : context.bgElevated,
               borderRadius: BorderRadius.circular(16),
             ),

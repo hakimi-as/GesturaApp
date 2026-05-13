@@ -235,27 +235,26 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              gradient: _completedCount > 0
-                  ? LinearGradient(
-                      colors: isCompleted
-                          ? [const Color(0xFFF59E0B), const Color(0xFFFBBF24)]
-                          : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    )
-                  : null,
-              color: _completedCount == 0 ? context.bgCard : null,
+              color: _completedCount > 0
+                  ? (isCompleted
+                      ? AppColors.success.withAlpha(20)
+                      : AppColors.primary.withAlpha(15))
+                  : context.bgCard,
               borderRadius: BorderRadius.circular(14),
-              border: _completedCount == 0 
-                  ? Border.all(color: context.borderColor) 
-                  : null,
+              border: Border.all(
+                color: _completedCount > 0
+                    ? (isCompleted ? AppColors.success.withAlpha(80) : AppColors.primary.withAlpha(80))
+                    : context.borderColor,
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   isCompleted ? Icons.workspace_premium : Icons.card_membership,
-                  color: _completedCount > 0 ? Colors.white : context.textMuted,
+                  color: _completedCount > 0
+                      ? (isCompleted ? AppColors.success : AppColors.primary)
+                      : context.textMuted,
                   size: 22,
                 ),
                 const SizedBox(width: 10),
@@ -267,7 +266,9 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                             ? 'Get Completion Certificate 🎓'
                             : 'Share Progress Certificate ($percentage%)',
                     style: TextStyle(
-                      color: _completedCount > 0 ? Colors.white : context.textMuted,
+                      color: _completedCount > 0
+                          ? (isCompleted ? AppColors.success : AppColors.primary)
+                          : context.textMuted,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -278,7 +279,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                   const SizedBox(width: 8),
                   Icon(
                     Icons.share,
-                    color: Colors.white.withAlpha(200),
+                    color: isCompleted ? AppColors.success : AppColors.primary,
                     size: 18,
                   ),
                 ],
@@ -293,44 +294,24 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
   Widget _buildHeader(BuildContext context, int completedCount, int totalLessons, double progress) {
     final isAllCompleted = completedCount == totalLessons && totalLessons > 0;
 
+    final accentColor = isAllCompleted ? AppColors.success : AppColors.primary;
+
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: isAllCompleted
-            ? const LinearGradient(
-                colors: [Color(0xFF10B981), Color(0xFF34D399)],
-              )
-            : AppColors.primaryGradient,
+      decoration: AppDecorations.card(context).copyWith(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: (isAllCompleted ? AppColors.success : AppColors.primary).withAlpha(77),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(51),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: isAllCompleted
-                      ? const Icon(Icons.check_circle, color: Colors.white, size: 32)
-                      : Text(
-                          widget.category.icon,
-                          style: const TextStyle(fontSize: 32),
-                        ),
-                ),
-              ),
+              isAllCompleted
+                  ? const Icon(Icons.check_circle, color: AppColors.success, size: 36)
+                  : Text(
+                      widget.category.icon,
+                      style: const TextStyle(fontSize: 36),
+                    ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -338,28 +319,23 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                   children: [
                     Text(
                       widget.category.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       isAllCompleted
                           ? '🎉 All lessons completed!'
                           : widget.category.description,
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(204),
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(fontSize: 13, color: context.textMuted),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Column(
             children: [
               Row(
@@ -367,16 +343,14 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                 children: [
                   Text(
                     '$completedCount of $totalLessons completed',
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(204),
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(fontSize: 12, color: context.textMuted),
                   ),
                   Text(
                     '${(progress * 100).toInt()}%',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: accentColor,
                       fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -386,9 +360,9 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: progress,
-                  backgroundColor: Colors.white.withAlpha(51),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                  minHeight: 8,
+                  backgroundColor: context.borderColor,
+                  valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                  minHeight: 7,
                 ),
               ),
             ],

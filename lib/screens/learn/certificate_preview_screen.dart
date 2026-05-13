@@ -137,9 +137,7 @@ class CertificatePreviewScreen extends StatelessWidget {
               child: Container(
                 height: 52,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, AppColors.secondary],
-                  ),
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 alignment: Alignment.center,
