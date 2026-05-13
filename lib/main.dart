@@ -55,6 +55,9 @@ void main() async {
   await ConnectivityProvider.init();
   // ------------------------------------------
 
+  // Configure sign recognition API (Disabled to use local MSL data via DtwService)
+  // RemoteSignService.serverUrl = 'https://gesturaapp-production.up.railway.app';
+  // RemoteSignService.apiKey    = '';
   // Configure sign recognition API — keys injected at build time via --dart-define
   RemoteSignService.serverUrl = const String.fromEnvironment(
     'SIGN_SERVER_URL',

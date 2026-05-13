@@ -40,27 +40,42 @@ class DtwService {
 
     try {
       final firestore = FirebaseFirestore.instance;
-      final snapshot = await firestore.collection('sign_animations').get();
-      final total = snapshot.docs.length;
+      
+      Query query = firestore.collection('sign_animations').limit(15);
+      DocumentSnapshot? lastDoc;
+      bool hasMore = true;
       int loaded = 0;
 
-      for (final doc in snapshot.docs) {
-        try {
-          final data = doc.data()['data'];
-          if (data == null) continue;
-
-          final frames = _extractFrames(data);
-          if (frames.isEmpty) continue;
-
-          final normalized = _normalizeSequence(frames);
-          if (normalized.isEmpty) continue;
-
-          _library[doc.id] = normalized;
-          loaded++;
-          onProgress?.call(loaded, total);
-        } catch (e) {
-          debugPrint('DTW: skipping ${doc.id}: $e');
+      while (hasMore) {
+        if (lastDoc != null) {
+          query = firestore.collection('sign_animations').startAfterDocument(lastDoc!).limit(15);
         }
+        
+        final snapshot = await query.get();
+        if (snapshot.docs.isEmpty) {
+          hasMore = false;
+          break;
+        }
+
+        for (final doc in snapshot.docs) {
+          try {
+            final data = doc.data() as Map<String, dynamic>?;
+            if (data == null || data['data'] == null) continue;
+
+            final frames = _extractFrames(data['data']);
+            if (frames.isEmpty) continue;
+
+            final normalized = _normalizeSequence(frames);
+            if (normalized.isEmpty) continue;
+
+            _library[doc.id] = normalized;
+            loaded++;
+            onProgress?.call(loaded, 999); // total is unknown during pagination
+          } catch (e) {
+            debugPrint('DTW: skipping ${doc.id}: $e');
+          }
+        }
+        lastDoc = snapshot.docs.last;
       }
 
       _isLoaded = true;
@@ -190,10 +205,20 @@ class DtwService {
   // ── Internal helpers ────────────────────────────────────────────────────
 
   List<Map<String, dynamic>> _extractFrames(dynamic data) {
-    if (data is Map && data['frames'] is List) {
+    if (data is List) {
       return List<Map<String, dynamic>>.from(
-        (data['frames'] as List).map((f) => Map<String, dynamic>.from(f as Map)),
+        data.map((f) => Map<String, dynamic>.from(f as Map)),
       );
+    } else if (data is Map) {
+      if (data['frames'] is List) {
+        return List<Map<String, dynamic>>.from(
+          (data['frames'] as List).map((f) => Map<String, dynamic>.from(f as Map)),
+        );
+      } else if (data['data'] is List) {
+        return List<Map<String, dynamic>>.from(
+          (data['data'] as List).map((f) => Map<String, dynamic>.from(f as Map)),
+        );
+      }
     }
     return [];
   }
