@@ -924,8 +924,10 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
       }
     }
 
-    for (final stepId in stepsToComplete) {
-      await LearningPathService.completeStep(userId, widget.path.id, stepId);
+    if (stepsToComplete.isNotEmpty) {
+      await Future.wait(
+        stepsToComplete.map((stepId) => LearningPathService.completeStep(userId, widget.path.id, stepId)),
+      );
     }
 
     if (stepsToComplete.isNotEmpty) {
@@ -1051,9 +1053,24 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
   Future<void> _refreshProgress() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userId = authProvider.currentUser?.id ?? '';
-    
-    await _syncWithLessonProgress();
-    
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      await _syncWithLessonProgress().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => debugPrint('⚠️ Learning path sync timed out'),
+      );
+    } finally {
+      if (mounted) Navigator.pop(context);
+    }
+
     final updatedProgress = await LearningPathService.getUserPathProgress(userId, widget.path.id);
     if (mounted) {
       setState(() => _progress = updatedProgress);
