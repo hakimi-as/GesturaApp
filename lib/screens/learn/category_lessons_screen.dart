@@ -35,6 +35,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
   List<LessonModel> _lessons = [];
   Set<String> _completedLessonIds = {};
   bool _isLoading = true;
+  bool _hasError = false;
 
   /// Check if this category is an alphabet/letters category
   bool get isAlphabetCategory {
@@ -67,7 +68,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
   }
 
   Future<void> _loadLessons() async {
-    setState(() => _isLoading = true);
+    setState(() { _isLoading = true; _hasError = false; });
 
     try {
       final lessons = await _firestoreService.getLessons(widget.category.id);
@@ -90,7 +91,7 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
       }
     } catch (e) {
       debugPrint('❌ Error loading lessons: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() { _isLoading = false; _hasError = true; });
     }
   }
 
@@ -192,6 +193,22 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : _hasError
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text('Could not load lessons', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => setState(() { _hasError = false; _isLoading = true; _loadLessons(); }),
+                    child: const Text('Try Again'),
+                  ),
+                ],
+              ),
             )
           : RefreshIndicator(
               onRefresh: _loadLessons,

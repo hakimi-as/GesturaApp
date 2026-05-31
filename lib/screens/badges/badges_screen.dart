@@ -246,12 +246,35 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
   }
 
   Widget _buildTabContent() {
-    return TabBarView(
-      controller: _tabController,
-      children: [
-        _buildAllBadgesTab(),
-        _buildUnlockedTab(),
-      ],
+    return Consumer<BadgeProvider>(
+      builder: (context, badgeProvider, child) {
+        if (badgeProvider.lastError != null && !badgeProvider.isLoading) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 12),
+                const Text('Could not load badges', style: TextStyle(fontWeight: FontWeight.w600)),
+                TextButton(
+                  onPressed: () {
+                    final auth = context.read<AuthProvider>();
+                    if (auth.userId != null) context.read<BadgeProvider>().loadUserBadges(auth.userId!);
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+        return TabBarView(
+          controller: _tabController,
+          children: [
+            _buildAllBadgesTab(),
+            _buildUnlockedTab(),
+          ],
+        );
+      },
     );
   }
 
@@ -378,7 +401,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
+            childAspectRatio: 0.62,
           ),
           itemCount: badges.length,
           itemBuilder: (context, index) {
@@ -414,7 +437,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
+            childAspectRatio: 0.62,
           ),
           itemCount: sortedBadges.length,
           itemBuilder: (context, index) {
