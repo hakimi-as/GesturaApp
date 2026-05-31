@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../services/certificate_service.dart';
+import '../../services/app_cache.dart';
 import 'lesson_detail_screen.dart';
 import 'certificate_preview_screen.dart';
 
@@ -80,14 +81,16 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
         debugPrint('✅ User completed ${completedIds.length} lessons total');
       }
 
-      setState(() {
-        _lessons = lessons;
-        _completedLessonIds = completedIds;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _lessons = lessons;
+          _completedLessonIds = completedIds;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint('❌ Error loading lessons: $e');
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -389,7 +392,10 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
             ),
           ),
         );
-        if (result == true) _loadLessons();
+        if (result == true) {
+          AppCache.instance.invalidateCompleted();
+          _loadLessons();
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
