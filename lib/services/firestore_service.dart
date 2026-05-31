@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 
 import '../config/constants.dart';
+import 'app_cache.dart';
 import '../models/user_model.dart';
 import '../models/category_model.dart';
 import '../models/lesson_model.dart';
@@ -243,11 +244,15 @@ class FirestoreService {
 
   Future<List<CategoryModel>> getCategories() async {
     try {
+      final cached = AppCache.instance.categories;
+      if (cached != null) return cached;
       final snapshot = await _firestore
           .collection(AppConstants.categoriesCollection)
           .orderBy('order')
           .get();
-      return snapshot.docs.map((doc) => CategoryModel.fromFirestore(doc)).toList();
+      final categories = snapshot.docs.map((doc) => CategoryModel.fromFirestore(doc)).toList();
+      AppCache.instance.setCategories(categories);
+      return categories;
     } catch (e) {
       debugPrint('Error getting categories: $e');
       return [];
@@ -315,8 +320,10 @@ class FirestoreService {
 
   Future<List<LessonModel>> getLessons(String categoryId) async {
     try {
+      final cached = AppCache.instance.lessons(categoryId);
+      if (cached != null) return cached;
       debugPrint('🔥 Getting lessons for categoryId: "$categoryId"');
-      
+
       final snapshot = await _firestore
           .collection(AppConstants.lessonsCollection)
           .where('categoryId', isEqualTo: categoryId)
@@ -326,7 +333,7 @@ class FirestoreService {
 
       final lessons = snapshot.docs.map((doc) => LessonModel.fromFirestore(doc)).toList();
       lessons.sort((a, b) => _naturalCompare(a.signName, b.signName));
-      
+      AppCache.instance.setLessons(categoryId, lessons);
       return lessons;
     } catch (e) {
       debugPrint('❌ Error getting lessons: $e');
@@ -934,6 +941,9 @@ class FirestoreService {
 
   Future<Set<String>> getCompletedLessonIdsForUser(String userId) async {
     try {
+      final cached = AppCache.instance.completedIds(userId);
+      if (cached != null) return cached;
+
       Set<String> completedIds = {};
 
       final allProgress = await _firestore
@@ -946,24 +956,24 @@ class FirestoreService {
       for (var doc in allProgress.docs) {
         final data = doc.data();
         final lessonId = data['lessonId'] as String?;
-        
+
         if (data['type'] == 'quiz' || data['categoryId'] == 'quiz') {
           continue;
         }
-        
+
         final isCompletedByStatus = data['status'] == 'completed';
         final isCompletedByBool = data['isCompleted'] == true;
         final isCompletedByPercentage = (data['completionPercentage'] ?? 0) >= 100;
-        
+
         final isCompleted = isCompletedByStatus || isCompletedByBool || isCompletedByPercentage;
-        
+
         if (lessonId != null && isCompleted) {
           completedIds.add(lessonId);
         }
       }
 
       debugPrint('✅ Total completed lessons: ${completedIds.length}');
-      
+      AppCache.instance.setCompletedIds(userId, completedIds);
       return completedIds;
     } catch (e) {
       debugPrint('❌ Error getting completed lessons: $e');
@@ -1319,6 +1329,7 @@ class FirestoreService {
           'practiceCount': 1,
           'bestAccuracy': 100.0,
         });
+        AppCache.instance.invalidateCompleted();
 
         debugPrint('✅ Progress saved: $categoryName - $lessonName');
       }
