@@ -30,6 +30,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   List<FriendWithUser> _friendsLeaderboard = [];
   bool _isLoading = true;
 
+  final Map<String, List<UserModel>> _globalCache = {};
+  final Map<String, List<FriendWithUser>> _friendsCache = {};
+  DateTime? _cacheTime;
+  static const _cacheTtl = Duration(minutes: 3);
+  bool _hasError = false;
+
+  bool get _cacheValid =>
+      _cacheTime != null && DateTime.now().difference(_cacheTime!) < _cacheTtl;
+
   @override
   void initState() {
     super.initState();
@@ -47,18 +56,35 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     }
   }
 
-  Future<void> _loadLeaderboard() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadLeaderboard({bool forceRefresh = false}) async {
+    final key = '${_selectedScope}_$_selectedTab';
+
+    if (!forceRefresh && _cacheValid) {
+      if (_selectedScope == 'global' && _globalCache.containsKey(key)) {
+        if (mounted) setState(() { _globalLeaderboard = _globalCache[key]!; _isLoading = false; });
+        return;
+      }
+      if (_selectedScope == 'friends' && _friendsCache.containsKey(key)) {
+        if (mounted) setState(() { _friendsLeaderboard = _friendsCache[key]!; _isLoading = false; });
+        return;
+      }
+    }
+
+    if (mounted) setState(() { _isLoading = true; _hasError = false; });
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUserId = authProvider.userId ?? '';
       if (_selectedScope == 'global') {
         await _loadGlobalLeaderboard(currentUserId, _selectedTab);
+        _globalCache[key] = List.from(_globalLeaderboard);
       } else {
         await _loadFriendsLeaderboard(currentUserId);
+        _friendsCache[key] = List.from(_friendsLeaderboard);
       }
+      _cacheTime = DateTime.now();
     } catch (e) {
       if (kDebugMode) debugPrint('Error loading leaderboard: $e');
+      if (mounted) setState(() => _hasError = true);
     }
     if (mounted) setState(() => _isLoading = false);
   }
@@ -218,6 +244,31 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
+    if (_hasError && !_isLoading) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off, size: 48, color: context.textMuted),
+            const SizedBox(height: 16),
+            Text(
+              'Could not load leaderboard',
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: context.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () => _loadLeaderboard(forceRefresh: true),
+              child: const Text('Try again'),
+            ),
+          ],
+        ),
+      );
+    }
+
     final users = _selectedScope == 'global'
         ? _globalLeaderboard
         : _friendsLeaderboard.map((f) => f.friendUser).toList();
@@ -230,7 +281,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     final listUsers = hasPodium ? users.skip(3).toList() : users;
 
     return RefreshIndicator(
-      onRefresh: _loadLeaderboard,
+      onRefresh: () => _loadLeaderboard(forceRefresh: true),
       color: AppColors.primary,
       child: ListView(
         padding: const EdgeInsets.only(bottom: 32),
