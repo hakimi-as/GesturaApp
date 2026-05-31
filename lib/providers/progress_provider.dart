@@ -14,6 +14,9 @@ class ProgressProvider with ChangeNotifier {
   List<DailyGoalModel> _dailyGoals = [];
   bool _isLoading = false;
   String? _error;
+  DateTime? _lastLoadedAt;
+  String? _lastLoadedUserId;
+  static const _progressTtl = Duration(seconds: 30);
 
   // Getters
   List<LearningProgressModel> get progressList => _progressList;
@@ -40,6 +43,13 @@ class ProgressProvider with ChangeNotifier {
 
   int get completedGoals => _dailyGoals.where((g) => g.isCompleted).length;
   int get totalGoals => _dailyGoals.length;
+
+  /// Check if progress data is stale (older than TTL or different user)
+  bool isStale(String userId) {
+    if (_lastLoadedUserId != userId) return true;
+    if (_lastLoadedAt == null) return true;
+    return DateTime.now().difference(_lastLoadedAt!) > _progressTtl;
+  }
 
   /// Get all active days (days when user completed at least one lesson)
   Set<DateTime> get activeDays {
@@ -180,6 +190,8 @@ class ProgressProvider with ChangeNotifier {
       notifyListeners();
 
       _progressList = await _firestoreService.getUserProgress(oderId);
+      _lastLoadedAt = DateTime.now();
+      _lastLoadedUserId = oderId;
 
       _isLoading = false;
       notifyListeners();

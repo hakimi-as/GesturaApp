@@ -24,9 +24,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      if (auth.userId != null) {
-        Provider.of<ProgressProvider>(context, listen: false)
-            .loadUserProgress(auth.userId!);
+      final progress = Provider.of<ProgressProvider>(context, listen: false);
+      if (auth.userId != null && progress.isStale(auth.userId!)) {
+        progress.loadUserProgress(auth.userId!);
       }
     });
   }
