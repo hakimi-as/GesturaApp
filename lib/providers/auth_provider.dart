@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _currentUser;
   AuthStatus _status = AuthStatus.initial;
   String? _errorMessage;
+  StreamSubscription<User?>? _authSubscription;
 
   // Getters
   User? get firebaseUser => _firebaseUser;
@@ -39,7 +41,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _init() {
-    _auth.authStateChanges().listen((User? user) async {
+    _authSubscription = _auth.authStateChanges().listen((User? user) async {
       _firebaseUser = user;
       if (user != null) {
         await _loadUserData(user.uid);
@@ -277,5 +279,11 @@ class AuthProvider extends ChangeNotifier {
       default:
         return 'Authentication failed. Please try again';
     }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 }
