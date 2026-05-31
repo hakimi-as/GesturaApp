@@ -24,8 +24,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _load() {
     final userId = context.read<AuthProvider>().userId;
-    if (userId != null) {
-      context.read<NotificationProvider>().loadNotifications(userId);
+    final provider = context.read<NotificationProvider>();
+    if (userId != null && provider.isStale(userId)) {
+      provider.loadNotifications(userId);
     }
   }
 

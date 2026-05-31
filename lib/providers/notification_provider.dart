@@ -9,11 +9,20 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
   String? _userId;
+  DateTime? _lastLoadedAt;
+  String? _lastLoadedUserId;
+  static const _ttl = Duration(minutes: 2);
 
   List<NotificationModel> get notifications => _notifications;
   bool get isLoading => _isLoading;
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
   bool get hasUnread => unreadCount > 0;
+
+  bool isStale(String userId) {
+    if (_lastLoadedUserId != userId) return true;
+    if (_lastLoadedAt == null) return true;
+    return DateTime.now().difference(_lastLoadedAt!) > _ttl;
+  }
 
   Future<void> loadNotifications(String userId) async {
     _userId = userId;
@@ -31,6 +40,8 @@ class NotificationProvider extends ChangeNotifier {
       _notifications = snapshot.docs
           .map((doc) => NotificationModel.fromFirestore(doc))
           .toList();
+      _lastLoadedAt = DateTime.now();
+      _lastLoadedUserId = userId;
     } catch (e) {
       debugPrint('NotificationProvider: error loading — $e');
     } finally {
