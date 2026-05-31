@@ -18,6 +18,7 @@ import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../services/haptic_service.dart';
 import '../../services/friend_service.dart'; // NEW: Friend Service
+import '../../services/app_cache.dart';
 import '../../models/challenge_model.dart';
 import '../../widgets/common/shimmer_widgets.dart';
 import '../../widgets/gamification/streak_freeze_widgets.dart';
@@ -57,24 +58,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadProfileImage() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final user = authProvider.currentUser;
-      
-      if (user?.photoUrl != null && user!.photoUrl!.isNotEmpty) {
-        final imageBase64 = prefs.getString('profileImageBase64');
-        if (imageBase64 != null && imageBase64.isNotEmpty && mounted) {
-          setState(() {
-            _profileImageBytes = base64Decode(imageBase64);
-          });
-        }
-      } else {
-        final imageBase64 = prefs.getString('profileImageBase64');
-        if (imageBase64 != null && imageBase64.isNotEmpty && mounted) {
-          setState(() {
-            _profileImageBytes = base64Decode(imageBase64);
-          });
-        }
+      final userId = authProvider.userId ?? '';
+
+      // Check in-memory cache first (avoids SharedPrefs read + base64 decode)
+      final cached = AppCache.instance.getProfileImage(userId);
+      if (cached != null && mounted) {
+        setState(() => _profileImageBytes = cached);
+        return;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final imageBase64 = prefs.getString('profileImageBase64');
+      if (imageBase64 != null && imageBase64.isNotEmpty) {
+        final bytes = base64Decode(imageBase64);
+        AppCache.instance.setProfileImage(userId, bytes);
+        if (mounted) setState(() => _profileImageBytes = bytes);
       }
     } catch (e) {
       if (kDebugMode) debugPrint('Error loading profile image: $e');

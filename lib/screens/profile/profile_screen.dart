@@ -15,6 +15,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/cloudinary_service.dart';
+import '../../services/app_cache.dart';
 import '../settings/settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -46,13 +47,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfileImage() async {
     try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.userId ?? '';
+
+      // Check in-memory cache first (avoids SharedPrefs read + base64 decode)
+      final cached = AppCache.instance.getProfileImage(userId);
+      if (cached != null && mounted) {
+        setState(() => _profileImageBytes = cached);
+        return;
+      }
+
       final prefs = await SharedPreferences.getInstance();
       final imageBase64 = prefs.getString('profileImageBase64');
-      
-      if (imageBase64 != null && imageBase64.isNotEmpty && mounted) {
-        setState(() {
-          _profileImageBytes = base64Decode(imageBase64);
-        });
+      if (imageBase64 != null && imageBase64.isNotEmpty) {
+        final bytes = base64Decode(imageBase64);
+        AppCache.instance.setProfileImage(userId, bytes);
+        if (mounted) setState(() => _profileImageBytes = bytes);
       }
     } catch (e) {
       if (kDebugMode) debugPrint('Error loading profile image: $e');
