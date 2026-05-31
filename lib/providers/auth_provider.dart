@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_model.dart';
+import '../services/app_cache.dart';
 import '../services/firestore_service.dart';
 
 enum AuthStatus {
@@ -167,6 +168,9 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
+      // Clear in-memory cache
+      AppCache.instance.clear();
+
       // Clear local storage
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('profileImagePath');
