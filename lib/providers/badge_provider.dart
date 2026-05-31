@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/badge_model.dart';
 import '../models/user_model.dart';
 import '../services/badge_service.dart';
+import '../services/app_cache.dart';
 
 /// Badge Provider with Dynamic Badge Checking
 /// 
@@ -49,7 +50,10 @@ class BadgeProvider extends ChangeNotifier {
   // ============ INITIALIZATION ============
 
   Future<void> initializeBadgePool() async {
-    if (_isInitialized) return;
+    if (_isInitialized || AppCache.instance.badgePoolSeeded) {
+      _isInitialized = true;
+      return;
+    }
 
     try {
       _lastError = null;
@@ -62,6 +66,7 @@ class BadgeProvider extends ChangeNotifier {
 
       await _loadBadgePool();
       _isInitialized = true;
+      AppCache.instance.badgePoolSeeded = true;
       debugPrint('✅ Badge pool initialized with ${_badgePool.length} badges');
     } catch (e) {
       _lastError = e.toString();
@@ -140,7 +145,10 @@ class BadgeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await initializeBadgePool();
+      // Pool only needs loading once per session
+      if (_badgePool.isEmpty) {
+        await initializeBadgePool();
+      }
       _userBadges = await _badgeService.getUserBadges(userId);
       _stats = await _badgeService.getBadgeStats(userId);
     } catch (e) {
