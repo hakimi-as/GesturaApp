@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -42,6 +44,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   bool _isSearching = false;
 
+  Timer? _debounce;
+
   List<String> _recentSearches = [];
 
   static const int _pageSize = 50;
@@ -57,6 +61,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
@@ -74,30 +79,25 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadInitialData() async {
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     try {
-      final categories = await _firestoreService.getCategories();
-      final categoryMap = <String, CategoryModel>{};
-      for (final cat in categories) {
-        categoryMap[cat.id] = cat;
-      }
+      _allCategories = await _firestoreService.getCategories();
+      _categoryMap = {for (final c in _allCategories) c.id: c};
 
-      final result = await _firestoreService.getLessonsPaginated(limit: _pageSize);
+      // Load all category lessons in parallel (AppCache makes repeats instant)
+      final lessonFutures = _allCategories
+          .map((c) => _firestoreService.getLessons(c.id))
+          .toList();
+      final results = await Future.wait(lessonFutures);
+      _allLessons = results.expand((l) => l).toList();
 
-      if (mounted) {
-        setState(() {
-          _allCategories = categories;
-          _categoryMap = categoryMap;
-          _allLessons = result.lessons;
-          _lastDoc = result.lastDoc;
-          _hasMore = result.lessons.length == _pageSize;
-          _isLoading = false;
-        });
-      }
+      // Pagination state: all lessons loaded upfront, no more pages needed
+      _hasMore = false;
+      _lastDoc = null;
     } catch (e) {
-      debugPrint('Error loading search data: $e');
-      if (mounted) setState(() => _isLoading = false);
+      debugPrint('SearchScreen init error: $e');
     }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _loadMoreLessons() async {
@@ -201,6 +201,13 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       _lessonResults = lessonResults;
       _categoryResults = categoryResults;
+    });
+  }
+
+  void _onSearchChanged(String query) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) _performSearch(query);
     });
   }
 
@@ -325,7 +332,7 @@ class _SearchScreenState extends State<SearchScreen> {
         child: TextField(
           controller: _searchController,
           focusNode: _focusNode,
-          onChanged: _performSearch,
+          onChanged: _onSearchChanged,
           onSubmitted: (query) {
             if (query.isNotEmpty) {
               _saveRecentSearch(query);
