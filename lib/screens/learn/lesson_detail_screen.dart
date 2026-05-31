@@ -106,36 +106,51 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final badgeProvider = Provider.of<BadgeProvider>(context, listen: false);
       final challengeProvider = Provider.of<ChallengeProvider>(context, listen: false);
+      final progressProvider = Provider.of<ProgressProvider>(context, listen: false);
 
       if (authProvider.userId == null) return;
 
-      // Pass lesson and category names
+      // Save to Firestore first
       await _firestoreService.completeLesson(
         authProvider.userId!,
         widget.lesson.id,
         widget.lesson.xpReward,
         lessonName: widget.lesson.signName,
         categoryName: widget.category.name,
+        categoryId: widget.lesson.categoryId,
       );
 
-      // Refresh user data
+      setState(() {
+        _isCompleted = true;
+        _isCompleting = false;
+      });
+
+      // Show completion dialog immediately — no need to wait for background work
+      if (mounted) await _showCompletionDialog();
+
+      // Refresh user data, then run badge/challenge checks + progress reload in parallel
       await authProvider.refreshUser();
 
-      // Check for new badges
       List<BadgeModel> newBadges = [];
       List<ChallengeModel> completedChallenges = [];
-      
+
       if (authProvider.currentUser != null) {
-        // Check badges
-        newBadges = await badgeProvider.checkForNewBadges(
+        // Run badge check, challenge update, and progress reload in parallel
+        // Instantly update challenge goals in memory — zero Firestore reads.
+        challengeProvider.quickUpdateInMemory(
+          lessonsCompleted: 1,
+          xpEarned: widget.lesson.xpReward,
+          signsLearned: 1,
+          categoryId: widget.lesson.categoryId,
+        );
+
+        final badgeFuture = badgeProvider.checkForNewBadges(
           userId: authProvider.userId!,
           user: authProvider.currentUser!,
           completedLessonToday: true,
           lessonsCompletedToday: authProvider.currentUser!.lessonsCompletedToday,
         );
-
-        // Check challenges
-        completedChallenges = await challengeProvider.updateProgress(
+        final challengeFuture = challengeProvider.updateProgress(
           userId: authProvider.userId!,
           user: authProvider.currentUser!,
           lessonsCompleted: 1,
@@ -143,30 +158,18 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           xpEarned: widget.lesson.xpReward,
           categoryId: widget.lesson.categoryId,
         );
+        final progressFuture = progressProvider.loadUserProgress(authProvider.userId!);
+
+        newBadges = await badgeFuture;
+        completedChallenges = await challengeFuture;
+        await progressFuture;
       }
 
-      // Refresh progress provider
-      final progressProvider = Provider.of<ProgressProvider>(context, listen: false);
-      await progressProvider.loadUserProgress(authProvider.userId!);
-
-      setState(() {
-        _isCompleted = true;
-        _isCompleting = false;
-      });
-
-      if (mounted) {
-        // Show completion dialog first
-        await _showCompletionDialog();
-        
-        // Then show badge dialogs if any new badges were unlocked
-        if (newBadges.isNotEmpty && mounted) {
-          await BadgeUnlockDialog.showMultiple(context, newBadges);
-        }
-
-        // Show challenge completion dialogs
-        if (completedChallenges.isNotEmpty && mounted) {
-          await ChallengeCompleteDialog.showMultiple(context, completedChallenges);
-        }
+      if (mounted && newBadges.isNotEmpty) {
+        await BadgeUnlockDialog.showMultiple(context, newBadges);
+      }
+      if (mounted && completedChallenges.isNotEmpty) {
+        await ChallengeCompleteDialog.showMultiple(context, completedChallenges);
       }
     } catch (e) {
       setState(() => _isCompleting = false);

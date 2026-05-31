@@ -1198,10 +1198,10 @@ class FirestoreService {
 
   // UPDATED: Complete Lesson with Freeze Awarding Logic
   Future<void> completeLesson(
-    String userId, 
-    String lessonId, 
-    int xpReward, 
-    {String lessonName = '', String categoryName = ''}
+    String userId,
+    String lessonId,
+    int xpReward,
+    {String lessonName = '', String categoryName = '', String categoryId = ''}
   ) async {
     try {
       final userDoc = await _firestore
@@ -1313,7 +1313,7 @@ class FirestoreService {
         await _firestore.collection(AppConstants.progressCollection).add({
           'userId': userId,
           'lessonId': lessonId,
-          'categoryId': '',
+          'categoryId': categoryId,
           'lessonName': lessonName,
           'categoryName': categoryName,
           'displayTitle': '$categoryName - $lessonName',
