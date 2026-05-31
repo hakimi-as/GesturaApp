@@ -84,25 +84,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _initializeData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.userId != null) {
-      await _firestoreService.checkAndResetDailyGoal(authProvider.userId!);
-      await authProvider.refreshUser();
-      if (mounted) {
-        Provider.of<ProgressProvider>(context, listen: false)
-            .loadUserProgress(authProvider.userId!);
-        Provider.of<NotificationProvider>(context, listen: false)
-            .loadNotifications(authProvider.userId!);
+      // checkAndResetDailyGoal and refreshUser can run in parallel.
+      await Future.wait([
+        _firestoreService.checkAndResetDailyGoal(authProvider.userId!),
+        authProvider.refreshUser(),
+      ]);
 
+      if (mounted) {
+        final uid = authProvider.userId!;
         final user = authProvider.currentUser;
+
+        // Fire these off without awaiting — they update UI via notifyListeners.
+        Provider.of<ProgressProvider>(context, listen: false).loadUserProgress(uid);
+        Provider.of<NotificationProvider>(context, listen: false).loadNotifications(uid);
         if (user != null) {
-          Provider.of<ChallengeProvider>(context, listen: false)
-              .loadChallenges(authProvider.userId!, user);
+          Provider.of<ChallengeProvider>(context, listen: false).loadChallenges(uid, user);
         }
       }
     }
-    
-    if (mounted) {
-      setState(() => _isInitialLoading = false);
-    }
+
+    if (mounted) setState(() => _isInitialLoading = false);
   }
 
   void _showFreezeInfo() {
@@ -124,18 +125,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onRefresh: () async {
             HapticService.lightTap();
             final authProvider = Provider.of<AuthProvider>(context, listen: false);
-            if (authProvider.userId != null) {
-              await authProvider.refreshUser();
-              await Provider.of<ProgressProvider>(context, listen: false)
-                  .loadUserProgress(authProvider.userId!);
-              
+            if (authProvider.userId == null) return;
+
+            await Future.wait([
+              authProvider.refreshUser(),
+              Provider.of<ProgressProvider>(context, listen: false)
+                  .loadUserProgress(authProvider.userId!),
+              _loadProfileImage(),
+            ]);
+
+            if (mounted) {
               final user = authProvider.currentUser;
               if (user != null) {
-                await Provider.of<ChallengeProvider>(context, listen: false)
+                Provider.of<ChallengeProvider>(context, listen: false)
                     .loadChallenges(authProvider.userId!, user);
               }
             }
-            await _loadProfileImage();
           },
           color: AppColors.primary,
           child: _isInitialLoading

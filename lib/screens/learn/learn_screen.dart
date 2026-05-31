@@ -76,11 +76,14 @@ class _LearnScreenState extends State<LearnScreen> {
     try {
       final categories = await _firestoreService.getCategories();
 
+      // Fetch all lesson lists once and cache them — reused for both counts.
+      final Map<String, List<dynamic>> allLessons = {};
       Map<String, int> lessonCounts = {};
       int totalLessons = 0;
 
       for (var category in categories) {
         final lessons = await _firestoreService.getLessons(category.id);
+        allLessons[category.id] = lessons;
         lessonCounts[category.id] = lessons.length;
         totalLessons += lessons.length;
       }
@@ -97,23 +100,25 @@ class _LearnScreenState extends State<LearnScreen> {
             await _firestoreService.getCompletedLessonIdsForUser(authProvider.userId!);
         totalCompleted = completedIds.length;
 
+        // Reuse cached lesson lists — no second round of getLessons reads.
         for (var category in categories) {
-          final lessons = await _firestoreService.getLessons(category.id);
+          final lessons = allLessons[category.id] ?? [];
           int completedInCategory = 0;
-
           for (var lesson in lessons) {
-            if (completedIds.contains(lesson.id)) {
-              completedInCategory++;
-            }
+            if (completedIds.contains(lesson.id)) completedInCategory++;
           }
           completedCounts[category.id] = completedInCategory;
         }
 
-        // Load badges
-        await badgeProvider.loadUserBadges(authProvider.userId!);
+        // Load badges, progress, accuracy in parallel.
+        final results = await Future.wait([
+          badgeProvider.loadUserBadges(authProvider.userId!),
+          _firestoreService.getUserProgress(authProvider.userId!),
+          _firestoreService.getAverageQuizAccuracy(authProvider.userId!),
+          _firestoreService.getRecentQuizAttempts(authProvider.userId!, limit: 20),
+        ]);
 
-        // Load progress for calendar
-        final progress = await _firestoreService.getUserProgress(authProvider.userId!);
+        final progress = results[1] as List;
         activeDays = progress
             .where((p) => p.isCompleted)
             .map((p) => DateTime(
@@ -124,11 +129,9 @@ class _LearnScreenState extends State<LearnScreen> {
             .toSet()
             .toList();
 
-        // Load quiz accuracy
-        quizAccuracy = await _firestoreService.getAverageQuizAccuracy(authProvider.userId!);
+        quizAccuracy = (results[2] as double?) ?? 0.0;
 
-        // Load best scores per quiz type
-        final recentAttempts = await _firestoreService.getRecentQuizAttempts(authProvider.userId!, limit: 20);
+        final recentAttempts = results[3] as List;
         final Map<String, int> bestScores = {};
         for (final attempt in recentAttempts) {
           final type = attempt['quizType'] as String? ?? '';
@@ -139,32 +142,36 @@ class _LearnScreenState extends State<LearnScreen> {
             bestScores[type] = score;
           }
         }
-        setState(() => _bestScoresByType = bestScores);
+        if (mounted) setState(() => _bestScoresByType = bestScores);
 
-        // Load daily challenges
+        // Load challenges only if not already loaded for today (fast-path inside).
         final user = authProvider.currentUser;
         if (user != null && mounted) {
           Provider.of<ChallengeProvider>(context, listen: false)
               .loadChallenges(authProvider.userId!, user);
         }
 
-        setState(() {
-          _activeDays = activeDays;
-          _averageQuizAccuracy = quizAccuracy;
-        });
+        if (mounted) {
+          setState(() {
+            _activeDays = activeDays;
+            _averageQuizAccuracy = quizAccuracy;
+          });
+        }
       }
 
-      setState(() {
-        _categories = categories;
-        _actualLessonCounts = lessonCounts;
-        _completedLessonCounts = completedCounts;
-        _totalLessons = totalLessons;
-        _totalCompletedLessons = totalCompleted;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _actualLessonCounts = lessonCounts;
+          _completedLessonCounts = completedCounts;
+          _totalLessons = totalLessons;
+          _totalCompletedLessons = totalCompleted;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('Error loading data: $e');
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -1573,7 +1580,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   crossAxisCount: 2,
                   mainAxisSpacing: 14,
                   crossAxisSpacing: 14,
-                  childAspectRatio: 1.15,
+                  childAspectRatio: 1.0,
                   children: [
                     _buildStatCard(
                       icon: '🤟',

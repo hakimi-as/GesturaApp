@@ -99,8 +99,8 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
     final userId = authProvider.currentUser?.id ?? '';
 
     final progress = await LearningPathService.startPath(userId, path.id);
-    
-    if (progress != null) {
+
+    if (progress != null && mounted) {
       setState(() {
         _userProgress[path.id] = progress;
       });
@@ -860,14 +860,14 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
   }
 
   Future<void> _syncWithLessonProgress() async {
-    setState(() => _isSyncing = true);
-    
+    if (mounted) setState(() => _isSyncing = true);
+
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final userId = authProvider.currentUser?.id ?? '';
-      
+
       if (userId.isEmpty) {
-        setState(() => _isSyncing = false);
+        if (mounted) setState(() => _isSyncing = false);
         return;
       }
 
@@ -877,7 +877,7 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
           .get();
 
       final completedIds = <String>{};
-      
+
       for (final doc in progressSnapshot.docs) {
         final data = doc.data();
         if (data['completed'] == true || data['isCompleted'] == true) {
@@ -888,16 +888,18 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
         }
       }
 
-      setState(() {
-        _completedLessonIds = completedIds;
-        _isSyncing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _completedLessonIds = completedIds;
+          _isSyncing = false;
+        });
+      }
 
       await _autoSyncPathProgress(userId, completedIds);
-      
+
     } catch (e) {
       debugPrint('Error syncing lesson progress: $e');
-      setState(() => _isSyncing = false);
+      if (mounted) setState(() => _isSyncing = false);
     }
   }
 
@@ -1096,7 +1098,7 @@ class _LearningPathDetailScreenState extends State<LearningPathDetailScreen> {
     if (_progress == null) {
       final newProgress = await LearningPathService.startPath(userId, widget.path.id);
       if (newProgress == null) return;
-      setState(() => _progress = newProgress);
+      if (mounted) setState(() => _progress = newProgress);
     }
     
     final success = await LearningPathService.completeStep(userId, widget.path.id, step.id);
