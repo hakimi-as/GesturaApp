@@ -123,33 +123,45 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           );
         }
       } else {
-        await firestoreService.completeQuiz(
-          userId: authProvider.userId!,
-          quizType: widget.quizType,
-          score: quizScore,
-          totalQuestions: totalQuestions,
-          correctAnswers: correctAnswers,
+        // Instantly update challenge goals in memory — zero Firestore reads
+        challengeProvider.quickUpdateInMemory(
+          lessonsCompleted: 0,
           xpEarned: xpEarned,
+          signsLearned: 0,
         );
 
-        await authProvider.refreshUser();
+        // Write quiz result and refresh user in parallel
+        await Future.wait([
+          firestoreService.completeQuiz(
+            userId: authProvider.userId!,
+            quizType: widget.quizType,
+            score: quizScore,
+            totalQuestions: totalQuestions,
+            correctAnswers: correctAnswers,
+            xpEarned: xpEarned,
+          ),
+          authProvider.refreshUser(),
+        ]);
 
         if (authProvider.currentUser != null) {
-          final newBadges = await badgeProvider.checkForNewBadges(
+          // Badge check and challenge update in parallel
+          final badgeFuture = badgeProvider.checkForNewBadges(
             userId: authProvider.userId!,
             user: authProvider.currentUser!,
             quizzesCompleted: authProvider.currentUser!.quizzesCompleted,
             perfectQuizzes:
                 isPerfect ? authProvider.currentUser!.perfectQuizzes : null,
           );
-
-          final completedChallenges = await challengeProvider.updateProgress(
+          final challengeFuture = challengeProvider.updateProgress(
             userId: authProvider.userId!,
             user: authProvider.currentUser!,
             quizzesCompleted: 1,
             xpEarned: xpEarned,
             perfectQuiz: isPerfect,
           );
+
+          final newBadges = await badgeFuture;
+          final completedChallenges = await challengeFuture;
 
           if ((newBadges.isNotEmpty || completedChallenges.isNotEmpty) &&
               mounted) {
