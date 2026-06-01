@@ -141,7 +141,7 @@ class RemoteSignService {
       await dtw.loadLibrary();
     }
 
-    final matches = dtw.match(frames, topK: topK);
+    final matches = await dtw.matchAsync(frames, topK: topK);
 
     debugPrint('RemoteSignService: on-device fallback → ${matches.isNotEmpty ? matches.first.word : '—'}');
 

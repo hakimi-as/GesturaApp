@@ -40,6 +40,9 @@ class SignPlayer extends StatefulWidget {
 class _SignPlayerState extends State<SignPlayer> {
   final FirestoreService _firestoreService = FirestoreService();
 
+  // Session-level cache — avoids duplicate Firestore reads across rebuilds
+  static final Map<String, Map<String, dynamic>?> _signCache = {};
+
   // Data
   final List<List<Map<String, dynamic>>> _sequence = [];
   final List<String> _sequenceLabels = [];
@@ -98,8 +101,10 @@ class _SignPlayerState extends State<SignPlayer> {
   }
 
   /// Low-level fetch by exact key. Returns {'frames': List, 'language': String, 'fsw': String?} or null.
-  /// Priority: local assets for animation (faster, offline), Firestore for FSW supplement.
+  /// Checks an in-memory cache first so repeated lookups (same sign) are instant.
   Future<Map<String, dynamic>?> _fetchSignDataByKey(String key) async {
+    if (_signCache.containsKey(key)) return _signCache[key];
+
     Map<String, dynamic>? result;
 
     // 1. Try local assets first (faster, works offline)
@@ -115,10 +120,12 @@ class _SignPlayerState extends State<SignPlayer> {
       }
     } catch (_) {}
 
-    // 2. If no local data, try Firestore for full data
+    // 2. If no local data, try Firestore (5s timeout to avoid indefinite hang)
     if (result == null) {
       try {
-        final firestoreData = await _firestoreService.getSignAnimationData(key);
+        final firestoreData = await _firestoreService
+            .getSignAnimationData(key)
+            .timeout(const Duration(seconds: 5));
         if (firestoreData != null && firestoreData['data'] != null) {
           final raw = firestoreData['data'];
           final List framesList;
@@ -130,9 +137,13 @@ class _SignPlayerState extends State<SignPlayer> {
             framesList = raw['data'] as List;
             language = 'BIM';
           } else {
+            _signCache[key] = null;
             return null;
           }
-          if (framesList.isEmpty) return null;
+          if (framesList.isEmpty) {
+            _signCache[key] = null;
+            return null;
+          }
           result = {
             'frames': framesList.cast<Map<String, dynamic>>(),
             'language': language,
@@ -144,15 +155,7 @@ class _SignPlayerState extends State<SignPlayer> {
       }
     }
 
-    // 3. Got local animation but no FSW — check Firestore just for the FSW field
-    if (result != null && result['fsw'] == null) {
-      try {
-        final firestoreData = await _firestoreService.getSignAnimationData(key);
-        final fsw = firestoreData?['fsw'] as String?;
-        if (fsw != null) result['fsw'] = fsw;
-      } catch (_) {}
-    }
-
+    _signCache[key] = result;
     return result;
   }
 
@@ -250,20 +253,21 @@ class _SignPlayerState extends State<SignPlayer> {
               _sequenceFsw.add(wordResult['fsw'] as String?);
             }
           } else {
-            // Fingerspell - split into characters
-            List<String> characters = wordKey.split('');
-            for (String char in characters) {
-              if (char == '_') continue;
-              final letterResult = await _fetchLetterData(char);
-              if (letterResult != null) {
-                final frames = letterResult['frames'] as List<Map<String, dynamic>>;
-                if (frames.isNotEmpty) {
-                  _sequence.add(frames);
-                  _sequenceLabels.add('Letter ${char.toUpperCase()}');
-                  _sequenceTypes.add('fingerspell');
-                  _sequenceLanguages.add('BIM');
-                  _sequenceFsw.add(null);
-                }
+            // Fingerspell - fetch all letters in parallel
+            final chars = wordKey.split('').where((c) => c != '_').toList();
+            final letterResults = await Future.wait(
+              chars.map((c) => _fetchLetterData(c)),
+            );
+            for (int ci = 0; ci < chars.length; ci++) {
+              final letterResult = letterResults[ci];
+              if (letterResult == null) continue;
+              final frames = letterResult['frames'] as List<Map<String, dynamic>>;
+              if (frames.isNotEmpty) {
+                _sequence.add(frames);
+                _sequenceLabels.add('Letter ${chars[ci].toUpperCase()}');
+                _sequenceTypes.add('fingerspell');
+                _sequenceLanguages.add('BIM');
+                _sequenceFsw.add(null);
               }
             }
           }
@@ -271,7 +275,10 @@ class _SignPlayerState extends State<SignPlayer> {
       }
     }
 
-    await _prefetchSvgs();
+    // Start SVG prefetch in background — don't block showing the skeleton animation
+    _prefetchSvgs().then((_) {
+      if (mounted) setState(() {});
+    });
 
     if (mounted) {
       setState(() {

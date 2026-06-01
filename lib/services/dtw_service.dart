@@ -2,6 +2,79 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+// ── Isolate-safe top-level functions for compute() ──────────────────────────
+
+List<Map<String, dynamic>> _dtwIsolateTask(Map<String, dynamic> args) {
+  final rawLib = args['library'] as Map<String, dynamic>;
+  final rawQuery = args['query'] as List<dynamic>;
+  final topK = args['topK'] as int;
+
+  final library = <String, List<List<double>>>{};
+  rawLib.forEach((k, v) {
+    library[k] = (v as List<dynamic>)
+        .map((row) => (row as List<dynamic>).cast<double>())
+        .toList();
+  });
+  final query =
+      rawQuery.map((row) => (row as List<dynamic>).cast<double>()).toList();
+
+  if (library.isEmpty || query.isEmpty) return [];
+
+  final distances = <String, double>{};
+  for (final entry in library.entries) {
+    distances[entry.key] = _isolateDtw(query, entry.value);
+  }
+
+  final sorted = distances.entries.toList()
+    ..sort((a, b) => a.value.compareTo(b.value));
+  if (sorted.isEmpty) return [];
+
+  final minDist = sorted.first.value;
+  final maxDist = sorted.last.value;
+  final range = (maxDist - minDist).clamp(1e-9, double.infinity);
+
+  return sorted.take(topK).map((e) {
+    final confidence = 1.0 - ((e.value - minDist) / range);
+    return <String, dynamic>{
+      'word': e.key.replaceAll('_', ' '),
+      'distance': e.value,
+      'confidence': confidence,
+    };
+  }).toList();
+}
+
+double _isolateDtw(List<List<double>> s1, List<List<double>> s2) {
+  final n = s1.length;
+  final m = s2.length;
+  final w = max(1, (max(n, m) * 0.2).round());
+  final dtw = List.generate(n + 1, (_) => List.filled(m + 1, double.infinity));
+  dtw[0][0] = 0;
+  for (int i = 1; i <= n; i++) {
+    final jStart = max(1, i - w);
+    final jEnd = min(m, i + w);
+    for (int j = jStart; j <= jEnd; j++) {
+      final cost = _isolateEuclidean(s1[i - 1], s2[j - 1]);
+      final prev =
+          min(dtw[i - 1][j], min(dtw[i][j - 1], dtw[i - 1][j - 1]));
+      dtw[i][j] = cost + prev;
+    }
+  }
+  if (dtw[n][m] == double.infinity) return double.infinity;
+  return dtw[n][m] / (n + m);
+}
+
+double _isolateEuclidean(List<double> a, List<double> b) {
+  double sum = 0;
+  final len = min(a.length, b.length);
+  for (int i = 0; i < len; i++) {
+    final d = a[i] - b[i];
+    sum += d * d;
+  }
+  return sqrt(sum);
+}
+
+// ── Model ────────────────────────────────────────────────────────────────────
+
 class SignMatch {
   final String word;
   final double distance;
@@ -200,6 +273,37 @@ class DtwService {
         confidence: confidence,
       );
     }).toList();
+  }
+
+  /// Like [match] but runs DTW in a background isolate so the UI stays smooth.
+  /// Uses 12-dim pose-only vectors for fast isolate transfer.
+  Future<List<SignMatch>> matchAsync(
+    List<Map<String, dynamic>> queryFrames, {
+    int topK = 5,
+  }) async {
+    if (_library.isEmpty) return [];
+
+    final querySeq = _normalizeSequence(queryFrames);
+    if (querySeq.isEmpty) return [];
+
+    final libraryExport = exportLibraryForIsolate(); // already 12-dim
+    final queryTrunc = querySeq
+        .map((f) => f.length > 12 ? f.sublist(0, 12) : List<double>.from(f))
+        .toList();
+
+    final results = await compute(_dtwIsolateTask, <String, dynamic>{
+      'library': libraryExport,
+      'query': queryTrunc,
+      'topK': topK,
+    });
+
+    return results
+        .map((r) => SignMatch(
+              word: r['word'] as String,
+              distance: r['distance'] as double,
+              confidence: r['confidence'] as double,
+            ))
+        .toList();
   }
 
   // ── Internal helpers ────────────────────────────────────────────────────
