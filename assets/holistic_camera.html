@@ -90,19 +90,27 @@
       }
     });
 
-    // ── Start camera via direct getUserMedia (more compatible than Camera util) ──
-    holistic.initialize().then(() => {
-      status.textContent = 'Starting camera…';
+    // ── Camera control (exposed so Flutter can start/stop without reloading) ──
+    let frameLoopActive = false;
 
+    function stopCamera() {
+      frameLoopActive = false;
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+      }
+      status.style.display = 'block';
+      status.textContent = 'Camera stopped';
+    }
+
+    function startCamera() {
+      if (video.srcObject) return; // already running
+      status.style.display = 'block';
+      status.textContent = 'Starting camera…';
       const constraints = {
-        video: {
-          facingMode: 'user',
-          width:  { ideal: 640 },
-          height: { ideal: 480 }
-        },
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false
       };
-
       navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
           video.srcObject = stream;
@@ -110,20 +118,31 @@
             video.play();
             status.style.display = 'none';
             try { window.flutter_inappwebview.callHandler('onReady'); } catch(e) {}
-
-            // Send frames to holistic at ~15fps
-            function sendFrame() {
-              if (video.readyState >= 2) {
-                holistic.send({ image: video });
-              }
-              setTimeout(sendFrame, 66); // ~15fps — enough for sign recognition
-            }
+            frameLoopActive = true;
             sendFrame();
           };
         })
         .catch(err => {
           status.textContent = 'Camera error: ' + err.name + ': ' + err.message;
         });
+    }
+
+    // Send frames to holistic at ~15fps
+    function sendFrame() {
+      if (!frameLoopActive) return;
+      if (video.readyState >= 2) {
+        holistic.send({ image: video });
+      }
+      setTimeout(sendFrame, 66);
+    }
+
+    // Expose to Flutter
+    window.stopCamera  = stopCamera;
+    window.startCamera = startCamera;
+
+    // ── Initialize MediaPipe then start camera ──────────────────────────────
+    holistic.initialize().then(() => {
+      startCamera();
     }).catch(err => {
       status.textContent = 'MediaPipe error: ' + err.message;
     });

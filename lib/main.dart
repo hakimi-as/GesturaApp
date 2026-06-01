@@ -28,6 +28,9 @@ import 'services/navigation_service.dart';
 import 'services/notification_service.dart';
 import 'services/haptic_service.dart';
 import 'services/remote_sign_service.dart';
+import 'services/dtw_service.dart';
+import 'services/firestore_service.dart';
+import 'services/app_cache.dart';
 
 // --- Screens ---
 import 'screens/splash_screen.dart';
@@ -73,6 +76,13 @@ void main() async {
     'SIGN_API_KEY',
     defaultValue: '',
   );
+
+  // Warm up: preload DTW sign library + category list in background.
+  // Both are fire-and-forget — they populate caches used by Sign→Text and Learn.
+  DtwService.instance.loadLibrary().catchError((_) {});
+  FirestoreService().getCategories().then((cats) {
+    AppCache.instance.setCategories(cats);
+  }).catchError((_) {});
 
   // Check if user has seen onboarding
   final prefs = await SharedPreferences.getInstance();

@@ -293,7 +293,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           ],
           ...listUsers.asMap().entries.map((e) {
             final rank = (hasPodium ? 4 : 1) + e.key;
-            return _buildLeaderboardRow(e.value, rank, e.key);
+            return RepaintBoundary(child: _buildLeaderboardRow(e.value, rank, e.key));
           }),
         ],
       ),

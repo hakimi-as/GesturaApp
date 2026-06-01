@@ -43,6 +43,7 @@ class _TranslateScreenState extends State<TranslateScreen>
   // ── Sign-to-Text state ──────────────────────────────────────────────────
   // _sentenceWords and _translationOutput live in TranslateProvider
   bool _isCameraActive = false;
+  bool _webViewEverStarted = false; // keep WebView alive after first open
   bool _isTranslating = false;
   String _currentDetected = '';
   bool _isMatching = false;
@@ -77,6 +78,9 @@ class _TranslateScreenState extends State<TranslateScreen>
 
   @override
   void dispose() {
+    if (_isCameraActive) {
+      _webViewController?.evaluateJavascript(source: 'stopCamera()');
+    }
     _webViewController = null;
     _tabController.dispose();
     _textController.dispose();
@@ -235,7 +239,19 @@ class _TranslateScreenState extends State<TranslateScreen>
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       clipBehavior: Clip.antiAlias,
-      child: _isCameraActive ? _buildWebCameraView() : _buildCameraPlaceholder(),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Keep WebView alive via Offstage after first init so MediaPipe
+          // models don't reload on subsequent camera opens.
+          if (_webViewEverStarted)
+            Offstage(
+              offstage: !_isCameraActive,
+              child: _buildWebCameraView(),
+            ),
+          if (!_isCameraActive) _buildCameraPlaceholder(),
+        ],
+      ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
   }
 
@@ -1077,13 +1093,19 @@ class _TranslateScreenState extends State<TranslateScreen>
     _currentDetected = '';
     _isReady = false;
 
-    // The InAppWebView in _buildWebCameraView() handles camera + MediaPipe.
-    // We just need to set the state to show it.
-    setState(() => _isCameraActive = true);
+    if (_webViewEverStarted && _webViewController != null) {
+      // WebView already loaded — restart camera stream via JS (MediaPipe stays warm)
+      await _webViewController!.evaluateJavascript(source: 'startCamera()');
+    }
+    setState(() {
+      _isCameraActive = true;
+      _webViewEverStarted = true;
+    });
   }
 
   void _stopCamera() {
-    _webViewController = null;
+    // Stop the video stream via JS but keep WebView alive for fast re-open
+    _webViewController?.evaluateJavascript(source: 'stopCamera()');
     _frameBuffer.clear();
     setState(() {
       _isCameraActive = false;

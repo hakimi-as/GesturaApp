@@ -169,6 +169,49 @@ class _SignPlayerState extends State<SignPlayer> {
     );
   }
 
+  /// Resolves one word to a list of sequence entries (bim or fingerspell).
+  /// All letter lookups within a fingerspelled word run in parallel.
+  Future<List<Map<String, dynamic>>> _resolveWord(String word) async {
+    final wordKey = word.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
+    if (wordKey.isEmpty) return [];
+
+    final wordResult = await _fetchWordData(wordKey);
+    if (wordResult != null) {
+      final frames = wordResult['frames'] as List<Map<String, dynamic>>;
+      if (frames.isEmpty) return [];
+      return [
+        {
+          'frames': frames,
+          'label': word.toUpperCase(),
+          'type': 'bim',
+          'language': wordResult['language'] as String? ?? 'BIM',
+          'fsw': wordResult['fsw'],
+        }
+      ];
+    }
+
+    // Fingerspell — fetch all letters in parallel
+    final chars = wordKey.split('').where((c) => c != '_').toList();
+    if (chars.isEmpty) return [];
+    final letterResults = await Future.wait(chars.map(_fetchLetterData));
+    final entries = <Map<String, dynamic>>[];
+    for (int ci = 0; ci < chars.length; ci++) {
+      final lr = letterResults[ci];
+      if (lr == null) continue;
+      final frames = lr['frames'] as List<Map<String, dynamic>>;
+      if (frames.isNotEmpty) {
+        entries.add({
+          'frames': frames,
+          'label': 'Letter ${chars[ci].toUpperCase()}',
+          'type': 'fingerspell',
+          'language': 'BIM',
+          'fsw': null,
+        });
+      }
+    }
+    return entries;
+  }
+
   Future<void> _prefetchSvgs() async {
     final uniqueFsw = _sequenceFsw.whereType<String>().toSet();
     if (uniqueFsw.isEmpty) return;
@@ -234,42 +277,16 @@ class _SignPlayerState extends State<SignPlayer> {
           _sequenceFsw.add(phraseResult['fsw'] as String?);
         }
       } else {
-        // Split into words
-        List<String> words = rawInput.trim().split(RegExp(r'\s+'));
-
-        for (String word in words) {
-          String wordKey = word.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
-          if (wordKey.isEmpty) continue;
-
-          Map<String, dynamic>? wordResult = await _fetchWordData(wordKey);
-
-          if (wordResult != null) {
-            final frames = wordResult['frames'] as List<Map<String, dynamic>>;
-            if (frames.isNotEmpty) {
-              _sequence.add(frames);
-              _sequenceLabels.add(word.toUpperCase());
-              _sequenceTypes.add('bim');
-              _sequenceLanguages.add(wordResult['language'] as String? ?? 'BIM');
-              _sequenceFsw.add(wordResult['fsw'] as String?);
-            }
-          } else {
-            // Fingerspell - fetch all letters in parallel
-            final chars = wordKey.split('').where((c) => c != '_').toList();
-            final letterResults = await Future.wait(
-              chars.map((c) => _fetchLetterData(c)),
-            );
-            for (int ci = 0; ci < chars.length; ci++) {
-              final letterResult = letterResults[ci];
-              if (letterResult == null) continue;
-              final frames = letterResult['frames'] as List<Map<String, dynamic>>;
-              if (frames.isNotEmpty) {
-                _sequence.add(frames);
-                _sequenceLabels.add('Letter ${chars[ci].toUpperCase()}');
-                _sequenceTypes.add('fingerspell');
-                _sequenceLanguages.add('BIM');
-                _sequenceFsw.add(null);
-              }
-            }
+        // Split into words, resolve ALL in parallel
+        final words = rawInput.trim().split(RegExp(r'\s+'));
+        final wordEntryGroups = await Future.wait(words.map(_resolveWord));
+        for (final entries in wordEntryGroups) {
+          for (final e in entries) {
+            _sequence.add(e['frames'] as List<Map<String, dynamic>>);
+            _sequenceLabels.add(e['label'] as String);
+            _sequenceTypes.add(e['type'] as String);
+            _sequenceLanguages.add(e['language'] as String);
+            _sequenceFsw.add(e['fsw'] as String?);
           }
         }
       }

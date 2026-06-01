@@ -407,10 +407,12 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
           itemBuilder: (context, index) {
             final badge = badges[index];
             final isUnlocked = unlockedIds.contains(badge.id);
-            return BadgeCard(
-              badge: badge,
-              isUnlocked: isUnlocked,
-            ).animate().fadeIn(delay: Duration(milliseconds: 50 * index));
+            return RepaintBoundary(
+              child: BadgeCard(
+                badge: badge,
+                isUnlocked: isUnlocked,
+              ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)),
+            );
           },
         ),
         const SizedBox(height: 24),
@@ -442,10 +444,12 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
           itemCount: sortedBadges.length,
           itemBuilder: (context, index) {
             final badge = sortedBadges[index];
-            return BadgeCard(
-              badge: badge,
-              isUnlocked: true,
-            ).animate().fadeIn(delay: Duration(milliseconds: 50 * index));
+            return RepaintBoundary(
+              child: BadgeCard(
+                badge: badge,
+                isUnlocked: true,
+              ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)),
+            );
           },
         );
       },
