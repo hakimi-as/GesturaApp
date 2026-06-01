@@ -14,10 +14,14 @@ build/
 .DS_Store
 Thumbs.db
 
-# Android
+# Android — local machine files (never commit these)
+android/local.properties
 android/.gradle/
 android/app/build/
+android/build/
 android/.kotlin/
+android/*.log
+android/*.hprof
 
 # Platform ephemeral files
 ios/Flutter/ephemeral/
@@ -26,3 +30,14 @@ ios/Flutter/flutter_export_environment.sh
 linux/flutter/ephemeral/
 macos/Flutter/ephemeral/
 windows/flutter/ephemeral/
+
+# AI / tooling config (machine-specific, not project code)
+.agents/
+.claude/
+.superpowers/
+skills-lock.json
+docs/superpowers/
+
+# Poster helper scripts (local rendering tools, not project source)
+docs/poster/render.html
+docs/poster/open_in_mermaid.js
