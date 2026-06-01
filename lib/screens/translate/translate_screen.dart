@@ -625,22 +625,28 @@ class _TranslateScreenState extends State<TranslateScreen>
           const SizedBox(height: 20),
           Row(
             children: [
-              _buildOutputActionButton(
-                icon: Icons.volume_up,
-                label: AppLocalizations.of(context).speak,
-                onTap: () => _speakOutput(sentenceWords),
+              Flexible(
+                child: _buildOutputActionButton(
+                  icon: Icons.volume_up,
+                  label: AppLocalizations.of(context).speak,
+                  onTap: () => _speakOutput(sentenceWords),
+                ),
               ),
-              const SizedBox(width: 10),
-              _buildOutputActionButton(
-                icon: Icons.copy,
-                label: AppLocalizations.of(context).copy,
-                onTap: () => _copyOutput(sentenceWords),
+              const SizedBox(width: 8),
+              Flexible(
+                child: _buildOutputActionButton(
+                  icon: Icons.copy,
+                  label: AppLocalizations.of(context).copy,
+                  onTap: () => _copyOutput(sentenceWords),
+                ),
               ),
-              const SizedBox(width: 10),
-              _buildOutputActionButton(
-                icon: Icons.delete_outline,
-                label: AppLocalizations.of(context).clear,
-                onTap: _clearOutput,
+              const SizedBox(width: 8),
+              Flexible(
+                child: _buildOutputActionButton(
+                  icon: Icons.delete_outline,
+                  label: AppLocalizations.of(context).clear,
+                  onTap: _clearOutput,
+                ),
               ),
             ],
           ),
@@ -721,7 +727,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                 onTap: _startVoiceInput,
                 isActive: _isListening,
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _buildInputActionButton(
                 icon: Icons.delete_outline,
                 label: AppLocalizations.of(context).clear,
@@ -731,25 +737,31 @@ class _TranslateScreenState extends State<TranslateScreen>
                   setState(() {});
                 },
               ),
-              const Spacer(),
-              TapScale(
-                onTap: _translateText,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('🤟', style: TextStyle(fontSize: 16)),
-                      const SizedBox(width: 8),
-                      Text(
-                        AppLocalizations.of(context).translateBtn,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-                      ),
-                    ],
+              const SizedBox(width: 8),
+              Expanded(
+                child: TapScale(
+                  onTap: _translateText,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🤟', style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            AppLocalizations.of(context).translateBtn,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -764,6 +776,8 @@ class _TranslateScreenState extends State<TranslateScreen>
     return Container(
       height: 480,
       width: double.infinity,
+      clipBehavior: Clip.hardEdge,
+      decoration: const BoxDecoration(),
       child: tp.currentSentence.isNotEmpty
           ? SignPlayer(
               sentence: tp.currentSentence,
@@ -1161,18 +1175,25 @@ class _TranslateScreenState extends State<TranslateScreen>
     return TapScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: context.bgElevated,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: context.borderColor),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: context.textSecondary, size: 18),
-            const SizedBox(width: 6),
-            Text(label, style: TextStyle(color: context.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(color: context.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),

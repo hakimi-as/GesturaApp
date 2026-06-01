@@ -100,8 +100,6 @@ class _NotificationSettingsScreenState
                           _buildNotificationTypes(),
                           const SizedBox(height: 24),
                           _buildReminderTime(),
-                          const SizedBox(height: 24),
-                          _buildTestNotification(),
                           const SizedBox(height: 40),
                         ],
                       ),
@@ -462,64 +460,4 @@ class _NotificationSettingsScreenState
     ).animate().fadeIn(delay: 300.ms);
   }
 
-  Widget _buildTestNotification() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text('🧪', style: TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              'Test Notifications',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () async {
-              await _notificationService.showLocalNotification(
-                title: '🧪 Test Notification',
-                body: 'If you see this, notifications are working!',
-              );
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Test notification sent!'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.bgCard,
-              foregroundColor: context.textPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: context.borderColor),
-              ),
-              elevation: 0,
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.send, size: 20),
-                SizedBox(width: 10),
-                Text(
-                  'Send Test Notification',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    ).animate().fadeIn(delay: 400.ms);
-  }
 }

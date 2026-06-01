@@ -911,6 +911,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
         return TapScale(
           onTap: isAnswered ? null : () => _handleOptionSelected(index),
+          onLongPress: optionImage != null ? () => _showFullscreenImage(context, optionImage) : null,
           child: Container(
             decoration: BoxDecoration(
               color: context.bgCard,
@@ -931,11 +932,9 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
             child: Stack(
               children: [
-                // Option image
+                // Option image — tap whole card to select, long-press to enlarge
                 if (optionImage != null)
-                  TapScale(
-                    onLongPress: () => _showFullscreenImage(context, optionImage),
-                    child: ClipRRect(
+                  ClipRRect(
                       borderRadius: BorderRadius.circular(14),
                       child: Image.network(
                         CloudinaryService.getOptimizedImage(optionImage, width: 300, height: 300),
@@ -964,8 +963,7 @@ class _QuizScreenState extends State<QuizScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  )
+                    )
                 else
                   // Fallback to text if no image
                   Center(

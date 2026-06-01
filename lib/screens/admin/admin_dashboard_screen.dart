@@ -15,6 +15,7 @@ import 'admin_badges_screen.dart';
 import 'admin_sign_library_screen.dart';
 import '../../services/learning_path_seeder.dart';
 import '../../services/learning_path_diagnostic.dart';
+import '../../services/notification_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -25,6 +26,7 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final NotificationService _notificationService = NotificationService();
   
   int _totalUsers = 0;
   int _totalCategories = 0;
@@ -142,6 +144,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ).animate().fadeIn(delay: 600.ms),
                     const SizedBox(height: 16),
                     _buildQuickActions(context),
+                    const SizedBox(height: 24),
+
+                    // Dev Tools
+                    Text(
+                      'Dev Tools',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ).animate().fadeIn(delay: 700.ms),
+                    const SizedBox(height: 16),
+                    _buildTestNotificationButton(context),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -557,6 +568,72 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
     );
   }
+  Widget _buildTestNotificationButton(BuildContext context) {
+    return TapScale(
+      onTap: () async {
+        await _notificationService.showLocalNotification(
+          title: '🧪 Test Notification',
+          body: 'If you see this, push notifications are working!',
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Test notification sent!'),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.borderColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Center(
+                child: Text('🧪', style: TextStyle(fontSize: 26)),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Test Push Notification',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Send a test local notification',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: context.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.send, color: AppColors.primary, size: 20),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 750.ms);
+  }
+
   void _showLearningPathsDialog(BuildContext context) {
     showDialog(
       context: context,
