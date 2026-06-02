@@ -94,7 +94,7 @@ class LessonModel {
   };
 
   static LessonModel fromJson(Map<String, dynamic> json) => LessonModel(
-    id: json['id'] as String,
+    id: json['id'] as String? ?? '',
     categoryId: json['categoryId'] as String? ?? '',
     signName: json['signName'] as String? ?? '',
     description: json['description'] as String? ?? '',
@@ -107,12 +107,10 @@ class LessonModel {
     order: json['order'] as int? ?? 0,
     xpReward: json['xpReward'] as int? ?? 10,
     isActive: json['isActive'] as bool? ?? true,
-    createdAt: json['createdAt'] != null
-        ? DateTime.fromMillisecondsSinceEpoch(json['createdAt'] as int)
-        : DateTime.now(),
-    updatedAt: json['updatedAt'] != null
-        ? DateTime.fromMillisecondsSinceEpoch(json['updatedAt'] as int)
-        : DateTime.now(),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(
+        (json['createdAt'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(
+        (json['updatedAt'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch),
   );
 
   LessonModel copyWith({

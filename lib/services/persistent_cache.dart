@@ -20,7 +20,11 @@ class PersistentCache {
   late Box _box;
 
   Future<void> init() async {
-    _box = await Hive.openBox(_boxName);
+    if (Hive.isBoxOpen(_boxName)) {
+      _box = Hive.box(_boxName);
+    } else {
+      _box = await Hive.openBox(_boxName);
+    }
   }
 
   bool _isFresh(String tsKey) {
@@ -30,20 +34,24 @@ class PersistentCache {
     return age < _ttlHours * 3600 * 1000;
   }
 
-  void _setTs(String key) =>
+  Future<void> _setTs(String key) =>
       _box.put('${key}_ts', DateTime.now().millisecondsSinceEpoch);
 
   List<CategoryModel>? getCategories() {
     if (!_isFresh(_keyCategories)) return null;
     final raw = _box.get(_keyCategories) as String?;
     if (raw == null) return null;
-    final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
-    return list.map(CategoryModel.fromJson).toList();
+    try {
+      final list = jsonDecode(raw) as List;
+      return list.whereType<Map<String, dynamic>>().map(CategoryModel.fromJson).toList();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> setCategories(List<CategoryModel> cats) async {
     await _box.put(_keyCategories, jsonEncode(cats.map((c) => c.toJson()).toList()));
-    _setTs(_keyCategories);
+    await _setTs(_keyCategories);
   }
 
   List<LessonModel>? getLessons(String categoryId) {
@@ -51,26 +59,35 @@ class PersistentCache {
     if (!_isFresh(key)) return null;
     final raw = _box.get(key) as String?;
     if (raw == null) return null;
-    final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
-    return list.map(LessonModel.fromJson).toList();
+    try {
+      final list = jsonDecode(raw) as List;
+      return list.whereType<Map<String, dynamic>>().map(LessonModel.fromJson).toList();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> setLessons(String categoryId, List<LessonModel> lessons) async {
     final key = '$_keyLessonsPrefix$categoryId';
     await _box.put(key, jsonEncode(lessons.map((l) => l.toJson()).toList()));
-    _setTs(key);
+    await _setTs(key);
   }
 
   List<Map<String, dynamic>>? getBadgePool() {
     if (!_isFresh(_keyBadgePool)) return null;
     final raw = _box.get(_keyBadgePool) as String?;
     if (raw == null) return null;
-    return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    try {
+      final list = jsonDecode(raw) as List;
+      return list.whereType<Map<String, dynamic>>().toList();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> setBadgePool(List<Map<String, dynamic>> pool) async {
     await _box.put(_keyBadgePool, jsonEncode(pool));
-    _setTs(_keyBadgePool);
+    await _setTs(_keyBadgePool);
   }
 
   Future<void> clear() => _box.clear();

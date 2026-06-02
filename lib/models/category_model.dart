@@ -48,7 +48,7 @@ class CategoryModel {
   };
 
   static CategoryModel fromJson(Map<String, dynamic> json) => CategoryModel(
-    id: json['id'] as String,
+    id: json['id'] as String? ?? '',
     name: json['name'] as String? ?? '',
     description: json['description'] as String? ?? '',
     icon: json['icon'] as String? ?? '📚',
@@ -56,11 +56,11 @@ class CategoryModel {
     lessonCount: json['lessonCount'] as int? ?? 0,
     order: json['order'] as int? ?? 0,
     isActive: json['isActive'] as bool? ?? true,
-    createdAt: json['createdAt'] != null
-        ? DateTime.fromMillisecondsSinceEpoch(json['createdAt'] as int)
+    createdAt: (json['createdAt'] as num?) != null
+        ? DateTime.fromMillisecondsSinceEpoch((json['createdAt'] as num).toInt())
         : null,
-    updatedAt: json['updatedAt'] != null
-        ? DateTime.fromMillisecondsSinceEpoch(json['updatedAt'] as int)
+    updatedAt: (json['updatedAt'] as num?) != null
+        ? DateTime.fromMillisecondsSinceEpoch((json['updatedAt'] as num).toInt())
         : null,
     difficulty: json['difficulty'] as String?,
     signLanguage: json['signLanguage'] as String?,
