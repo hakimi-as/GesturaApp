@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../services/firestore_service.dart';
 import 'auth/login_screen.dart';
 import 'main_navigator.dart';
 
@@ -35,22 +36,53 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigateAfterDelay() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (!mounted) return;
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    // Run minimum splash animation (1.2 s) AND prefetch data in parallel.
+    // Whichever finishes last determines when we navigate.
+    await Future.wait([
+      Future.delayed(const Duration(milliseconds: 1200)),
+      _prefetchData(authProvider),
+    ]);
+
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
+        pageBuilder: (_, __, ___) =>
             authProvider.isLoggedIn ? const MainNavigator() : const LoginScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+        transitionsBuilder: (_, animation, __, child) =>
             FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 600),
       ),
     );
+  }
+
+  Future<void> _prefetchData(AuthProvider authProvider) async {
+    try {
+      final firestoreService = FirestoreService();
+
+      // Always prefetch static content
+      final categories = await firestoreService.getCategories();
+
+      final futures = <Future>[
+        if (categories.isNotEmpty)
+          firestoreService.getLessonsForCategories(
+              categories.map((c) => c.id).toList()),
+      ];
+
+      // User-specific data only when logged in
+      if (authProvider.isLoggedIn && authProvider.userId != null) {
+        futures.addAll([
+          firestoreService.getCompletedLessonIdsForUser(authProvider.userId!),
+          firestoreService.getUserProgress(authProvider.userId!),
+        ]);
+      }
+
+      await Future.wait(futures);
+    } catch (_) {
+      // Prefetch failures are silent — screens will fetch on demand
+    }
   }
 
   @override
