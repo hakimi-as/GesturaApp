@@ -76,15 +76,12 @@ class _LearnScreenState extends State<LearnScreen> {
     try {
       final categories = await _firestoreService.getCategories();
 
-      // Fetch all lesson lists once and cache them — reused for both counts.
-      final Map<String, List<dynamic>> allLessons = {};
-      Map<String, int> lessonCounts = {};
-
-      for (var category in categories) {
-        final lessons = await _firestoreService.getLessons(category.id);
-        allLessons[category.id] = lessons;
-        lessonCounts[category.id] = lessons.length;
-      }
+      // Fetch all lesson lists in parallel — one batched call instead of N sequential reads.
+      final allLessons = await _firestoreService
+          .getLessonsForCategories(categories.map((c) => c.id).toList());
+      final Map<String, int> lessonCounts = {
+        for (final e in allLessons.entries) e.key: e.value.length,
+      };
 
       if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);

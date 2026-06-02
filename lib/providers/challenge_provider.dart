@@ -150,34 +150,37 @@ class ChallengeProvider extends ChangeNotifier {
       _cachedTodayKey = todayKey;
       _cachedUser = user;
 
+      // Load all challenge types in parallel.
       // Personalized challenges are cached for the day so they never change
       // mid-session (fixes the "Explore Food disappears after completing a lesson" bug).
-      final personalized = await _loadPersonalizedChallenges(userId, user, todayKey);
+      final results = await Future.wait([
+        _loadPersonalizedChallenges(userId, user, todayKey),
+        _loadOrSelectChallenges(
+          userId: userId,
+          user: user,
+          periodKey: '${todayKey}_type0',
+          type: ChallengeType.daily,
+          count: 3,
+        ),
+        _loadOrSelectChallenges(
+          userId: userId,
+          user: user,
+          periodKey: '${weekKey}_type1',
+          type: ChallengeType.weekly,
+          count: 4,
+        ),
+        _loadOrSelectChallenges(
+          userId: userId,
+          user: user,
+          periodKey: '${monthKey}_type2',
+          type: ChallengeType.special,
+          count: 2,
+        ),
+      ]);
 
-      final regularDaily = await _loadOrSelectChallenges(
-        userId: userId,
-        user: user,
-        periodKey: '${todayKey}_type0',
-        type: ChallengeType.daily,
-        count: 3,
-      );
-      _dailyChallenges = [...personalized, ...regularDaily];
-
-      _weeklyChallenges = await _loadOrSelectChallenges(
-        userId: userId,
-        user: user,
-        periodKey: '${weekKey}_type1',
-        type: ChallengeType.weekly,
-        count: 4,
-      );
-
-      _specialChallenges = await _loadOrSelectChallenges(
-        userId: userId,
-        user: user,
-        periodKey: '${monthKey}_type2',
-        type: ChallengeType.special,
-        count: 2,
-      );
+      _dailyChallenges = [...results[0], ...results[1]];
+      _weeklyChallenges = results[2];
+      _specialChallenges = results[3];
 
       debugPrint(
           '📦 Loaded ${_dailyChallenges.length} daily / ${_weeklyChallenges.length} weekly / ${_specialChallenges.length} special');
