@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -5,6 +7,7 @@ import '../models/badge_model.dart';
 import '../models/user_model.dart';
 import '../services/badge_service.dart';
 import '../services/app_cache.dart';
+import '../services/persistent_cache.dart';
 
 /// Badge Provider with Dynamic Badge Checking
 /// 
@@ -116,22 +119,37 @@ class BadgeProvider extends ChangeNotifier {
   }
 
   Future<void> _loadBadgePool() async {
+    // 1. Disk cache
+    final diskData = PersistentCache.instance.getBadgePool();
+    if (diskData != null && diskData.isNotEmpty) {
+      _badgePool = diskData.map((m) => BadgeTemplate.fromMap(m)).toList();
+      debugPrint('📦 Loaded ${_badgePool.length} badges from disk cache');
+      unawaited(_fetchBadgePoolFromFirestore().catchError((e) {
+        debugPrint('⚠️ Background badge pool refresh failed: $e');
+      }));
+      return;
+    }
+    // 2. Firestore
+    await _fetchBadgePoolFromFirestore();
+  }
+
+  Future<void> _fetchBadgePoolFromFirestore() async {
     try {
       final snapshot = await _firestore
           .collection('badgePool')
           .orderBy('category')
           .orderBy('tier')
           .get();
-
       _badgePool = snapshot.docs.map((d) => BadgeTemplate.fromFirestore(d)).toList();
-      debugPrint('📦 Loaded ${_badgePool.length} badges from pool');
+      await PersistentCache.instance.setBadgePool(
+        snapshot.docs.map((d) => <String, dynamic>{'id': d.id, ...d.data()}).toList(),
+      );
+      debugPrint('📦 Loaded ${_badgePool.length} badges from Firestore');
     } catch (e) {
       debugPrint('Error loading badge pool: $e');
-      // If ordering fails (no index), try without ordering
       try {
         final snapshot = await _firestore.collection('badgePool').get();
         _badgePool = snapshot.docs.map((d) => BadgeTemplate.fromFirestore(d)).toList();
-        debugPrint('📦 Loaded ${_badgePool.length} badges (unordered)');
       } catch (e2) {
         debugPrint('Error loading badge pool (unordered): $e2');
       }

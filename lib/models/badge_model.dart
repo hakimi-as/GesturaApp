@@ -263,6 +263,27 @@ class BadgeTemplate {
     );
   }
 
+  factory BadgeTemplate.fromMap(Map<String, dynamic> data) {
+    return BadgeTemplate(
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+      description: data['description'] ?? '',
+      icon: data['icon'] ?? '🏆',
+      tier: BadgeTier.values[data['tier'] ?? 0],
+      category: BadgeCategory.values[data['category'] ?? 0],
+      requirement: data['requirement'] ?? 1,
+      trackingField: data['trackingField'] ?? 'signsLearned',
+      lessonCategoryId: data['lessonCategoryId'],
+      lessonCategoryName: data['lessonCategoryName'],
+      xpReward: data['xpReward'] ?? 10,
+      isSecret: data['isSecret'] ?? false,
+      isActive: data['isActive'] ?? true,
+      createdAt: data['createdAt'] != null
+          ? DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+    );
+  }
+
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
