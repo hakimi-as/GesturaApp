@@ -32,6 +32,40 @@ class CategoryModel {
   /// Check if category has a custom image
   bool get hasCustomImage => imageUrl != null && imageUrl!.isNotEmpty;
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'description': description,
+    'icon': icon,
+    'imageUrl': imageUrl,
+    'lessonCount': lessonCount,
+    'order': order,
+    'isActive': isActive,
+    'createdAt': createdAt?.millisecondsSinceEpoch,
+    'updatedAt': updatedAt?.millisecondsSinceEpoch,
+    'difficulty': difficulty,
+    'signLanguage': signLanguage,
+  };
+
+  static CategoryModel fromJson(Map<String, dynamic> json) => CategoryModel(
+    id: json['id'] as String,
+    name: json['name'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    icon: json['icon'] as String? ?? '📚',
+    imageUrl: json['imageUrl'] as String?,
+    lessonCount: json['lessonCount'] as int? ?? 0,
+    order: json['order'] as int? ?? 0,
+    isActive: json['isActive'] as bool? ?? true,
+    createdAt: json['createdAt'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(json['createdAt'] as int)
+        : null,
+    updatedAt: json['updatedAt'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(json['updatedAt'] as int)
+        : null,
+    difficulty: json['difficulty'] as String?,
+    signLanguage: json['signLanguage'] as String?,
+  );
+
   factory CategoryModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return CategoryModel(

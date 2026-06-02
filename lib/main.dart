@@ -31,6 +31,7 @@ import 'services/remote_sign_service.dart';
 import 'services/dtw_service.dart';
 import 'services/firestore_service.dart';
 import 'services/app_cache.dart';
+import 'services/persistent_cache.dart';
 
 // --- Screens ---
 import 'screens/splash_screen.dart';
@@ -47,7 +48,7 @@ void main() async {
 
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    cacheSizeBytes: 40 * 1024 * 1024, // 40 MB cap — CACHE_SIZE_UNLIMITED caused OOM on startup
   );
 
   // Initialize notifications
@@ -59,7 +60,10 @@ void main() async {
   // --- Phase 2 Integration: Initialization ---
   // Initialize Offline Service (Hive, Adapters, Download Paths)
   await OfflineService.initialize();
-  
+
+  // Initialize persistent disk cache (Hive already initialised above)
+  await PersistentCache.instance.init();
+
   // Initialize Connectivity Service (Start listening to network status)
   await ConnectivityProvider.init();
   // ------------------------------------------

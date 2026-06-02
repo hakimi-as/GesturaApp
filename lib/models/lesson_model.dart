@@ -75,6 +75,46 @@ class LessonModel {
     };
   }
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'categoryId': categoryId,
+    'signName': signName,
+    'description': description,
+    'emoji': emoji,
+    'imageUrl': imageUrl,
+    'videoUrl': videoUrl,
+    'animation3DUrl': animation3DUrl,
+    'tips': tips,
+    'difficulty': difficulty,
+    'order': order,
+    'xpReward': xpReward,
+    'isActive': isActive,
+    'createdAt': createdAt.millisecondsSinceEpoch,
+    'updatedAt': updatedAt.millisecondsSinceEpoch,
+  };
+
+  static LessonModel fromJson(Map<String, dynamic> json) => LessonModel(
+    id: json['id'] as String,
+    categoryId: json['categoryId'] as String? ?? '',
+    signName: json['signName'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    emoji: json['emoji'] as String? ?? '🤟',
+    imageUrl: json['imageUrl'] as String?,
+    videoUrl: json['videoUrl'] as String?,
+    animation3DUrl: json['animation3DUrl'] as String?,
+    tips: (json['tips'] as List?)?.cast<String>() ?? const [],
+    difficulty: json['difficulty'] as String? ?? 'beginner',
+    order: json['order'] as int? ?? 0,
+    xpReward: json['xpReward'] as int? ?? 10,
+    isActive: json['isActive'] as bool? ?? true,
+    createdAt: json['createdAt'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(json['createdAt'] as int)
+        : DateTime.now(),
+    updatedAt: json['updatedAt'] != null
+        ? DateTime.fromMillisecondsSinceEpoch(json['updatedAt'] as int)
+        : DateTime.now(),
+  );
+
   LessonModel copyWith({
     String? id,
     String? categoryId,
