@@ -32,7 +32,9 @@ class LocaleProvider extends ChangeNotifier {
   Future<void> setLocale(Locale locale) async {
     if (!AppLocalizations.supportedLocales
         .map((l) => l.languageCode)
-        .contains(locale.languageCode)) return;
+        .contains(locale.languageCode)) {
+      return;
+    }
 
     _locale = locale;
     final prefs = await SharedPreferences.getInstance();

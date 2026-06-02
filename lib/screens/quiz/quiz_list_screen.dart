@@ -188,7 +188,7 @@ class _QuizListScreenState extends State<QuizListScreen> {
                       const Spacer(),
                       Text(
                         '+${quiz.questionCount * 5} XP',
-                        style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w600),
+                        style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),

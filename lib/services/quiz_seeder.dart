@@ -37,7 +37,7 @@ class QuizSeederService {
           .toList();
 
       if (mediaLessons.length < 4) {
-        return SeedResult(
+        return const SeedResult(
           success: false,
           message:
               'Not enough lessons with images/videos found (need at least 4).\n'

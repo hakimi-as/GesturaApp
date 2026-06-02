@@ -85,7 +85,7 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
   }
 
   int get _totalXPEarned {
-    return _userProgress.values.fold(0, (sum, p) => sum + p.xpEarned);
+    return _userProgress.values.fold(0, (totalXp, p) => totalXp + p.xpEarned);
   }
 
   int get _pathsInProgress {
@@ -175,11 +175,11 @@ class _LearningPathsScreenState extends State<LearningPathsScreen>
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.route_rounded, color: AppColors.primary, size: 16),
+                      const Icon(Icons.route_rounded, color: AppColors.primary, size: 16),
                       const SizedBox(width: 6),
                       Text(
                         '${_allPaths.length} Paths',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
@@ -552,7 +552,7 @@ class _LearningPathCard extends StatelessWidget {
                         ),
                         child: Center(
                           child: isCompleted
-                              ? Icon(Icons.check_circle, color: const Color(0xFF10B981), size: 32)
+                              ? const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 32)
                               : Text(path.iconEmoji ?? '📚', style: const TextStyle(fontSize: 28)),
                         ),
                       ),
@@ -810,7 +810,6 @@ class _LearningPathCard extends StatelessWidget {
         math.min(total, 8), // Max 8 dots
         (index) {
           final isComplete = index < completed;
-          final isCompact = total > 8;
           
           return Expanded(
             child: Container(

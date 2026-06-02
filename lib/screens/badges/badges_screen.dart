@@ -141,7 +141,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
                     child: Center(
                       child: Text(
                         '$percentage%',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -160,7 +160,7 @@ class _BadgesScreenState extends State<BadgesScreen> with SingleTickerProviderSt
                   value: percentage / 100,
                   minHeight: 8,
                   backgroundColor: context.borderColor,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
               ),
               const SizedBox(height: 18),

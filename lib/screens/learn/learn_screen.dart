@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -46,7 +46,7 @@ class _LearnScreenState extends State<LearnScreen> {
   List<CategoryModel> _categories = [];
   Map<String, int> _actualLessonCounts = {};
   Map<String, int> _completedLessonCounts = {};
-  int _totalLessons = 0;
+  // int _totalLessons = 0;
   int _totalCompletedLessons = 0;
   bool _isLoading = true;
 
@@ -79,15 +79,14 @@ class _LearnScreenState extends State<LearnScreen> {
       // Fetch all lesson lists once and cache them — reused for both counts.
       final Map<String, List<dynamic>> allLessons = {};
       Map<String, int> lessonCounts = {};
-      int totalLessons = 0;
 
       for (var category in categories) {
         final lessons = await _firestoreService.getLessons(category.id);
         allLessons[category.id] = lessons;
         lessonCounts[category.id] = lessons.length;
-        totalLessons += lessons.length;
       }
 
+      if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final badgeProvider = Provider.of<BadgeProvider>(context, listen: false);
       Map<String, int> completedCounts = {};
@@ -164,7 +163,7 @@ class _LearnScreenState extends State<LearnScreen> {
           _categories = categories;
           _actualLessonCounts = lessonCounts;
           _completedLessonCounts = completedCounts;
-          _totalLessons = totalLessons;
+          // _totalLessons = totalLessons;
           _totalCompletedLessons = totalCompleted;
           _isLoading = false;
         });
@@ -191,7 +190,7 @@ class _LearnScreenState extends State<LearnScreen> {
               ),
               title: Row(
                 children: [
-                  Icon(Icons.menu_book, color: AppColors.primary, size: 20),
+                  const Icon(Icons.menu_book, color: AppColors.primary, size: 20),
                   const SizedBox(width: 10),
                   Text(AppLocalizations.of(context).learnTitle),
                 ],
@@ -541,7 +540,7 @@ class _LearnScreenState extends State<LearnScreen> {
             const Spacer(),
             GestureDetector(
               onTap: onAction,
-              child: Text(action, style: TextStyle(fontSize: 10, color: AppColors.primary)),
+              child: Text(action, style: const TextStyle(fontSize: 10, color: AppColors.primary)),
             ),
           ],
         ],
@@ -802,6 +801,7 @@ class _LearnScreenState extends State<LearnScreen> {
     ).animate().fadeIn(delay: 300.ms);
   }
 
+  // ignore: unused_element
   Widget _buildFeaturedCategoryCard(CategoryModel category, int index) {
     final actualLessonCount = _actualLessonCounts[category.id] ?? 0;
     final completedCount = _completedLessonCounts[category.id] ?? 0;
@@ -910,6 +910,7 @@ class _LearnScreenState extends State<LearnScreen> {
     ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.08);
   }
 
+  // ignore: unused_element
   Widget _buildCategoryCard(CategoryModel category, int index) {
     final actualLessonCount = _actualLessonCounts[category.id] ?? 0;
     final completedCount = _completedLessonCounts[category.id] ?? 0;
@@ -1015,6 +1016,7 @@ class _LearnScreenState extends State<LearnScreen> {
     ).animate().fadeIn(delay: Duration(milliseconds: 350 + (index * 50))).slideY(begin: 0.08);
   }
 
+  // ignore: unused_element
   Widget _buildDailyGoalsSection() {
     return Consumer2<AuthProvider, ChallengeProvider>(
       builder: (context, authProvider, challengeProvider, child) {
@@ -1062,7 +1064,7 @@ class _LearnScreenState extends State<LearnScreen> {
                       ),
                     );
                   },
-                  child: Text(
+                  child: const Text(
                     'View All',
                     style: TextStyle(
                       color: AppColors.primary,
@@ -1126,6 +1128,7 @@ class _LearnScreenState extends State<LearnScreen> {
   }
   // ==================== RECOMMENDED BANNER ====================
 
+  // ignore: unused_element
   Widget _buildRecommendedBanner() {
     final Map<String, Map<String, String>> config = {
       'beginner':     {'emoji': '🌱', 'label': 'Start with the Beginner path',     'sub': 'Perfect for complete beginners',        'difficulty': 'beginner'},
@@ -1163,7 +1166,7 @@ class _LearnScreenState extends State<LearnScreen> {
                           color: AppColors.primary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Recommended for you',
                           style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5),
                         ),
@@ -1185,6 +1188,7 @@ class _LearnScreenState extends State<LearnScreen> {
 
   // ==================== LEARNING PATHS CARD ====================
 
+  // ignore: unused_element
   Widget _buildLearningPathsCard() {
     return TapScale(
       onTap: () {
@@ -1844,7 +1848,7 @@ class _LearnScreenState extends State<LearnScreen> {
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                         ),
-                        child: Text(
+                        child: const Text(
                           'View All',
                           style: TextStyle(
                             color: AppColors.primary,
@@ -1860,8 +1864,8 @@ class _LearnScreenState extends State<LearnScreen> {
 
               // Earned Section
               if (unlockedBadges.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 24, 20, 12),
                   child: SectionHeader(title: 'Earned', dotColor: AppColors.success),
                 ),
 
@@ -1870,8 +1874,8 @@ class _LearnScreenState extends State<LearnScreen> {
               ],
 
               // Locked Section
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 24, 20, 12),
                 child: SectionHeader(title: 'Locked'),
               ),
 
@@ -1900,7 +1904,7 @@ class _LearnScreenState extends State<LearnScreen> {
                       child: Center(
                         child: Text(
                           'View All ${lockedBadges.length - 5} More Badges',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),

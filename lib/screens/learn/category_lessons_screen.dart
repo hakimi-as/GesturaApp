@@ -16,7 +16,6 @@ import 'certificate_preview_screen.dart';
 
 // --- Phase 2 Integration: Imports ---
 import '../../widgets/offline/download_widgets.dart';
-import '../../widgets/offline/offline_widgets.dart';
 
 class CategoryLessonsScreen extends StatefulWidget {
   final CategoryModel category;
@@ -70,11 +69,11 @@ class _CategoryLessonsScreenState extends State<CategoryLessonsScreen> {
   Future<void> _loadLessons() async {
     setState(() { _isLoading = true; _hasError = false; });
 
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     try {
       final lessons = await _firestoreService.getLessons(widget.category.id);
       debugPrint('📚 Loaded ${lessons.length} lessons for ${widget.category.name}');
-
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       Set<String> completedIds = {};
 
       if (authProvider.userId != null) {

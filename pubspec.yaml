@@ -1,4 +1,4 @@
-name: Gestura
+name: gestura
 description: "Gestura - Breaking Silence, Building Bridges: An app that unites communities through sign language"
 publish_to: 'none'
 version: 1.0.0+1
@@ -89,9 +89,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
     - assets/icons/
-    - assets/animations/
     - assets/signs/
     - assets/icons/AppIcon.png
     - assets/signwriting_viewer.html

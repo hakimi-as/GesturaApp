@@ -287,9 +287,9 @@ class _MigrationDialogState extends State<_MigrationDialog> {
           ),
         ],
         if (_isMigrating)
-          TextButton(
+          const TextButton(
             onPressed: null, // Disabled while running
-            child: const Text("Please wait..."),
+            child: Text("Please wait..."),
           ),
         if (_result != null || _error != null)
           ElevatedButton(

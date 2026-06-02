@@ -864,7 +864,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.lightbulb_outline, size: 20, color: AppColors.primary),
+                const Icon(Icons.lightbulb_outline, size: 20, color: AppColors.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

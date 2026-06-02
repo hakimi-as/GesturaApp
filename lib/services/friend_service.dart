@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../models/friend_model.dart';
 import '../models/user_model.dart';
 import '../models/badge_model.dart';
-import '../models/challenge_model.dart';
 import 'badge_service.dart';
 
 /// Friend Service with Badge & Challenge Integration
@@ -55,6 +54,29 @@ class FriendService {
 
       await _friendshipsCollection.add(friendship.toFirestore());
 
+      // Create in-app notification for receiver
+      try {
+        String senderName = 'Someone';
+        final senderDoc = await _usersCollection.doc(fromUserId).get();
+        if (senderDoc.exists) {
+          final senderData = senderDoc.data() as Map<String, dynamic>?;
+          senderName = senderData?['fullName'] ?? 'Someone';
+        }
+
+        await _firestore.collection('notifications').add({
+          'userId': toUserId,
+          'type': 'system',
+          'title': 'Friend Request 🤝',
+          'message': '$senderName sent you a friend request!',
+          'icon': '🤝',
+          'actionRoute': '/friends',
+          'isRead': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('⚠️ Error creating friend request notification: $e');
+      }
+
       return {'success': true, 'message': 'Friend request sent!'};
     } catch (e) {
       debugPrint('Error sending friend request: $e');
@@ -79,6 +101,29 @@ class FriendService {
         'status': 'accepted',
         'acceptedAt': FieldValue.serverTimestamp(),
       });
+
+      // Create in-app notification for the requester (otherUserId)
+      try {
+        String accepterName = 'Someone';
+        final userDoc = await _usersCollection.doc(userId).get();
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>?;
+          accepterName = userData?['fullName'] ?? 'Someone';
+        }
+
+        await _firestore.collection('notifications').add({
+          'userId': otherUserId,
+          'type': 'system',
+          'title': 'Friend Request Accepted 🎉',
+          'message': '$accepterName accepted your friend request. You are now friends!',
+          'icon': '🎉',
+          'actionRoute': '/friends',
+          'isRead': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('⚠️ Error creating friend accepted notification: $e');
+      }
 
       // ========== TRIGGER BADGE CHECKS FOR BOTH USERS ==========
       

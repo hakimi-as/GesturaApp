@@ -71,9 +71,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   onSelected: (value) async {
                     if (value == 'clear') {
                       final confirm = await _confirmClear();
-                      if (confirm == true && mounted) {
+                      if (confirm == true && context.mounted) {
                         await provider.clearAll();
-                        if (mounted) {
+                        if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Text('All notifications cleared'),

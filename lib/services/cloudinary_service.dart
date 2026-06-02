@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -197,7 +196,7 @@ class CloudinaryService {
   static String _generateSignature(String publicId, String timestamp) {
     final stringToSign = 'public_id=$publicId&timestamp=$timestamp$apiSecret';
     final bytes = utf8.encode(stringToSign);
-    final digest = sha1.convert(bytes);
+    final digest = Sha1.convert(bytes);
     return digest.toString();
   }
 
@@ -266,7 +265,7 @@ class CloudinaryUploadResult {
 }
 
 // Simple SHA1 implementation for signature
-class sha1 {
+class Sha1 {
   static Digest convert(List<int> bytes) {
     return Digest(_sha1(bytes));
   }

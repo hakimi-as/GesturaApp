@@ -1087,9 +1087,9 @@ class _AdminUploadSignScreenState extends State<AdminUploadSignScreen>
         _step('4', 'Copy your Space URL into VideoProcessingService.baseUrl'),
         _step('5', 'Space sleeps after 48h inactivity — first request takes ~30s to wake up'),
         const SizedBox(height: 8),
-        Text(
+        const Text(
           'Current endpoint: ${VideoProcessingService.baseUrl}',
-          style: const TextStyle(
+          style: TextStyle(
               fontSize: 11, color: Colors.grey, fontFamily: 'monospace'),
         ),
       ]),

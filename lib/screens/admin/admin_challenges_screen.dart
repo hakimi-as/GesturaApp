@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/challenge_model.dart';
 import '../../providers/challenge_provider.dart';
@@ -167,6 +166,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
       setState(() => _isSeeding = true);
       
       try {
+        if (!mounted) return;
         final provider = Provider.of<ChallengeProvider>(context, listen: false);
         final success = await provider.forceSeedDefaultChallenges();
         
@@ -541,6 +541,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
 
     if (confirmed == true) {
       try {
+        if (!mounted) return;
         final provider = Provider.of<ChallengeProvider>(context, listen: false);
         await provider.deleteChallenge(challenge.id);
         if (!mounted) return;
@@ -614,7 +615,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
 
                     // Type dropdown
                     DropdownButtonFormField<ChallengeType>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       decoration: InputDecoration(
                         labelText: 'Challenge Type',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -635,7 +636,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
 
                     // Tracking field dropdown
                     DropdownButtonFormField<String>(
-                      value: selectedTrackingField,
+                      initialValue: selectedTrackingField,
                       decoration: InputDecoration(
                         labelText: 'What to Track',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -659,7 +660,7 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
                     if (requiresCategory) ...[
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: selectedCategoryId,
+                        initialValue: selectedCategoryId,
                         decoration: InputDecoration(
                           labelText: 'Select Lesson Category *',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -761,12 +762,12 @@ class _AdminChallengesScreenState extends State<AdminChallengesScreen>
                     } else {
                       await provider.addChallenge(newChallenge);
                     }
-                    if (!mounted) return;
+                    if (!mounted || !ctx.mounted) return;
                     Navigator.pop(ctx);
                     _loadChallenges();
                     _showSnackBar(isEditing ? 'Challenge updated' : 'Challenge added');
                   } catch (e) {
-                    if (!mounted) return;
+                    if (!mounted || !ctx.mounted) return;
                     _showSnackBar('Error saving challenge', isError: true);
                   }
                 },

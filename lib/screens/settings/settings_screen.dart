@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -38,7 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   
   Uint8List? _profileImageBytes;
-  bool _isLoadingImage = false;
+  final bool _isLoadingImage = false;
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
@@ -52,8 +52,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final prefs = await SharedPreferences.getInstance();
     
     Uint8List? imageBytes;
     final user = authProvider.currentUser;
@@ -339,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final confirm = await _showBuyConfirmation(context, 500, user.totalXP);
               if (confirm == true) {
                 final result = await _firestoreService.buyStreakFreeze(user.id);
-                if (mounted) {
+                if (context.mounted) {
                   if (result['success']) {
                     HapticService.achievement();
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -778,7 +778,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     HapticService.buttonTap();
     final l10n = AppLocalizations.of(context);
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
-    final languages = LocaleProvider.supportedLanguages;
+    const languages = LocaleProvider.supportedLanguages;
 
     showModalBottomSheet(
       context: context,

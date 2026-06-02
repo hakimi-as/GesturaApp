@@ -98,7 +98,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       hintStyle: TextStyle(color: context.textMuted),
                       prefixIcon: Icon(Icons.search, color: context.textMuted),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                   ),
                 ),
@@ -309,8 +309,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.visibility, size: 20, color: context.textSecondary),
-                    SizedBox(width: 12),
-                    Text('View Details'),
+                    const SizedBox(width: 12),
+                    const Text('View Details'),
                   ],
                 ),
               ),
@@ -618,11 +618,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: context.bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 28),
-            const SizedBox(width: 12),
-            const Text('Reset Progress'),
+            SizedBox(width: 12),
+            Text('Reset Progress'),
           ],
         ),
         content: Column(
@@ -695,7 +695,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'This will permanently reset:',
                     style: TextStyle(
                       color: AppColors.error,
@@ -718,7 +718,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               '⚠️ This action cannot be undone!',
               style: TextStyle(
                 color: AppColors.error,
@@ -753,17 +753,17 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(Icons.remove_circle, color: AppColors.error, size: 14),
+          const Icon(Icons.remove_circle, color: AppColors.error, size: 14),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               label,
-              style: TextStyle(color: AppColors.error, fontSize: 12),
+              style: const TextStyle(color: AppColors.error, fontSize: 12),
             ),
           ),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               color: AppColors.error,
               fontSize: 12,
               fontWeight: FontWeight.bold,

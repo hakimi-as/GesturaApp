@@ -378,11 +378,17 @@ class _SignPlayerState extends State<SignPlayer> {
 
   void _toggleSpeed() {
     setState(() {
-      if (_playbackSpeed == 1.0) _playbackSpeed = 0.5;
-      else if (_playbackSpeed == 0.5) _playbackSpeed = 2.0;
-      else _playbackSpeed = 1.0;
+      if (_playbackSpeed == 1.0) {
+        _playbackSpeed = 0.5;
+      } else if (_playbackSpeed == 0.5) {
+        _playbackSpeed = 2.0;
+      } else {
+        _playbackSpeed = 1.0;
+      }
     });
-    if (_isPlaying) _play(); 
+    if (_isPlaying) {
+      _play();
+    }
   }
 
   void _replay() {

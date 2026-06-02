@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -871,7 +871,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                   style: TextStyle(fontSize: 13, color: context.textMuted)),
               Text(
                 '+$xpEarned XP',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,

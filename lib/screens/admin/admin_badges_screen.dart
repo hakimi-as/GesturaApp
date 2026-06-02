@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/badge_model.dart';
 import '../../providers/badge_provider.dart';
@@ -157,9 +156,11 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
     );
 
     if (confirmed == true) {
+      if (!mounted) return;
       setState(() => _isSeeding = true);
       
       try {
+        if (!mounted) return;
         final provider = Provider.of<BadgeProvider>(context, listen: false);
         final success = await provider.forceSeedDefaultBadges();
         
@@ -529,6 +530,7 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
     );
 
     if (confirmed == true) {
+      if (!mounted) return;
       try {
         final provider = Provider.of<BadgeProvider>(context, listen: false);
         await provider.deleteBadge(badge.id);
@@ -597,7 +599,7 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
 
                     // Tier dropdown
                     DropdownButtonFormField<BadgeTier>(
-                      value: selectedTier,
+                      initialValue: selectedTier,
                       decoration: InputDecoration(labelText: 'Tier', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                       items: BadgeTier.values.map((tier) => DropdownMenuItem(
                         value: tier,
@@ -615,7 +617,7 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
 
                     // Badge Category dropdown
                     DropdownButtonFormField<BadgeCategory>(
-                      value: selectedCategory,
+                      initialValue: selectedCategory,
                       decoration: InputDecoration(labelText: 'Badge Category', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                       items: BadgeCategory.values.map((cat) => DropdownMenuItem(
                         value: cat,
@@ -633,7 +635,7 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
 
                     // Tracking field dropdown
                     DropdownButtonFormField<String>(
-                      value: selectedTrackingField,
+                      initialValue: selectedTrackingField,
                       decoration: InputDecoration(labelText: 'What to Track', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                       items: BadgeTemplate.trackingFieldOptions.map((opt) => DropdownMenuItem(value: opt['value'], child: Text(opt['label']!, style: const TextStyle(fontSize: 13)))).toList(),
                       onChanged: (v) {
@@ -651,7 +653,7 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
                     if (requiresCategory) ...[
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: selectedLessonCategoryId,
+                        initialValue: selectedLessonCategoryId,
                         decoration: InputDecoration(
                           labelText: 'Select Lesson Category *',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -700,7 +702,7 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
                       subtitle: const Text('Hidden until unlocked'),
                       value: isSecret,
                       onChanged: (v) => setDialogState(() => isSecret = v),
-                      activeColor: AppColors.primary,
+                      activeThumbColor: AppColors.primary,
                       contentPadding: EdgeInsets.zero,
                     ),
                   ],
@@ -745,12 +747,12 @@ class _AdminBadgesScreenState extends State<AdminBadgesScreen>
                     } else {
                       await provider.addBadge(newBadge);
                     }
-                    if (!mounted) return;
+                    if (!mounted || !ctx.mounted) return;
                     Navigator.pop(ctx);
                     _loadBadges();
                     _showSnackBar(isEditing ? 'Badge updated' : 'Badge added');
                   } catch (e) {
-                    if (!mounted) return;
+                    if (!mounted || !ctx.mounted) return;
                     _showSnackBar('Error saving badge', isError: true);
                   }
                 },

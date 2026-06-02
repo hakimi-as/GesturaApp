@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -188,7 +188,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                     child: Text(
                       '$current / $total',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
@@ -531,7 +531,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   suffixIcon: qp.isAnswered ? null : IconButton(
@@ -652,7 +652,7 @@ class _QuizScreenState extends State<QuizScreen> {
                                     errorBuilder: (_, __, ___) => Center(
                                       child: Text(
                                         question.correctAnswer[idx],
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 28,
                                           fontWeight: FontWeight.bold,
                                           color: AppColors.accent,
@@ -753,7 +753,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 const SizedBox(width: 6),
                 Text(
                   AppLocalizations.of(context).pickCorrectSign,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.secondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -862,7 +862,7 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
             ),
             if (isSelected && !isAnswered)
-              Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 22),
+              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 22),
           ],
         ),
       ),

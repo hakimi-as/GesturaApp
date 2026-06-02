@@ -7,7 +7,7 @@ class LessonProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
 
   List<CategoryModel> _categories = [];
-  Map<String, List<LessonModel>> _lessonsByCategory = {};
+  final Map<String, List<LessonModel>> _lessonsByCategory = {};
   CategoryModel? _selectedCategory;
   LessonModel? _selectedLesson;
   bool _isLoading = false;

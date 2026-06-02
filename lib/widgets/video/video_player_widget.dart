@@ -113,9 +113,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           children: [
             const Icon(Icons.error_outline, color: AppColors.error, size: 48),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Failed to load video',
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: Colors.white, fontSize: 16),
             ),
             const SizedBox(height: 8),
             TextButton.icon(

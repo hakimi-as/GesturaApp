@@ -8,7 +8,6 @@ class NotificationProvider extends ChangeNotifier {
 
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
-  String? _userId;
   DateTime? _lastLoadedAt;
   String? _lastLoadedUserId;
   static const _ttl = Duration(minutes: 2);
@@ -25,7 +24,6 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   Future<void> loadNotifications(String userId) async {
-    _userId = userId;
     _isLoading = true;
     notifyListeners();
 
@@ -113,7 +111,6 @@ class NotificationProvider extends ChangeNotifier {
 
   void clear() {
     _notifications.clear();
-    _userId = null;
     notifyListeners();
   }
 }

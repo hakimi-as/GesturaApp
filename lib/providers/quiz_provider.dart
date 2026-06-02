@@ -50,7 +50,9 @@ class QuizProvider with ChangeNotifier {
 
   QuizQuestionModel? get currentQuestion {
     if (_currentQuestions.isEmpty ||
-        _currentQuestionIndex >= _currentQuestions.length) return null;
+        _currentQuestionIndex >= _currentQuestions.length) {
+      return null;
+    }
     return _currentQuestions[_currentQuestionIndex];
   }
 

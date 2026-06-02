@@ -23,7 +23,7 @@ class StatCard extends StatelessWidget {
         color: context.bgCard,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

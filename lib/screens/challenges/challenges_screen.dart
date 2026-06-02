@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -269,11 +269,11 @@ class _ChallengesScreenState extends State<ChallengesScreen>
             const SizedBox(height: 20),
             Row(
               children: [
-                Icon(Icons.star, size: 16, color: AppColors.primary),
+                const Icon(Icons.star, size: 16, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Text(
                   '+${challenge.xpReward} XP reward',
-                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
                 ),
                 const Spacer(),
                 Text(

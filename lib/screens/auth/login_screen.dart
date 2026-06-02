@@ -120,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Email
-                          _FieldLabel('Email'),
+                          const _FieldLabel('Email'),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _emailController,
@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 20),
 
                           // Password
-                          _FieldLabel('Password'),
+                          const _FieldLabel('Password'),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _passwordController,
@@ -184,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 padding: EdgeInsets.zero,
                                 minimumSize: const Size(0, 36),
                               ),
-                              child: Text(
+                              child: const Text(
                                 'Forgot Password?',
                                 style: TextStyle(
                                   color: AppColors.primary,
@@ -228,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             MaterialPageRoute(
                                 builder: (_) => const RegisterScreen()),
                           ),
-                          child: Text(
+                          child: const Text(
                             'Sign Up',
                             style: TextStyle(
                               color: AppColors.primary,

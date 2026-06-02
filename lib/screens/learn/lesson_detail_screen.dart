@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../config/design_system.dart';
 import '../../config/theme.dart';
 import '../../models/lesson_model.dart';
 import '../../models/category_model.dart';
@@ -328,7 +327,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
               
               HapticService.success();
               
-              if (mounted) {
+              if (context.mounted) {
                 setState(() {}); // Refresh to show "Saved" state
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

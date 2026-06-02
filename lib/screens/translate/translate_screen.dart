@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -528,7 +527,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                   const SizedBox(width: 10),
                   Text(
                     _currentDetected,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -593,7 +592,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                     ),
                     child: Text(
                       AppLocalizations.of(context).aslToEnglish,
-                      style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
+                      style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -856,7 +855,7 @@ class _TranslateScreenState extends State<TranslateScreen>
                 ),
                 child: Text(
                   AppLocalizations.of(context).englishToMsl,
-                  style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -1015,11 +1014,11 @@ class _TranslateScreenState extends State<TranslateScreen>
   void _captureSign() {
     if (_frameBuffer.length < _minFrames) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Hold your sign for a moment first'),
+        const SnackBar(
+          content: Text('Hold your sign for a moment first'),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.black87,
-          duration: const Duration(seconds: 2),
+          duration: Duration(seconds: 2),
         ),
       );
       return;

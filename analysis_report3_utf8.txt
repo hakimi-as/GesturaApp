@@ -1,0 +1,45 @@
+﻿Analyzing GesturaApp...                                         
+
+warning - The declaration '_getUserProgress' isn't referenced - lib\providers\challenge_provider.dart:687:15 - unused_element
+warning - The value of the field '_userId' isn't used - lib\providers\notification_provider.dart:11:11 - unused_field
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_badges_screen.dart:162:53 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_badges_screen.dart:532:53 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\admin\admin_badges_screen.dart:748:35 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_challenges_screen.dart:169:57 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_challenges_screen.dart:543:57 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\admin\admin_challenges_screen.dart:764:35 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\admin\admin_dashboard_screen.dart:579:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_dashboard_screen.dart:835:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_quizzes_screen.dart:1033:21 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\dashboard\dashboard_screen.dart:167:48 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\learn\category_lessons_screen.dart:76:54 - use_build_context_synchronously
+warning - The value of the field '_totalLessons' isn't used - lib\screens\learn\learn_screen.dart:49:7 - unused_field
+   info - Don't use 'BuildContext's across async gaps - lib\screens\learn\learn_screen.dart:91:54 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\learn\learn_screen.dart:92:56 - use_build_context_synchronously
+warning - The declaration '_buildFeaturedCategoryCard' isn't referenced - lib\screens\learn\learn_screen.dart:805:10 - unused_element
+warning - The declaration '_buildCategoryCard' isn't referenced - lib\screens\learn\learn_screen.dart:913:10 - unused_element
+warning - The declaration '_buildDailyGoalsSection' isn't referenced - lib\screens\learn\learn_screen.dart:1018:10 - unused_element
+warning - The declaration '_buildRecommendedBanner' isn't referenced - lib\screens\learn\learn_screen.dart:1129:10 - unused_element
+warning - The declaration '_buildLearningPathsCard' isn't referenced - lib\screens\learn\learn_screen.dart:1188:10 - unused_element
+   info - The parameter name 'sum' matches a visible type name - lib\screens\learn\learning_paths_screen.dart:88:42 - avoid_types_as_parameter_names
+warning - The value of the local variable 'isCompact' isn't used - lib\screens\learn\learning_paths_screen.dart:813:17 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\learn\lesson_detail_screen.dart:332:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\notifications\notifications_screen.dart:77:48 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\settings\settings_screen.dart:56:52 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings\settings_screen.dart:345:42 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings\settings_screen.dart:347:59 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings\settings_screen.dart:356:42 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings\settings_screen.dart:358:78 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\social\add_friend_screen.dart:69:54 - use_build_context_synchronously
+   info - The type name 'sha1' isn't an UpperCamelCase identifier - lib\services\cloudinary_service.dart:268:7 - camel_case_types
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\stat_card.dart:26:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:26:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:71:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:88:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:98:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:109:45 - deprecated_member_use
+warning - The value of the field '_errorMessage' isn't used - lib\widgets\video\cached_video_player.dart:44:11 - unused_field
+   info - Statements in an if should be enclosed in a block - lib\widgets\video\sign_player.dart:383:41 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\widgets\video\sign_player.dart:384:12 - curly_braces_in_flow_control_structures
+   info - The package name 'Gestura' isn't a lower_case_with_underscores identifier - pubspec.yaml:1:7 - package_names
+

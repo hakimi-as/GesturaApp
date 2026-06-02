@@ -575,7 +575,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           title: '🧪 Test Notification',
           body: 'If you see this, push notifications are working!',
         );
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Test notification sent!'),
@@ -627,7 +627,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
               ),
             ),
-            Icon(Icons.send, color: AppColors.primary, size: 20),
+            const Icon(Icons.send, color: AppColors.primary, size: 20),
           ],
         ),
       ),
@@ -829,6 +829,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
 
     if (confirm != true) return;
+
+    if (!mounted) return;
 
     // Show loading
     showDialog(

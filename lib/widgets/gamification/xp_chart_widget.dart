@@ -153,7 +153,7 @@ class _XPProgressChartState extends State<XPProgressChart> {
                   color: AppColors.primary.withAlpha(26),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
+                child: const Text(
                   'Last 7 days',
                   style: TextStyle(
                     color: AppColors.primary,

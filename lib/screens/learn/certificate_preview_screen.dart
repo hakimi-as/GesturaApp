@@ -41,7 +41,7 @@ class CertificatePreviewScreen extends StatelessWidget {
                   horizontal: 16,
                   vertical: 8,
                 ),
-                loadingWidget: Center(
+                loadingWidget: const Center(
                   child: CircularProgressIndicator(
                     color: AppColors.primary,
                   ),
@@ -141,12 +141,12 @@ class CertificatePreviewScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 alignment: Alignment.center,
-                child: Row(
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.share_rounded, color: Colors.white, size: 18),
-                    const SizedBox(width: 8),
-                    const Text(
+                    Icon(Icons.share_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 8),
+                    Text(
                       'Save & Share',
                       style: TextStyle(
                         color: Colors.white,
@@ -168,13 +168,14 @@ class CertificatePreviewScreen extends StatelessWidget {
     try {
       await CertificateService.shareCertificate(pdfBytes, fileName);
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not share certificate: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not share certificate: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 }

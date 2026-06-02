@@ -6,7 +6,7 @@ import '../widgets/video/sign_player.dart';
 /// and app backgrounding. Camera/frame-buffer stay in the widget (hardware).
 class TranslateProvider extends ChangeNotifier {
   // ── Sign-to-Text ────────────────────────────────────────────────────────
-  List<String> _sentenceWords = [];
+  final List<String> _sentenceWords = [];
   String _translationOutput = '';
 
   List<String> get sentenceWords => List.unmodifiable(_sentenceWords);

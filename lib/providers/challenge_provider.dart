@@ -67,12 +67,16 @@ class ChallengeProvider extends ChangeNotifier {
       _lastError = null;
       final existing = await _firestore.collection('challengePool').get();
       final batch = _firestore.batch();
-      for (final doc in existing.docs) batch.delete(doc.reference);
+      for (final doc in existing.docs) {
+        batch.delete(doc.reference);
+      }
       await batch.commit();
 
       final activeDocs = await _firestore.collection('activeChallenges').get();
       final batch2 = _firestore.batch();
-      for (final doc in activeDocs.docs) batch2.delete(doc.reference);
+      for (final doc in activeDocs.docs) {
+        batch2.delete(doc.reference);
+      }
       await batch2.commit();
 
       await _seedDefaultChallenges();
@@ -680,6 +684,7 @@ class ChallengeProvider extends ChangeNotifier {
   }
 
   // Keep async version for admin/diagnostic use.
+  // ignore: unused_element
   Future<int> _getUserProgress(
       String userId, UserModel user, String trackingField, String? categoryId) async {
     final todayKey = _getTodayKey();
@@ -897,7 +902,9 @@ class ChallengeProvider extends ChangeNotifier {
     try {
       final batch = _firestore.batch();
       final activeDocs = await _firestore.collection('activeChallenges').get();
-      for (final doc in activeDocs.docs) batch.delete(doc.reference);
+      for (final doc in activeDocs.docs) {
+        batch.delete(doc.reference);
+      }
       await batch.commit();
       _isInitialized = false;
       _cachedTodayKey = null; // Force full reload next time

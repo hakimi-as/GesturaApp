@@ -280,7 +280,7 @@ class _ActivityFeedWidgetState extends State<ActivityFeedWidget> {
                           const SizedBox(width: 4),
                           Text(
                             '+${activity.xpEarned} XP',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w600,
                               fontSize: 12,

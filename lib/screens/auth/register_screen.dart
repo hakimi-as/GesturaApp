@@ -114,7 +114,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Full Name
-                          _FieldLabel('Full Name'),
+                          const _FieldLabel('Full Name'),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _nameController,
@@ -126,7 +126,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 18),
 
                           // Email
-                          _FieldLabel('Email'),
+                          const _FieldLabel('Email'),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _emailController,
@@ -143,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 18),
 
                           // User type
-                          _FieldLabel('I am a...'),
+                          const _FieldLabel('I am a...'),
                           const SizedBox(height: 10),
                           Row(
                             children: [
@@ -158,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 18),
 
                           // Password
-                          _FieldLabel('Password'),
+                          const _FieldLabel('Password'),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _passwordController,
@@ -183,7 +183,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 18),
 
                           // Confirm Password
-                          _FieldLabel('Confirm Password'),
+                          const _FieldLabel('Confirm Password'),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _confirmPasswordController,
@@ -227,7 +227,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             style: TextStyle(color: context.textMuted, fontSize: 14)),
                         TapScale(
                           onTap: () => Navigator.pop(context),
-                          child: Text('Sign In',
+                          child: const Text('Sign In',
                               style: TextStyle(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w700,

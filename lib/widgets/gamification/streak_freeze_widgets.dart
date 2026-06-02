@@ -663,7 +663,7 @@ class BuyFreezeDialog extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'You need ${cost - currentXP} more XP',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.error,
                   fontSize: 13,
                 ),

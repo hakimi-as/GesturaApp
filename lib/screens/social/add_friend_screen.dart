@@ -66,7 +66,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> with SingleTickerProv
         return;
       }
 
+      if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
       if (searchCode == authProvider.userId) {
         if (mounted) {
           setState(() {

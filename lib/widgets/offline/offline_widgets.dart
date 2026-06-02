@@ -27,7 +27,7 @@ class OfflineBanner extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: const BoxDecoration(
-            color: const Color(0xFFEF4444),
+            color: Color(0xFFEF4444),
           ),
           child: SafeArea(
             bottom: false,
@@ -136,7 +136,7 @@ class OfflineIndicator extends StatelessWidget {
               color: AppColors.error.withAlpha(30),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
@@ -144,7 +144,7 @@ class OfflineIndicator extends StatelessWidget {
                   size: 14,
                   color: AppColors.error,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Text(
                   'Offline',
                   style: TextStyle(
@@ -267,7 +267,7 @@ class _SyncingIndicatorState extends State<SyncingIndicator> {
             color: const Color(0xFF6366F1).withAlpha(30),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Row(
+          child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
@@ -276,12 +276,12 @@ class _SyncingIndicatorState extends State<SyncingIndicator> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    const Color(0xFF6366F1),
+                    Color(0xFF6366F1),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Syncing...',
                 style: TextStyle(
                   color: Color(0xFF6366F1),

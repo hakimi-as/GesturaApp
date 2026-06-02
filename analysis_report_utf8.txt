@@ -1,0 +1,188 @@
+﻿Analyzing GesturaApp...                                         
+
+   info - Statements in a for should be enclosed in a block - lib\providers\challenge_provider.dart:70:40 - curly_braces_in_flow_control_structures
+   info - Statements in a for should be enclosed in a block - lib\providers\challenge_provider.dart:75:42 - curly_braces_in_flow_control_structures
+warning - The declaration '_getUserProgress' isn't referenced - lib\providers\challenge_provider.dart:683:15 - unused_element
+   info - Statements in a for should be enclosed in a block - lib\providers\challenge_provider.dart:900:42 - curly_braces_in_flow_control_structures
+   info - The private field _lessonsByCategory could be 'final' - lib\providers\lesson_provider.dart:10:34 - prefer_final_fields
+   info - Statements in an if should be enclosed in a block - lib\providers\locale_provider.dart:35:41 - curly_braces_in_flow_control_structures
+warning - The value of the field '_userId' isn't used - lib\providers\notification_provider.dart:11:11 - unused_field
+   info - Statements in an if should be enclosed in a block - lib\providers\quiz_provider.dart:53:60 - curly_braces_in_flow_control_structures
+   info - The private field _sentenceWords could be 'final' - lib\providers\translate_provider.dart:9:16 - prefer_final_fields
+warning - Unused import: '../../config/design_system.dart' - lib\screens\admin\admin_badges_screen.dart:6:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_badges_screen.dart:163:53 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_badges_screen.dart:533:53 - use_build_context_synchronously
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\admin\admin_badges_screen.dart:600:23 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\admin\admin_badges_screen.dart:618:23 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\admin\admin_badges_screen.dart:636:23 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\admin\admin_badges_screen.dart:654:25 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\admin\admin_badges_screen.dart:703:23 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\admin\admin_badges_screen.dart:749:35 - use_build_context_synchronously
+warning - Unused import: '../../config/design_system.dart' - lib\screens\admin\admin_challenges_screen.dart:6:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_challenges_screen.dart:170:57 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_challenges_screen.dart:544:57 - use_build_context_synchronously
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\admin\admin_challenges_screen.dart:617:23 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\admin\admin_challenges_screen.dart:638:23 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\screens\admin\admin_challenges_screen.dart:662:25 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\admin\admin_challenges_screen.dart:765:35 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\admin\admin_dashboard_screen.dart:579:32 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_dashboard_screen.dart:630:13 - prefer_const_constructors
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_dashboard_screen.dart:835:7 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_quizzes_screen.dart:684:26 - prefer_const_constructors
+   info - Don't use 'BuildContext's across async gaps - lib\screens\admin\admin_quizzes_screen.dart:1033:21 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_sign_library_screen.dart:290:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_upload_sign_screen.dart:1090:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:101:39 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:312:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:313:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:621:16 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\screens\admin\admin_users_screen.dart:622:21 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:623:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:698:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:700:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:721:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:723:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:756:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:761:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\admin\admin_users_screen.dart:766:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\forgot_password_screen.dart:160:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\forgot_password_screen.dart:162:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\login_screen.dart:123:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\login_screen.dart:144:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\login_screen.dart:187:38 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\login_screen.dart:189:40 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\login_screen.dart:231:34 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\login_screen.dart:233:36 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\register_screen.dart:117:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\register_screen.dart:129:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\register_screen.dart:146:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\register_screen.dart:161:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\register_screen.dart:186:27 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\register_screen.dart:230:34 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\auth\register_screen.dart:231:38 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\badges\badges_screen.dart:144:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\badges\badges_screen.dart:163:31 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\challenges\challenges_screen.dart:272:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\challenges\challenges_screen.dart:276:26 - prefer_const_constructors
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\screens\dashboard\dashboard_screen.dart:2:8 - unnecessary_import
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\dashboard\dashboard_screen.dart:168:48 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\dashboard\dashboard_screen.dart:408:48 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\dashboard\dashboard_screen.dart:420:44 - prefer_const_constructors
+   info - Unnecessary use of string interpolation - lib\screens\dashboard\dashboard_screen.dart:520:29 - unnecessary_string_interpolations
+   info - Use 'const' with the constructor to improve performance - lib\screens\dashboard\dashboard_screen.dart:659:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\dashboard\dashboard_screen.dart:659:47 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\dashboard\dashboard_screen.dart:864:42 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\dashboard\dashboard_screen.dart:954:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\dashboard\dashboard_screen.dart:984:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\dashboard\dashboard_screen.dart:984:44 - prefer_const_constructors
+warning - Unused import: '../../widgets/offline/offline_widgets.dart' - lib\screens\learn\category_lessons_screen.dart:19:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps - lib\screens\learn\category_lessons_screen.dart:77:54 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\certificate_preview_screen.dart:44:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\certificate_preview_screen.dart:45:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\certificate_preview_screen.dart:144:24 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\screens\learn\certificate_preview_screen.dart:146:29 - prefer_const_literals_to_create_immutables
+warning - The value of the field '_totalLessons' isn't used - lib\screens\learn\learn_screen.dart:49:7 - unused_field
+   info - Don't use 'BuildContext's across async gaps - lib\screens\learn\learn_screen.dart:91:54 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\learn\learn_screen.dart:92:56 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:194:19 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:544:42 - prefer_const_constructors
+warning - The declaration '_buildFeaturedCategoryCard' isn't referenced - lib\screens\learn\learn_screen.dart:805:10 - unused_element
+warning - The declaration '_buildCategoryCard' isn't referenced - lib\screens\learn\learn_screen.dart:913:10 - unused_element
+warning - The declaration '_buildDailyGoalsSection' isn't referenced - lib\screens\learn\learn_screen.dart:1018:10 - unused_element
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1065:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1067:28 - prefer_const_constructors
+warning - The declaration '_buildRecommendedBanner' isn't referenced - lib\screens\learn\learn_screen.dart:1129:10 - unused_element
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1166:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1168:34 - prefer_const_constructors
+warning - The declaration '_buildLearningPathsCard' isn't referenced - lib\screens\learn\learn_screen.dart:1188:10 - unused_element
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1847:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1849:34 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1863:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1865:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1873:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1875:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learn_screen.dart:1903:34 - prefer_const_constructors
+   info - The parameter name 'sum' matches a visible type name - lib\screens\learn\learning_paths_screen.dart:88:42 - avoid_types_as_parameter_names
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learning_paths_screen.dart:178:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learning_paths_screen.dart:182:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\learn\learning_paths_screen.dart:555:33 - prefer_const_constructors
+warning - The value of the local variable 'isCompact' isn't used - lib\screens\learn\learning_paths_screen.dart:813:17 - unused_local_variable
+warning - Unused import: '../../config/design_system.dart' - lib\screens\learn\lesson_detail_screen.dart:6:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\learn\lesson_detail_screen.dart:333:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\notifications\notifications_screen.dart:77:48 - use_build_context_synchronously
+warning - Unused import: '../../config/design_system.dart' - lib\screens\onboarding\onboarding_screen.dart:5:8 - unused_import
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\screens\profile\profile_screen.dart:2:8 - unnecessary_import
+   info - Use 'const' with the constructor to improve performance - lib\screens\quiz\quiz_list_screen.dart:191:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\quiz\quiz_result_screen.dart:874:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\quiz\quiz_screen.dart:191:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\quiz\quiz_screen.dart:534:33 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\quiz\quiz_screen.dart:655:48 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\quiz\quiz_screen.dart:756:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\quiz\quiz_screen.dart:865:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\search\search_screen.dart:867:17 - prefer_const_constructors
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\settings\notification_settings_screen.dart:212:13 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\settings\notification_settings_screen.dart:347:13 - deprecated_member_use
+   info - The private field _isLoadingImage could be 'final' - lib\screens\settings\settings_screen.dart:41:8 - prefer_final_fields
+   info - Don't use 'BuildContext's across async gaps - lib\screens\settings\settings_screen.dart:56:52 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings\settings_screen.dart:345:42 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings\settings_screen.dart:347:59 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings\settings_screen.dart:356:42 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\screens\settings\settings_screen.dart:358:78 - use_build_context_synchronously
+   info - Use 'const' for final variables initialized to a constant value - lib\screens\settings\settings_screen.dart:781:5 - prefer_const_declarations
+   info - Don't use 'BuildContext's across async gaps - lib\screens\social\add_friend_screen.dart:69:54 - use_build_context_synchronously
+   info - Use 'const' with the constructor to improve performance - lib\screens\social\friend_profile_screen.dart:193:13 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\social\friend_profile_screen.dart:479:40 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\social\friend_profile_screen.dart:850:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\splash_screen.dart:229:33 - prefer_const_constructors
+warning - Unused import: 'dart:convert' - lib\screens\translate\translate_screen.dart:2:8 - unused_import
+   info - Use 'const' with the constructor to improve performance - lib\screens\translate\translate_screen.dart:531:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\translate\translate_screen.dart:596:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\translate\translate_screen.dart:859:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\screens\translate\translate_screen.dart:1018:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\certificate_service.dart:73:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\certificate_service.dart:75:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\certificate_service.dart:81:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\certificate_service.dart:197:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\certificate_service.dart:342:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\certificate_service.dart:358:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\certificate_service.dart:410:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\certificate_service.dart:538:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\certificate_service.dart:554:32 - prefer_const_constructors
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\services\cloudinary_service.dart:1:8 - unnecessary_import
+   info - The type name 'sha1' isn't an UpperCamelCase identifier - lib\services\cloudinary_service.dart:269:7 - camel_case_types
+warning - The '!' will have no effect because the receiver can't be null - lib\services\dtw_service.dart:124:85 - unnecessary_non_null_assertion
+   info - Use 'const' with the constructor to improve performance - lib\services\notification_service.dart:278:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\notification_service.dart:344:28 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\services\quiz_seeder.dart:40:16 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\badges\badge_card.dart:227:25 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\badges\badge_card.dart:227:52 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\stat_card.dart:26:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:26:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:71:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:88:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:98:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\cards\welcome_card.dart:109:45 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\widgets\gamification\streak_freeze_widgets.dart:666:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\gamification\xp_chart_widget.dart:156:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\gamification\xp_chart_widget.dart:158:26 - prefer_const_constructors
+warning - Unused import: 'dart:math' - lib\widgets\learning\learning_path_widgets.dart:3:8 - unused_import
+   info - Unnecessary 'const' keyword - lib\widgets\offline\offline_widgets.dart:30:20 - unnecessary_const
+   info - Use 'const' with the constructor to improve performance - lib\widgets\offline\offline_widgets.dart:139:20 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\widgets\offline\offline_widgets.dart:141:25 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance - lib\widgets\offline\offline_widgets.dart:142:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\offline\offline_widgets.dart:148:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\offline\offline_widgets.dart:150:26 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\offline\offline_widgets.dart:270:18 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\widgets\offline\offline_widgets.dart:272:23 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance - lib\widgets\offline\offline_widgets.dart:273:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\offline\offline_widgets.dart:276:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\offline\offline_widgets.dart:278:31 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\widgets\social\activity_feed_widget.dart:283:36 - prefer_const_constructors
+warning - Unused import: 'dart:io' - lib\widgets\video\cached_video_player.dart:1:8 - unused_import
+warning - The value of the field '_errorMessage' isn't used - lib\widgets\video\cached_video_player.dart:45:11 - unused_field
+   info - Statements in an if should be enclosed in a block - lib\widgets\video\sign_player.dart:381:34 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\widgets\video\sign_player.dart:382:39 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\widgets\video\sign_player.dart:383:12 - curly_braces_in_flow_control_structures
+   info - Use 'const' with the constructor to improve performance - lib\widgets\video\video_player_widget.dart:116:13 - prefer_const_constructors
+   info - The package name 'Gestura' isn't a lower_case_with_underscores identifier - pubspec.yaml:1:7 - package_names
+

@@ -121,7 +121,7 @@ class DtwService {
 
       while (hasMore) {
         if (lastDoc != null) {
-          query = firestore.collection('sign_animations').startAfterDocument(lastDoc!).limit(15);
+          query = firestore.collection('sign_animations').startAfterDocument(lastDoc).limit(15);
         }
         
         final snapshot = await query.get();

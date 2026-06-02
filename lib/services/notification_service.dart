@@ -275,7 +275,7 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       _channelIdReminders,
       'Daily Reminders',
       channelDescription: 'Daily learning reminders',
@@ -295,7 +295,7 @@ class NotificationService {
       title,
       body,
       scheduledDate,
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      const NotificationDetails(android: androidDetails, iOS: iosDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
@@ -341,7 +341,7 @@ class NotificationService {
       return;
     }
 
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       _channelIdStreaks,
       'Streak Alerts',
       channelDescription: 'Streak protection alerts',
@@ -363,7 +363,7 @@ class NotificationService {
       'Your Streak is at Risk! 🔥',
       'Don\'t lose your ${streakText}streak! Complete a lesson before midnight.',
       scheduledDate,
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      const NotificationDetails(android: androidDetails, iOS: iosDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,

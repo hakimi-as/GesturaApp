@@ -70,15 +70,15 @@ class CertificateService {
 
     // ── Top accent stripe ──────────────────────────────────────────
     if (isGold) {
-      c.setFillColor(PdfColor(0.914, 0.663, 0.125));
+      c.setFillColor(const PdfColor(0.914, 0.663, 0.125));
     } else {
-      c.setFillColor(PdfColor(0.388, 0.400, 0.945));
+      c.setFillColor(const PdfColor(0.388, 0.400, 0.945));
     }
     c.drawRect(0, h - 3.5, w, 3.5);
     c.fillPath();
 
     // ── Outer border ───────────────────────────────────────────────
-    c.setStrokeColor(PdfColor(0.098, 0.102, 0.220));
+    c.setStrokeColor(const PdfColor(0.098, 0.102, 0.220));
     c.setLineWidth(0.9);
     c.drawRRect(11, 11, w - 22, h - 22, 14, 14);
     c.strokePath();
@@ -194,7 +194,7 @@ class CertificateService {
                   style: pw.TextStyle(
                     font: fTitle,
                     fontSize: 12,
-                    color: PdfColor(1, 1, 1, 0.35),
+                    color: const PdfColor(1, 1, 1, 0.35),
                     letterSpacing: 7,
                   ),
                 ),
@@ -339,7 +339,7 @@ class CertificateService {
                       style: pw.TextStyle(
                         font: fBody,
                         fontSize: 7,
-                        color: PdfColor(0.30, 0.30, 0.46),
+                        color: const PdfColor(0.30, 0.30, 0.46),
                       ),
                     ),
                     pw.Text(
@@ -355,7 +355,7 @@ class CertificateService {
                       style: pw.TextStyle(
                         font: fBody,
                         fontSize: 7,
-                        color: PdfColor(0.30, 0.30, 0.46),
+                        color: const PdfColor(0.30, 0.30, 0.46),
                       ),
                     ),
                   ],
@@ -407,7 +407,7 @@ class CertificateService {
                   style: pw.TextStyle(
                     font: fTitle,
                     fontSize: 12,
-                    color: PdfColor(1, 1, 1, 0.35),
+                    color: const PdfColor(1, 1, 1, 0.35),
                     letterSpacing: 7,
                   ),
                 ),
@@ -535,7 +535,7 @@ class CertificateService {
                       style: pw.TextStyle(
                         font: fBody,
                         fontSize: 7,
-                        color: PdfColor(0.30, 0.30, 0.46),
+                        color: const PdfColor(0.30, 0.30, 0.46),
                       ),
                     ),
                     pw.Text(
@@ -551,7 +551,7 @@ class CertificateService {
                       style: pw.TextStyle(
                         font: fBody,
                         fontSize: 7,
-                        color: PdfColor(0.30, 0.30, 0.46),
+                        color: const PdfColor(0.30, 0.30, 0.46),
                       ),
                     ),
                   ],

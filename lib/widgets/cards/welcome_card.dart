@@ -23,7 +23,7 @@ class WelcomeCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -68,7 +68,7 @@ class WelcomeCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 10,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
@@ -85,7 +85,7 @@ class WelcomeCard extends StatelessWidget {
                           : Icons.radio_button_unchecked,
                       color: goal.isCompleted
                           ? Colors.white
-                          : Colors.white.withOpacity(0.5),
+                          : Colors.white.withValues(alpha: 0.5),
                       size: 18,
                     ),
                     const SizedBox(width: 10),
@@ -95,7 +95,7 @@ class WelcomeCard extends StatelessWidget {
                         style: TextStyle(
                           color: goal.isCompleted
                               ? Colors.white
-                              : Colors.white.withOpacity(0.7),
+                              : Colors.white.withValues(alpha: 0.7),
                           fontSize: 13,
                           decoration: goal.isCompleted
                               ? TextDecoration.lineThrough
@@ -106,7 +106,7 @@ class WelcomeCard extends StatelessWidget {
                     Text(
                       '+${goal.xpReward} XP',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),

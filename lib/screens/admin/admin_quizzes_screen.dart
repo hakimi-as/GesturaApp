@@ -681,7 +681,7 @@ class _QuizQuestionsScreenState extends State<_QuizQuestionsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   'Answer: ${question.correctAnswer}',
-                  style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1030,6 +1030,7 @@ class _QuestionDialogState extends State<_QuestionDialog> {
         points: int.tryParse(pointsController.text) ?? 10,
       );
 
+      if (!mounted) return;
       Navigator.pop(context);
       widget.onSave(newQuestion);
     } catch (e) {

@@ -1,5 +1,4 @@
-﻿import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +33,7 @@ import '../notifications/notifications_screen.dart';
 import '../../widgets/learning/learning_path_widgets.dart';
 import '../learn/learning_paths_screen.dart';
 import '../social/friends_screen.dart'; // NEW: Friends Screen
+import '../badges/badges_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -115,6 +115,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _handleNotificationRoute(String route) {
+    Widget? targetScreen;
+    switch (route) {
+      case '/badges':
+        targetScreen = const BadgesScreen();
+        break;
+      case '/progress':
+        targetScreen = const ProgressScreen();
+        break;
+      case '/challenges':
+        targetScreen = const ChallengesScreen();
+        break;
+      case '/learn':
+        targetScreen = const LearnScreen(showBackButton: true);
+        break;
+      case '/friends':
+        targetScreen = const FriendsScreen();
+        break;
+    }
+
+    if (targetScreen != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => targetScreen!),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,7 +161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _loadProfileImage(),
             ]);
 
-            if (mounted) {
+            if (context.mounted) {
               final user = authProvider.currentUser;
               if (user != null) {
                 Provider.of<ChallengeProvider>(context, listen: false)
@@ -263,12 +291,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 8),
                 TapScale(
-                  onTap: () {
+                  onTap: () async {
                     HapticService.buttonTap();
-                    Navigator.push(
+                    final route = await Navigator.push<String>(
                       context,
                       MaterialPageRoute(builder: (_) => const NotificationsScreen()),
                     );
+                    if (route != null && mounted) {
+                      _handleNotificationRoute(route);
+                    }
                   },
                   child: Container(
                     width: 44,
@@ -373,7 +404,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     return Center(
                                       child: Text(
                                         user?.initials ?? 'U',
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: AppColors.primary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
@@ -385,7 +416,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               : Center(
                                   child: Text(
                                     user?.initials ?? 'U',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
@@ -485,7 +516,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Row(
                         children: [
                           Text(
-                            '${_formatNumber(xpEarned)}',
+                            _formatNumber(xpEarned),
                             style: TextStyle(
                               color: context.textSecondary,
                               fontSize: 11,
@@ -624,7 +655,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   HapticService.buttonTap();
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const LearnScreen(showBackButton: true)));
                 },
-                child: Text('See all', style: TextStyle(fontSize: 10, color: AppColors.primary)),
+                child: const Text('See all', style: TextStyle(fontSize: 10, color: AppColors.primary)),
               ),
             ],
           ),
@@ -829,7 +860,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 child: Text(
                                   '$count NEW',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: AppColors.accent,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -919,7 +950,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: Text(
                         '$activeChallenges Active',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.accent,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -949,7 +980,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const ProgressScreen()));
             },
             style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
-            child: Text('View All', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+            child: const Text('View All', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
           ),
         ),
         const SizedBox(height: 12),

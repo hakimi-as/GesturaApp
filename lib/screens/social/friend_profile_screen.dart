@@ -139,6 +139,15 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             ),
           );
           setState(() => _friendshipStatus = 'sent');
+        } else if (mounted) {
+          HapticService.error();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ ${result['message'] ?? 'Failed to send friend request'}'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
         break;
 
@@ -168,7 +177,25 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             if (newBadges != null && newBadges.isNotEmpty && mounted) {
               await BadgeUnlockDialog.showMultiple(context, newBadges);
             }
+          } else if (mounted) {
+            HapticService.error();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('❌ ${result['message'] ?? 'Failed to accept friend request'}'),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           }
+        } else if (mounted) {
+          HapticService.error();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Friendship request not found'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
         break;
 
@@ -449,7 +476,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                           ? Center(
                               child: Text(
                                 _friend!.initials,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 36,
@@ -820,7 +847,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                 ),
                 child: Text(
                   '${_friendBadges.length} earned',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
