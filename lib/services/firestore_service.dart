@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../config/constants.dart';
 import 'app_cache.dart';
+import 'persistent_cache.dart';
 import '../models/user_model.dart';
 import '../models/category_model.dart';
 import '../models/lesson_model.dart';
@@ -244,19 +245,39 @@ class FirestoreService {
 
   Future<List<CategoryModel>> getCategories() async {
     try {
-      final cached = AppCache.instance.categories;
-      if (cached != null) return cached;
-      final snapshot = await _firestore
-          .collection(AppConstants.categoriesCollection)
-          .orderBy('order')
-          .get();
-      final categories = snapshot.docs.map((doc) => CategoryModel.fromFirestore(doc)).toList();
-      AppCache.instance.setCategories(categories);
-      return categories;
+      // 1. In-memory (fastest)
+      final mem = AppCache.instance.categories;
+      if (mem != null && mem.isNotEmpty) return mem;
+
+      // 2. Disk cache (fast, survives restarts)
+      final disk = PersistentCache.instance.getCategories();
+      if (disk != null && disk.isNotEmpty) {
+        AppCache.instance.setCategories(disk);
+        _refreshCategoriesInBackground();
+        return disk;
+      }
+
+      // 3. Firestore (slow path, first launch or cache expired)
+      return await _fetchCategoriesFromFirestore();
     } catch (e) {
       debugPrint('Error getting categories: $e');
       return [];
     }
+  }
+
+  Future<List<CategoryModel>> _fetchCategoriesFromFirestore() async {
+    final snapshot = await _firestore
+        .collection(AppConstants.categoriesCollection)
+        .orderBy('order')
+        .get();
+    final categories = snapshot.docs.map((doc) => CategoryModel.fromFirestore(doc)).toList();
+    AppCache.instance.setCategories(categories);
+    await PersistentCache.instance.setCategories(categories);
+    return categories;
+  }
+
+  void _refreshCategoriesInBackground() {
+    _fetchCategoriesFromFirestore().catchError((_) => <CategoryModel>[]);
   }
 
   Future<void> addCategory(Map<String, dynamic> data) async {
@@ -320,25 +341,50 @@ class FirestoreService {
 
   Future<List<LessonModel>> getLessons(String categoryId) async {
     try {
-      final cached = AppCache.instance.lessons(categoryId);
-      if (cached != null) return cached;
-      debugPrint('🔥 Getting lessons for categoryId: "$categoryId"');
+      // 1. In-memory
+      final mem = AppCache.instance.lessons(categoryId);
+      if (mem != null) return mem;
 
-      final snapshot = await _firestore
-          .collection(AppConstants.lessonsCollection)
-          .where('categoryId', isEqualTo: categoryId)
-          .get();
+      // 2. Disk cache
+      final disk = PersistentCache.instance.getLessons(categoryId);
+      if (disk != null) {
+        AppCache.instance.setLessons(categoryId, disk);
+        _refreshLessonsInBackground(categoryId);
+        return disk;
+      }
 
-      debugPrint('🔥 Found ${snapshot.docs.length} lessons');
-
-      final lessons = snapshot.docs.map((doc) => LessonModel.fromFirestore(doc)).toList();
-      lessons.sort((a, b) => _naturalCompare(a.signName, b.signName));
-      AppCache.instance.setLessons(categoryId, lessons);
-      return lessons;
+      // 3. Firestore
+      return await _fetchLessonsFromFirestore(categoryId);
     } catch (e) {
       debugPrint('❌ Error getting lessons: $e');
       return [];
     }
+  }
+
+  Future<List<LessonModel>> _fetchLessonsFromFirestore(String categoryId) async {
+    final snapshot = await _firestore
+        .collection(AppConstants.lessonsCollection)
+        .where('categoryId', isEqualTo: categoryId)
+        .get();
+    final lessons = snapshot.docs.map((doc) => LessonModel.fromFirestore(doc)).toList();
+    lessons.sort((a, b) => _naturalCompare(a.signName, b.signName));
+    AppCache.instance.setLessons(categoryId, lessons);
+    await PersistentCache.instance.setLessons(categoryId, lessons);
+    return lessons;
+  }
+
+  void _refreshLessonsInBackground(String categoryId) {
+    _fetchLessonsFromFirestore(categoryId).catchError((_) => <LessonModel>[]);
+  }
+
+  /// Fetch lessons for multiple categories in parallel.
+  Future<Map<String, List<LessonModel>>> getLessonsForCategories(
+      List<String> categoryIds) async {
+    final futures = categoryIds.map((id) async {
+      return MapEntry(id, await getLessons(id));
+    });
+    final entries = await Future.wait(futures);
+    return Map.fromEntries(entries);
   }
 
   Future<List<LessonModel>> getAllLessons() async {
