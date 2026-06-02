@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +13,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/badge_provider.dart';
 import '../../providers/challenge_provider.dart';
 import '../../models/category_model.dart';
+import '../../models/lesson_model.dart';
 import '../../models/badge_model.dart';
 import '../../models/challenge_model.dart';
 import '../../services/firestore_service.dart';
@@ -50,6 +53,11 @@ class _LearnScreenState extends State<LearnScreen> {
   int _totalCompletedLessons = 0;
   bool _isLoading = true;
 
+  // Real-time completed lesson tracking
+  Set<String> _completedLessonIds = {};
+  Map<String, List<LessonModel>> _allLessons = {};
+  StreamSubscription<Set<String>>? _completedSub;
+
   // For progress calendar
   List<DateTime> _activeDays = [];
   
@@ -67,6 +75,12 @@ class _LearnScreenState extends State<LearnScreen> {
     _loadData();
   }
 
+  @override
+  void dispose() {
+    _completedSub?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
@@ -77,10 +91,11 @@ class _LearnScreenState extends State<LearnScreen> {
       final categories = await _firestoreService.getCategories();
 
       // Fetch all lesson lists in parallel — one batched call instead of N sequential reads.
-      final allLessons = await _firestoreService
+      final fetchedLessons = await _firestoreService
           .getLessonsForCategories(categories.map((c) => c.id).toList());
+      _allLessons = Map<String, List<LessonModel>>.from(fetchedLessons);
       final Map<String, int> lessonCounts = {
-        for (final e in allLessons.entries) e.key: e.value.length,
+        for (final e in fetchedLessons.entries) e.key: e.value.length,
       };
 
       if (!mounted) return;
@@ -98,7 +113,7 @@ class _LearnScreenState extends State<LearnScreen> {
 
         // Reuse cached lesson lists — no second round of getLessons reads.
         for (var category in categories) {
-          final lessons = allLessons[category.id] ?? [];
+          final lessons = fetchedLessons[category.id] ?? [];
           int completedInCategory = 0;
           for (var lesson in lessons) {
             if (completedIds.contains(lesson.id)) completedInCategory++;
@@ -165,10 +180,32 @@ class _LearnScreenState extends State<LearnScreen> {
           _isLoading = false;
         });
       }
+
+      if (authProvider.userId != null) {
+        _subscribeToCompletedLessons(authProvider.userId!);
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('Error loading data: $e');
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _subscribeToCompletedLessons(String userId) {
+    _completedSub?.cancel();
+    _completedSub = _firestoreService
+        .completedLessonIdsStream(userId)
+        .listen((ids) {
+          if (!mounted) return;
+          setState(() {
+            _completedLessonIds = ids;
+            _totalCompletedLessons = ids.length;
+            for (final cat in _categories) {
+              final lessons = _allLessons[cat.id] ?? [];
+              _completedLessonCounts[cat.id] =
+                  lessons.where((l) => ids.contains(l.id)).length;
+            }
+          });
+        });
   }
 
   @override

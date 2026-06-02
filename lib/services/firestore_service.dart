@@ -2295,4 +2295,30 @@ class FirestoreService {
       return null;
     }
   }
+
+  /// Real-time stream of completed lesson IDs for a user.
+  Stream<Set<String>> completedLessonIdsStream(String userId) {
+    return _firestore
+        .collection(AppConstants.progressCollection)
+        .where('userId', isEqualTo: userId)
+        .where('isCompleted', isEqualTo: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => d['lessonId'] as String? ?? '')
+            .where((id) => id.isNotEmpty)
+            .toSet());
+  }
+
+  /// Real-time stream of unlocked badge IDs for a user.
+  Stream<List<String>> userBadgeIdsStream(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .map((doc) {
+          final data = doc.data();
+          if (data == null) return <String>[];
+          return List<String>.from(data['unlockedBadges'] ?? []);
+        });
+  }
 }
