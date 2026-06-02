@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'dart:async';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 
@@ -277,7 +278,10 @@ class FirestoreService {
   }
 
   void _refreshCategoriesInBackground() {
-    _fetchCategoriesFromFirestore().catchError((_) => <CategoryModel>[]);
+    unawaited(_fetchCategoriesFromFirestore().catchError((e) {
+      debugPrint('⚠️ Background category refresh failed: $e');
+      return <CategoryModel>[];
+    }));
   }
 
   Future<void> addCategory(Map<String, dynamic> data) async {
@@ -374,7 +378,10 @@ class FirestoreService {
   }
 
   void _refreshLessonsInBackground(String categoryId) {
-    _fetchLessonsFromFirestore(categoryId).catchError((_) => <LessonModel>[]);
+    unawaited(_fetchLessonsFromFirestore(categoryId).catchError((e) {
+      debugPrint('⚠️ Background lesson refresh failed for $categoryId: $e');
+      return <LessonModel>[];
+    }));
   }
 
   /// Fetch lessons for multiple categories in parallel.
